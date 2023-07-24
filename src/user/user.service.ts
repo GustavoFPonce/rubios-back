@@ -9,6 +9,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 import { RoleService } from '../role/role.service';
+import { Role } from './enum';
 
 @Injectable()
 export class UserService {
@@ -25,6 +26,17 @@ export class UserService {
     return users;
   }
 
+  async findByRole(role: number){
+    return this.userRepository.find({role})
+  }
+
+  async findDebtCollectors(){
+    const role = (await this.roleService.findOneByName(Role.debtCollector));
+    const debtCollectors = await this.userRepository.find({role: role.id})
+    console.log("debtCollectors: ", debtCollectors);
+    return debtCollectors;
+  }
+
   async findOne(id: string) {
     const user = await this.userRepository.findOne(id, {
       relations: ['role'],
@@ -39,7 +51,7 @@ export class UserService {
 
   async findOneByEmail(email: string) {
     const user = await this.userRepository.findOne(
-      { email },
+      //{ email },
       { relations: ['role'] },
     );
 
@@ -51,7 +63,7 @@ export class UserService {
 
     const user = await this.userRepository.create({
       ...createUserDto,
-      role,
+     // role,
     });
 
     return this.userRepository.save(user);
@@ -65,7 +77,7 @@ export class UserService {
     const user = await this.userRepository.preload({
       id,
       ...updateUserDto,
-      role,
+      //role,
     });
 
     if (!user) {

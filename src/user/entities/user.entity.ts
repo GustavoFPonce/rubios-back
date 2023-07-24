@@ -12,31 +12,36 @@ import { Role } from '../../role/entities/role.entity';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id: string;
 
-  @Column({ length: 25 })
+  @Column()
+  lastName: string;
+
+  @Column()
   name: string;
 
-  @Column({ length: 25 })
-  surname: string;
+  // @Column()
+  // email: string;
 
-  @Column({ length: 50 })
-  email: string;
+  // @Column()
+  // password: string;
 
-  @Column({ length: 60 })
-  password: string;
+  @Column()
+  address: string;
 
-  @Column({ length: 16 })
+  @Column()
   phoneNumber: string;
 
-  @Column({ nullable: true })
-  refreshToken: string;
+  // @Column()
+  // refreshToken: string;
 
-  @JoinTable()
-  @ManyToOne(() => Role, (role: Role) => role.users)
-  role: Role;
+  @Column()
+  role: number;
+  
+  // @ManyToOne(() => Role, (role: Role) => role.users)
+  // role: Role;
 
-  @OneToMany(() => Order, (order: Order) => order.user)
-  orders: Order[];
+  // @OneToMany(() => Order, (order: Order) => order.user)
+  // orders: Order[];
 }

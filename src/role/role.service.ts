@@ -20,6 +20,8 @@ export class RoleService {
 
     throw new NotFoundException(`There is no role under this name ${name}`);
   }
+  
+
 
   async checkPermission(name: string, neededPermission: string) {
     const role = await this.roleRepository.findOne(

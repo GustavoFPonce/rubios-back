@@ -32,8 +32,8 @@ export class Order {
   @Column({ nullable: true })
   stripeId: string;
 
-  @ManyToOne(() => User, (user: User) => user.orders)
-  user: User;
+  // @ManyToOne(() => User, (user: User) => user.orders)
+  // user: User;
 
   @Column()
   userId: string;

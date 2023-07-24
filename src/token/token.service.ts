@@ -28,7 +28,8 @@ export class TokenService {
   async getRefreshToken(id: string) {
     const user = await this.userService.findOne(id);
 
-    const token = user.refreshToken;
+    const token = null
+    //user.refreshToken;
 
     return token;
   }

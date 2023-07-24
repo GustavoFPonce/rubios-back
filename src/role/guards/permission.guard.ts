@@ -32,7 +32,7 @@ export class PermissionGuard implements CanActivate {
         );
         const { role } = await this.userService.findOne(id);
         const hasPermission = await this.roleService.checkPermission(
-          role.name,
+          role.toString(),
           neededPermission.toString(),
         );
 

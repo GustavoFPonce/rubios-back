@@ -13,7 +13,7 @@ import { Permission } from '../../user/entities/permission.entity';
 @Entity()
 export class Role {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: number;
 
   @Column({ length: 25 })
   name: string;
