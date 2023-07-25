@@ -1,18 +1,19 @@
-import { Column, Double, Entity, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Double, Entity, JoinColumn, OneToMany, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { PaymentDetail } from "./payment-detail.entity";
 
 @Entity()
 export class Credit{
 @PrimaryGeneratedColumn()
-id: Number;
+id: number;
 
 @Column()
-userId: Number;
+userId: number;
 
 @Column()
-clientId: Number;
+clientId: number;
 
 @Column()
-debtCollectorId: Number;
+debtCollectorId: number;
 
 @Column()
 date: Date
@@ -21,26 +22,29 @@ date: Date
 firstPayment: Date;
 
 @Column()
-payDay: String;
+payDay: string;
 
 @Column()
-principal: Number;
+principal: number;
 
 @Column()
-interestRate: Number;
+interestRate: number;
 
 @Column()
-paymentFrequency: String;
+paymentFrequency: string;
 
 @Column()
-numberPayment: Number;
+numberPayment: number;
 
 @Column()
-payment: Number;
+payment: number;
 
 @Column()
-status: Number;
+status: number;
 
 @Column()
-information: String
+information: string
+
+@OneToMany(()=>PaymentDetail, (detail: PaymentDetail) => detail.credit)
+paymentDetails: PaymentDetail[]
 }

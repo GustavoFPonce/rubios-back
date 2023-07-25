@@ -33,13 +33,13 @@ export class RoleService {
       },
     );
 
-    const permission = role.permissions.find(
-      (permission) => permission.name === neededPermission,
-    );
+    // const permission = role.permissions.find(
+    //   (permission) => permission.name === neededPermission,
+    // );
 
-    if (permission) {
-      return true;
-    }
+    // if (permission) {
+    //   return true;
+    // }
 
     return false;
   }

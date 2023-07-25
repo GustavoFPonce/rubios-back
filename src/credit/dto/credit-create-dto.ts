@@ -3,31 +3,31 @@ import { IsDate, IsDateString, IsNumber, IsString } from 'class-validator';
 
 export class CreditCreateDto{
     @IsNumber()
-    readonly clientId: Number;
+    readonly clientId: number;
 
     @IsNumber()
-    readonly debtCollectorId: Number;
+    readonly debtCollectorId: number;
 
     @IsString()
     readonly firstPayment: string;
 
     @IsNumber()
-    readonly principal: Number;
+    readonly principal: number;
 
     @IsNumber()
-    readonly interestRate: Number;
+    readonly interestRate: number;
 
     @IsString()
-    readonly paymentFrequency: String;
+    readonly paymentFrequency: string;
 
     @IsNumber()
-    readonly numberPayment: Number;
+    readonly numberPayment: number;
 
     @IsNumber()
-    readonly payment: Number;
+    readonly payment: number;
 
     @IsString()
-    readonly information: String
+    readonly information: string
 
 
 }

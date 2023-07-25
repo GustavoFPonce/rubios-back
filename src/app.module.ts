@@ -11,6 +11,7 @@ import { TokenModule } from './token/token.module';
 import { StripeModule } from 'nestjs-stripe';
 import { CreditModule } from './credit/credit.module';
 import { ClientModule } from './client/client.module';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ClientModule } from './client/client.module';
       database: 'db_a7f37d_rubios',
       autoLoadEntities: true,
       synchronize: false,
+      entities: [join(__dirname, '**', '*.entity.{ts,js}')],
     }),
     StripeModule.forRoot({
       apiKey: process.env.STRIPE_API_KEY,

@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToOne,
   OneToMany,
@@ -35,12 +36,10 @@ export class User {
 
   // @Column()
   // refreshToken: string;
-
-  @Column()
-  role: number;
   
-  // @ManyToOne(() => Role, (role: Role) => role.users)
-  // role: Role;
+  @ManyToOne(() => Role, (role: Role) => role.users)
+  @JoinColumn({ name: 'role' }) // Nombre de la columna que contiene la clave foránea a la tabla Role
+  role: Role;
 
   // @OneToMany(() => Order, (order: Order) => order.user)
   // orders: Order[];

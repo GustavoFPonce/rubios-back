@@ -27,12 +27,15 @@ export class UserService {
   }
 
   async findByRole(role: number){
-    return this.userRepository.find({role})
+   // return this.userRepository.find({role})
   }
 
   async findDebtCollectors(){
     const role = (await this.roleService.findOneByName(Role.debtCollector));
-    const debtCollectors = await this.userRepository.find({role: role.id})
+    const debtCollectors = await this.userRepository.find({
+      where:   {role: role.id},
+      relations: ['role'], // Carga la relación "role" en la consulta
+    });
     console.log("debtCollectors: ", debtCollectors);
     return debtCollectors;
   }

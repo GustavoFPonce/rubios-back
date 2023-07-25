@@ -5,8 +5,8 @@ module.exports = {
   username: 'a7f37d_rubios',
   password: 'Abcd1234',
   database: 'db_a7f37d_rubios',
-  entities: ['dist/**/*.entity.js'],
-  migrations: ['dist/migrations/*.js'],
+  entities: [join(__dirname, '**', '*.entity.{ts,js}')],
+ // migrations: ['dist/migrations/*.js'],
   cli: {
     migrationsDir: 'src/migrations',
   },
