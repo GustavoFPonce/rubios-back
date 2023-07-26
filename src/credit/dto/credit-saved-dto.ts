@@ -1,6 +1,6 @@
 import { IsDateString, IsNumber, IsString } from "class-validator";
 
-export class CreditSaved {
+export class CreditSavedDto {
     @IsNumber()
     id: number;
 

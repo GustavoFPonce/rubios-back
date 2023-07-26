@@ -8,6 +8,7 @@ import { CreditCreateDto } from './dto/credit-create-dto';
 import { StatusCredit } from './enum';
 import { Status } from '../order/enums/status.enum';
 import { PaymentDetail } from './entities/payment-detail.entity';
+import { CreditSavedDto } from './dto/credit-saved-dto';
 
 @Injectable()
 export class CreditService {
@@ -48,7 +49,7 @@ export class CreditService {
 
         //return null;
     }
-    
+
 
     private async addPaymentDetail(credit: Credit) {
         for (let i = 0; i < credit.numberPayment; i++) {
@@ -76,6 +77,28 @@ export class CreditService {
     }
 
 
+
+    async update(id: number, credit: CreditSavedDto) {
+        var creditSaved = await this.creditRepository.findOne(credit.id);
+        console.log("credito en bbdd1: ", creditSaved);
+        creditSaved.firstPayment = parseISO(credit.firstPayment);
+        for (const [clave, valor] of Object.entries(credit)) {
+           // if (valor !== 'firstPayment' && valor !== 'paymentFrecuency') {
+                creditSaved[clave] = valor;
+            //}
+        //    if (valor == 'paymentFrecuency') {
+        //         if (credit.paymentFrequency !== creditSaved.paymentFrequency) {
+        //         }
+        //     }
+        }
+        console.log("credito en bbdd2: ", creditSaved);
+        // console.log('credit update: ', credit);
+        const saved = await this.creditRepository.save(creditSaved);
+        console.log("credito en bbdd: ", saved);
+        //return null;
+    }
+
+
     async byStatus(status: StatusCredit) {
         console.log("status: ", status);
         return this.creditRepository.find({ status })
@@ -84,4 +107,6 @@ export class CreditService {
     async byDebtCollector(id: number) {
         return this.creditRepository.find({ debtCollectorId: id });
     }
+
+
 }

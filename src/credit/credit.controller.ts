@@ -1,6 +1,7 @@
-import { Body, Controller, Post, UseGuards, Response, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Response, Get, Query, Put, Param } from '@nestjs/common';
 import { CreditService } from './credit.service';
 import { CreditCreateDto } from './dto/credit-create-dto';
+import { CreditSavedDto } from './dto/credit-saved-dto';
 
 @Controller('credit')
 export class CreditController {
@@ -25,8 +26,17 @@ export class CreditController {
     @Get('by-debt-collector')
     async ByDebtCollector(
         @Query('id') id
-    ){
+    ) {
         return this.creditService.byDebtCollector(id);
+    }
+
+    @Put(':id')
+    async update(
+        @Param('id') id: number,
+        @Body() credit: CreditSavedDto
+    ) {
+        var response = await this.creditService.update(id, credit);
+        return response;
     }
 
 }
