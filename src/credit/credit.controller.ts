@@ -39,4 +39,9 @@ export class CreditController {
         return response;
     }
 
+    @Get()
+    async getAll(){
+        return this.creditService.getAll();
+    }
+
 }

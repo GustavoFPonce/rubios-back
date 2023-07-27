@@ -9,6 +9,7 @@ import { StatusCredit } from './enum';
 import { Status } from '../order/enums/status.enum';
 import { PaymentDetail } from './entities/payment-detail.entity';
 import { CreditSavedDto } from './dto/credit-saved-dto';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class CreditService {
@@ -17,6 +18,8 @@ export class CreditService {
         private readonly creditRepository: Repository<Credit>,
         @InjectRepository(PaymentDetail)
         private paymentDetailRepository: Repository<PaymentDetail>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
     ) { }
 
 
@@ -25,8 +28,10 @@ export class CreditService {
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
 
         console.log("nuevo credito: ", creditCreateDto);
+        const user = await this.userRepository.findOne(userId);
+        console.log("usuario encontrado: ", user);
         var createCredit = new Credit();
-        createCredit.userId = userId;
+        createCredit.user = user;
         createCredit.clientId = creditCreateDto.clientId;
         createCredit.debtCollectorId = creditCreateDto.debtCollectorId;
         createCredit.date = new Date();
@@ -47,7 +52,7 @@ export class CreditService {
         console.log("response: ", creditSaved);
         return creditSaved;
 
-        //return null;
+        //  return null;
     }
 
 
@@ -83,13 +88,13 @@ export class CreditService {
         console.log("credito en bbdd1: ", creditSaved);
         creditSaved.firstPayment = parseISO(credit.firstPayment);
         for (const [clave, valor] of Object.entries(credit)) {
-           // if (valor !== 'firstPayment' && valor !== 'paymentFrecuency') {
-                creditSaved[clave] = valor;
+            // if (valor !== 'firstPayment' && valor !== 'paymentFrecuency') {
+            creditSaved[clave] = valor;
             //}
-        //    if (valor == 'paymentFrecuency') {
-        //         if (credit.paymentFrequency !== creditSaved.paymentFrequency) {
-        //         }
-        //     }
+            //    if (valor == 'paymentFrecuency') {
+            //         if (credit.paymentFrequency !== creditSaved.paymentFrequency) {
+            //         }
+            //     }
         }
         console.log("credito en bbdd2: ", creditSaved);
         // console.log('credit update: ', credit);
@@ -98,6 +103,13 @@ export class CreditService {
         //return null;
     }
 
+
+
+    async getAll() {
+        const credits = await this.creditRepository.find({ where:   {status: StatusCredit.active}, relations: ['user']});
+        console.log("creditos activos: ", credits);
+        return credits;
+    }
 
     async byStatus(status: StatusCredit) {
         console.log("status: ", status);
