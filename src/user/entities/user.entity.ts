@@ -42,8 +42,10 @@ export class User {
   @JoinColumn({ name: 'role' }) // Nombre de la columna que contiene la clave foránea a la tabla Role
   role: Role;
 
-  @OneToMany(() => Credit, (credit) => credit.clientId)
+  @OneToMany(() => Credit, (credit) => credit.debtCollector)
   credits: Credit[];
+
+
 
   // @OneToMany(() => Order, (order: Order) => order.user)
   // orders: Order[];

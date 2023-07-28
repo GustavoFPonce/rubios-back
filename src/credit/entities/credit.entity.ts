@@ -3,50 +3,50 @@ import { PaymentDetail } from "./payment-detail.entity";
 import { User } from "src/user/entities/user.entity";
 
 @Entity()
-export class Credit{
-@PrimaryGeneratedColumn()
-id: number;
+export class Credit {
+    @PrimaryGeneratedColumn()
+    id: number;
 
-@ManyToOne(() => User, (user) => user.credits)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+    @Column()
+    userId: number;
+    
+    @ManyToOne(() => User, (user) => user.credits)
+    @JoinColumn({ name: 'debtCollector_id' })
+    debtCollector: User;
 
-@Column()
-clientId: number;
+    @Column()
+    clientId: number;
 
-@Column()
-debtCollectorId: number;
+    @Column()
+    date: Date
 
-@Column()
-date: Date
+    @Column()
+    firstPayment: Date;
 
-@Column()
-firstPayment: Date;
+    @Column()
+    payDay: string;
 
-@Column()
-payDay: string;
+    @Column()
+    principal: number;
 
-@Column()
-principal: number;
+    @Column()
+    interestRate: number;
 
-@Column()
-interestRate: number;
+    @Column()
+    paymentFrequency: string;
 
-@Column()
-paymentFrequency: string;
+    @Column()
+    numberPayment: number;
 
-@Column()
-numberPayment: number;
+    @Column()
+    payment: number;
 
-@Column()
-payment: number;
+    @Column()
+    status: number;
 
-@Column()
-status: number;
+    @Column()
+    information: string
 
-@Column()
-information: string
-
-@OneToMany(()=>PaymentDetail, (detail: PaymentDetail) => detail.credit)
-paymentDetails: PaymentDetail[]
+    @OneToMany(() => PaymentDetail, (detail: PaymentDetail) => detail.credit)
+    paymentDetails: PaymentDetail[]
 }

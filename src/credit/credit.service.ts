@@ -10,6 +10,7 @@ import { Status } from '../order/enums/status.enum';
 import { PaymentDetail } from './entities/payment-detail.entity';
 import { CreditSavedDto } from './dto/credit-saved-dto';
 import { User } from 'src/user/entities/user.entity';
+import { CreditListDto } from './dto/credit-list.dto';
 
 @Injectable()
 export class CreditService {
@@ -28,12 +29,11 @@ export class CreditService {
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
 
         console.log("nuevo credito: ", creditCreateDto);
-        const user = await this.userRepository.findOne(userId);
-        console.log("usuario encontrado: ", user);
+        const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         var createCredit = new Credit();
-        createCredit.user = user;
+        createCredit.userId = userId;
         createCredit.clientId = creditCreateDto.clientId;
-        createCredit.debtCollectorId = creditCreateDto.debtCollectorId;
+        createCredit.debtCollector = debtCollector;
         createCredit.date = new Date();
         createCredit.firstPayment = parseISO(creditCreateDto.firstPayment);
         createCredit.paymentFrequency = creditCreateDto.paymentFrequency;
@@ -106,9 +106,14 @@ export class CreditService {
 
 
     async getAll() {
-        const credits = await this.creditRepository.find({ where:   {status: StatusCredit.active}, relations: ['user']});
-        console.log("creditos activos: ", credits);
-        return credits;
+        const credits = await this.creditRepository.find({ where:   {status: StatusCredit.active}, relations: ['debtCollector']});
+        const creditsDto = credits.map(credit => {
+            const creditList = new CreditListDto(credit);
+            return creditList;
+        })
+        
+        console.log("creditos activos: ", creditsDto);
+        return creditsDto;
     }
 
     async byStatus(status: StatusCredit) {
@@ -117,7 +122,12 @@ export class CreditService {
     }
 
     async byDebtCollector(id: number) {
-        return this.creditRepository.find({ debtCollectorId: id });
+        const credits = await this.creditRepository.find({
+            where: { debtCollector: { id: id } },
+            relations: ['user'], 
+          });
+          console.log("creditos por cobrador: ", credits);
+          return credits;
     }
 
 
