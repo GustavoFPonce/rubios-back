@@ -40,8 +40,28 @@ export class CreditController {
     }
 
     @Get()
-    async getAll(){
+    async getAll() {
         return this.creditService.getAll();
+    }
+
+    @Get('by-status-date-range')
+    async getByStatusByDateRange(
+        @Query('status') status: any,
+        @Query('startDate') startDate: any,
+        @Query('endDate') endDate: any
+    ) {
+        console.log("status: ", status);
+        console.log("startDate: ", startDate);
+        console.log("endDate: ", endDate);
+        return this.creditService.getByFilterStatusByDate(status, startDate, endDate);
+    }
+
+    @Get('by-client-name')
+    async getByClientName(
+        @Query('name') name: string
+    ) {
+        console.log("name: ", name);
+        return this.creditService.getByClientName(name);
     }
 
 }

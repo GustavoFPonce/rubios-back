@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Credit } from "src/credit/entities/credit.entity";
+import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Client{
@@ -17,4 +18,8 @@ export class Client{
 
     @Column()
     phoneNumber: string;
+
+    @OneToMany(()=> Credit, (credit)=> credit.client)
+    credits: Credit[];
+    
 }

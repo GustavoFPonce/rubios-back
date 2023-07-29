@@ -15,7 +15,7 @@ export class CreditListDto {
     constructor(credit: Credit) {
         const creditDto: CreditListDto = {
             id: credit.id,
-            client: credit.clientId.toString(),
+            client: credit.client.lastName + " " + credit.client.name,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             date: credit.date.toISOString().split('T')[0],
             principal: credit.principal,

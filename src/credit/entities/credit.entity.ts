@@ -1,6 +1,7 @@
 import { Column, Double, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { PaymentDetail } from "./payment-detail.entity";
 import { User } from "src/user/entities/user.entity";
+import { Client } from "src/client/entities/client.entity";
 
 @Entity()
 export class Credit {
@@ -9,13 +10,14 @@ export class Credit {
 
     @Column()
     userId: number;
-    
+
     @ManyToOne(() => User, (user) => user.credits)
     @JoinColumn({ name: 'debtCollector_id' })
     debtCollector: User;
 
-    @Column()
-    clientId: number;
+    @ManyToOne(() => Client, (client) => client.credits)
+    @JoinColumn({ name: 'client_id' })
+    client: Client;
 
     @Column()
     date: Date
