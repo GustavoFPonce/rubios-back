@@ -15,7 +15,10 @@ export class PaymentDetail{
     @Column()
     paymentDate: Date
 
-    @ManyToOne(()=> Credit, (credit: Credit) => credit.paymentDetails)
+    @Column()
+    balance: number;
+
+    @ManyToOne(()=> Credit, (credit: Credit) => credit.paymentsDetail)
     @JoinColumn({ name: 'credit_id' }) 
     credit: Credit;
 }

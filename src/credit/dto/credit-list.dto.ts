@@ -9,6 +9,8 @@ export class CreditListDto {
     paymentFrequency: string;
     numberPayment: number;
     payment: number;
+    payDay: string;
+    information: string;
 
 
 
@@ -22,6 +24,8 @@ export class CreditListDto {
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
             payment: credit.payment,
+            payDay: credit.payDay,
+            information: credit.information
         };
 
         return creditDto;

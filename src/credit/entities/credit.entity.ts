@@ -50,5 +50,5 @@ export class Credit {
     information: string
 
     @OneToMany(() => PaymentDetail, (detail: PaymentDetail) => detail.credit)
-    paymentDetails: PaymentDetail[]
+    paymentsDetail: PaymentDetail[]
 }

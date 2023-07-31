@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Response, Get, Query, Put, Param } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Response, Get, Query, Put, Param, Delete } from '@nestjs/common';
 import { CreditService } from './credit.service';
 import { CreditCreateDto } from './dto/credit-create-dto';
 import { CreditSavedDto } from './dto/credit-saved-dto';
@@ -62,6 +62,22 @@ export class CreditController {
     ) {
         console.log("name: ", name);
         return this.creditService.getByClientName(name);
+    }
+
+    @Get(':id/payments-detail')
+    async getPaymentsDetail(
+        @Param('id') id: number
+    ) {
+        console.log("pidiendo detalle de los pagos: ", id);
+        return this.creditService.getPaymentsDetail(id);
+    }
+
+    @Delete(':id')
+    async delete(
+        @Param('id') id: number
+    ) {
+        console.log("id: ", id);
+        return await this.creditService.delete(id);
     }
 
 }

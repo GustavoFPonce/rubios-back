@@ -68,6 +68,7 @@ export class CreditService {
             detail.paymentDueDate = credit.firstPayment;
             detail.paymentDate = this.getNextPaymenteDate(credit.paymentFrequency, i + 1, credit.firstPayment);
             detail.credit = credit;
+            detail.balance = (i==0)?credit.payment*credit.numberPayment: 0;
             console.log("detail: ", detail);
             const paymentDetail = await this.paymentDetailRepository.create(detail);
             await this.paymentDetailRepository.save(paymentDetail);
@@ -188,13 +189,13 @@ export class CreditService {
             .where(new Brackets((qb) => {
                 filters.forEach((term, index) => {
                     qb.orWhere('client.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
-                      .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
-                  });
+                        .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
+                });
             }))
             .getMany();
         //console.log("creditos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
-       // console.log("creditos: ", creditsDto);
+        // console.log("creditos: ", creditsDto);
         return creditsDto;
     }
 
@@ -203,6 +204,20 @@ export class CreditService {
             const creditList = new CreditListDto(credit);
             return creditList;
         })
+    }
+
+    async getPaymentsDetail(id: number): Promise<PaymentDetail[]> {
+        const credit = await this.creditRepository.findOne({where:{id:id}, relations:['paymentsDetail']});
+        console.log("credit: ", credit);
+        return credit.paymentsDetail;
+    }
+
+    async delete(id: number){
+        var response = {success: false}
+        const responseDelete = await this.creditRepository.delete(id);
+        console.log("response: ", responseDelete);
+        if(responseDelete.affected > 0) response.success = true;
+        return response;
     }
 
 
