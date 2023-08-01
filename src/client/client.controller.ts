@@ -9,7 +9,7 @@ export class ClientController {
     @Get()
     async all() {
         const clients = await this.clientService.all();
-        console.log("clientes: ", clients );
+        // console.log("clientes: ", clients );
         return clients;
     }
 }

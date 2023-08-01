@@ -33,15 +33,19 @@ export class CreditController {
     @Put(':id')
     async update(
         @Param('id') id: number,
-        @Body() credit: CreditSavedDto
+        @Body() credit: any
     ) {
+        console.log("llegue a modificar créditos");
         var response = await this.creditService.update(id, credit);
         return response;
     }
 
     @Get()
     async getAll() {
-        return this.creditService.getAll();
+        // console.log("pidiendo los creditos");
+        const id = 1;
+        //const id = 3;
+        return this.creditService.getAll(id);
     }
 
     @Get('by-status-date-range')

@@ -4,6 +4,7 @@ export class CreditListDto {
     id: number;
     client: string;
     debtCollector: string;
+    debtCollectorId: number;
     date: string;
     principal: number;
     paymentFrequency: string;
@@ -11,6 +12,8 @@ export class CreditListDto {
     payment: number;
     payDay: string;
     information: string;
+    interestRate: number;
+    firstPayment: string;
 
 
 
@@ -19,15 +22,18 @@ export class CreditListDto {
             id: credit.id,
             client: credit.client.lastName + " " + credit.client.name,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
+            debtCollectorId: parseInt(credit.debtCollector.id),
             date: credit.date.toISOString().split('T')[0],
             principal: credit.principal,
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
             payment: credit.payment,
             payDay: credit.payDay,
-            information: credit.information
+            information: credit.information,
+            interestRate: credit.interestRate,
+            firstPayment: credit.firstPayment.toISOString().split('T')[0]
         };
-
+        // console.log("credit list dto: ", credit);
         return creditDto;
 
     }

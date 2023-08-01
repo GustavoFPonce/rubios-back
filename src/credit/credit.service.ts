@@ -29,7 +29,7 @@ export class CreditService {
 
 
     async create(creditCreateDto: CreditCreateDto, userId: number) {
-
+        var response = { success: false }
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
 
         console.log("nuevo credito: ", creditCreateDto);
@@ -55,7 +55,8 @@ export class CreditService {
         console.log("credit guardado: ", credit);
         this.addPaymentDetail(creditSaved);
         console.log("response: ", creditSaved);
-        return creditSaved;
+        if (creditSaved) response.success = true;
+        return response;
 
         //  return null;
     }
@@ -68,7 +69,7 @@ export class CreditService {
             detail.paymentDueDate = credit.firstPayment;
             detail.paymentDate = this.getNextPaymenteDate(credit.paymentFrequency, i + 1, credit.firstPayment);
             detail.credit = credit;
-            detail.balance = (i==0)?credit.payment*credit.numberPayment: 0;
+            detail.balance = (i == 0) ? parseFloat((credit.payment * credit.numberPayment).toFixed(2)) : 0;
             console.log("detail: ", detail);
             const paymentDetail = await this.paymentDetailRepository.create(detail);
             await this.paymentDetailRepository.save(paymentDetail);
@@ -90,32 +91,46 @@ export class CreditService {
 
 
     async update(id: number, credit: CreditSavedDto) {
+        var response = { success: false };
+        const debtCollector = await this.userRepository.findOne(credit.debtCollectorId);
         var creditSaved = await this.creditRepository.findOne(credit.id);
-        console.log("credito en bbdd1: ", creditSaved);
-        creditSaved.firstPayment = parseISO(credit.firstPayment);
-        for (const [clave, valor] of Object.entries(credit)) {
-            // if (valor !== 'firstPayment' && valor !== 'paymentFrecuency') {
-            creditSaved[clave] = valor;
-            //}
-            //    if (valor == 'paymentFrecuency') {
-            //         if (credit.paymentFrequency !== creditSaved.paymentFrequency) {
-            //         }
-            //     }
-        }
-        console.log("credito en bbdd2: ", creditSaved);
+        // console.log("credito en bbdd1: ", creditSaved);
+        creditSaved.debtCollector = debtCollector;
+        creditSaved.information = credit.information;
+        // creditSaved.firstPayment = parseISO(credit.firstPayment);
+        // for (const [clave, valor] of Object.entries(credit)) {
+        //     // if (valor !== 'firstPayment' && valor !== 'paymentFrecuency') {
+        //     creditSaved[clave] = valor;
+        //     //}
+        //     //    if (valor == 'paymentFrecuency') {
+        //     //         if (credit.paymentFrequency !== creditSaved.paymentFrequency) {
+        //     //         }
+        //     //     }
+        // }
+        // console.log("credito en bbdd2: ", creditSaved);
         // console.log('credit update: ', credit);
         const saved = await this.creditRepository.save(creditSaved);
-        console.log("credito en bbdd: ", saved);
+        // console.log("credito en bbdd: ", saved);
+        if (saved) response.success = true;
+        return response;
         //return null;
     }
 
 
 
-    async getAll() {
-        const credits = await this.creditRepository.find({ where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'] });
+    async getAll(id: number) {
+        const user = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
+        // console.log("usuario encontrado: ", user);
+        var credits = [];
+        if (user.role.name == 'admin') {
+            credits = await this.creditRepository.find({ where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'] });
+        } else {
+            credits = await this.creditRepository.find({ where: { status: StatusCredit.active, debtCollector: user.id }, relations: ['debtCollector', 'client'] });
+        }
+        // console.log("creditos activos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
 
-        //console.log("creditos activos: ", creditsDto);
+        // console.log("creditos activos: ", creditsDto);
         return creditsDto;
     }
 
@@ -207,16 +222,16 @@ export class CreditService {
     }
 
     async getPaymentsDetail(id: number): Promise<PaymentDetail[]> {
-        const credit = await this.creditRepository.findOne({where:{id:id}, relations:['paymentsDetail']});
-        console.log("credit: ", credit);
+        const credit = await this.creditRepository.findOne({ where: { id: id }, relations: ['paymentsDetail'] });
+        // console.log("credit: ", credit);
         return credit.paymentsDetail;
     }
 
-    async delete(id: number){
-        var response = {success: false}
+    async delete(id: number) {
+        var response = { success: false }
         const responseDelete = await this.creditRepository.delete(id);
         console.log("response: ", responseDelete);
-        if(responseDelete.affected > 0) response.success = true;
+        if (responseDelete.affected > 0) response.success = true;
         return response;
     }
 

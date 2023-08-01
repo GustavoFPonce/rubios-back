@@ -36,7 +36,7 @@ export class UserService {
       where:   {role: role.id},
       relations: ['role'], // Carga la relación "role" en la consulta
     });
-    console.log("debtCollectors: ", debtCollectors);
+    // console.log("debtCollectors: ", debtCollectors);
     return debtCollectors;
   }
 
