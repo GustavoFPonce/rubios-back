@@ -14,7 +14,20 @@ export class UserController {
     }
 
     @Get('debt-collectors')
-    async debtCollectors(){
+    async debtCollectors() {
         return await this.userService.findDebtCollectors();
+    }
+
+    @Get()
+    async getAll() {
+        return await this.userService.getAll();
+    }
+
+    @Get('by-name')
+    async getByName(
+        @Query('name') name: string
+    ) {
+        console.log("name: ", name);
+        return this.userService.getByName(name);
     }
 }

@@ -93,7 +93,7 @@ describe('UserService', () => {
 
   describe('findAll', () => {
     it('returns all users', async () => {
-      const result = await service.findAll();
+      const result = await service.getAll();
 
       expect(result).toEqual(users);
     });
