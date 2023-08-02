@@ -124,9 +124,20 @@ export class CreditService {
         // console.log("usuario encontrado: ", user);
         var credits = [];
         if (user.role.name == 'admin') {
-            credits = await this.creditRepository.find({ where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'] });
+            credits = await this.creditRepository.find(
+                {
+                    where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'],
+                    order: {
+                        date: 'DESC',
+                    }
+                });
         } else {
-            credits = await this.creditRepository.find({ where: { status: StatusCredit.active, debtCollector: user.id }, relations: ['debtCollector', 'client'] });
+            credits = await this.creditRepository.find({ where: { status: StatusCredit.active, debtCollector: user.id },
+                 relations: ['debtCollector', 'client'],
+                 order: {
+                    date: 'DESC',
+                }
+         });
         }
         // console.log("creditos activos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
@@ -137,13 +148,18 @@ export class CreditService {
 
     async byStatus(status: StatusCredit) {
         console.log("status: ", status);
-        return this.creditRepository.find({ status })
+        return this.creditRepository.find({ where: {status}, order: {
+            date: 'DESC',
+        } })
     }
 
     async byDebtCollector(id: number) {
         const credits = await this.creditRepository.find({
             where: { debtCollector: { id: id } },
             relations: ['user'],
+            order: {
+                date: 'DESC',
+            }
         });
         console.log("creditos por cobrador: ", credits);
         return credits;
@@ -177,6 +193,9 @@ export class CreditService {
             where: {
                 status: StatusCredit[`${status}`],
                 date: Between(start, end),
+                order: {
+                    date: 'DESC',
+                }
             },
             relations: ['debtCollector', 'client']
         });
@@ -191,6 +210,9 @@ export class CreditService {
         return await this.creditRepository.find({
             where: {
                 date: Between(start, end),
+                order: {
+                    date: 'DESC',
+                }
             },
             relations: ['debtCollector', 'client']
         });
@@ -208,6 +230,7 @@ export class CreditService {
                         .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
                 });
             }))
+            .orderBy('credit.date', 'DESC')
             .getMany();
         //console.log("creditos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
@@ -259,6 +282,7 @@ export class CreditService {
                 startDate,
                 endDate,
             })
+            .orderBy('paymentsDetail.paymentDate', 'DESC')
             .getMany();
 
         console.log("cobranzas obtenidas: ", collections);
@@ -277,12 +301,12 @@ export class CreditService {
     async registerPayment(id: number) {
         var response = { success: false, collection: {} };
         var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
-        .leftJoinAndSelect('paymentsDetail.credit', 'credit')
-        .leftJoinAndSelect('credit.client', 'client')
-        .where('paymentsDetail.id = :id', { id })
-        .getOne();
-        
-       // findOne({ where: { id: id }, relations: ['credit'] });
+            .leftJoinAndSelect('paymentsDetail.credit', 'credit')
+            .leftJoinAndSelect('credit.client', 'client')
+            .where('paymentsDetail.id = :id', { id })
+            .getOne();
+
+        // findOne({ where: { id: id }, relations: ['credit'] });
         payment.paymentDate = new Date();
         payment.balance = payment.balance - payment.payment;
         const saved = await this.paymentDetailRepository.save(payment);
