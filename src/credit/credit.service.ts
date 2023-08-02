@@ -193,9 +193,9 @@ export class CreditService {
             where: {
                 status: StatusCredit[`${status}`],
                 date: Between(start, end),
-                order: {
-                    date: 'DESC',
-                }
+            },            
+            order: {
+                date: 'DESC',
             },
             relations: ['debtCollector', 'client']
         });
@@ -210,9 +210,9 @@ export class CreditService {
         return await this.creditRepository.find({
             where: {
                 date: Between(start, end),
-                order: {
-                    date: 'DESC',
-                }
+            },            
+            order: {
+                date: 'DESC',
             },
             relations: ['debtCollector', 'client']
         });
