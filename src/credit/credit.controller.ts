@@ -84,4 +84,22 @@ export class CreditController {
         return await this.creditService.delete(id);
     }
 
+    @Get('day')
+    async getDay() {
+        return this.creditService.getDay();
+    }
+
+    @Get('collections-by-day')
+    async getCollectionsByDay() {
+        const userId = 2;
+        return await this.creditService.getCollectionsByDay(userId);
+    }
+
+    @Put((':id/register-payment'))
+    async registerPayment(
+        @Param('id') id: number
+    ) {
+        return this.creditService.registerPayment(id);
+    }
+
 }

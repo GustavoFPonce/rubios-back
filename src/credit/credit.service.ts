@@ -13,6 +13,7 @@ import { User } from 'src/user/entities/user.entity';
 import { CreditListDto } from './dto/credit-list.dto';
 import { Client } from 'src/client/entities/client.entity';
 import { filter } from 'rxjs';
+import { CollectionDto } from './dto/collection-dto';
 
 @Injectable()
 export class CreditService {
@@ -42,7 +43,7 @@ export class CreditService {
         createCredit.date = new Date();
         createCredit.firstPayment = parseISO(creditCreateDto.firstPayment);
         createCredit.paymentFrequency = creditCreateDto.paymentFrequency;
-        createCredit.payDay = format(dateFirstPayment, 'EEEE', { locale: es });
+        createCredit.payDay = this.getDayString(dateFirstPayment);
         createCredit.principal = creditCreateDto.principal;
         createCredit.interestRate = creditCreateDto.interestRate;
         createCredit.status = StatusCredit.active;
@@ -66,8 +67,8 @@ export class CreditService {
         for (let i = 0; i < credit.numberPayment; i++) {
             var detail = new PaymentDetail();
             detail.payment = credit.payment;
-            detail.paymentDueDate = credit.firstPayment;
-            detail.paymentDate = this.getNextPaymenteDate(credit.paymentFrequency, i + 1, credit.firstPayment);
+            detail.paymentDueDate = (i == 0) ? credit.firstPayment : this.getNextPaymenteDate(credit.paymentFrequency, i + 1, credit.firstPayment);
+            detail.paymentDate = null;
             detail.credit = credit;
             detail.balance = (i == 0) ? parseFloat((credit.payment * credit.numberPayment).toFixed(2)) : 0;
             console.log("detail: ", detail);
@@ -223,7 +224,7 @@ export class CreditService {
 
     async getPaymentsDetail(id: number): Promise<PaymentDetail[]> {
         const credit = await this.creditRepository.findOne({ where: { id: id }, relations: ['paymentsDetail'] });
-        // console.log("credit: ", credit);
+        console.log("credit: ", credit);
         return credit.paymentsDetail;
     }
 
@@ -233,6 +234,78 @@ export class CreditService {
         console.log("response: ", responseDelete);
         if (responseDelete.affected > 0) response.success = true;
         return response;
+    }
+
+    async getDay() {
+        const date = new Date();
+        //return this.getDayString(date);
+        return {
+            day: this.getDayString(date),
+            date: format(date, 'dd-MM-yyyy')
+        }
+    }
+
+    async getCollectionsByDay(userId: number) {
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+        var collections = await this.paymentDetailRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.credit', 'credit')
+            .leftJoinAndSelect('credit.client', 'client')
+            .where('credit.debtCollector_Id = :userId', { userId })
+            .andWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
+                startDate,
+                endDate,
+            })
+            .getMany();
+
+        console.log("cobranzas obtenidas: ", collections);
+
+        const collectionsDto = collections.map(collection => {
+            return new CollectionDto(collection);
+        })
+        return collectionsDto;
+    }
+
+
+    private getDayString(date: Date) {
+        return format(date, 'EEEE', { locale: es });
+    }
+
+    async registerPayment(id: number) {
+        var response = { success: false, collection: {} };
+        var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
+        .leftJoinAndSelect('paymentsDetail.credit', 'credit')
+        .leftJoinAndSelect('credit.client', 'client')
+        .where('paymentsDetail.id = :id', { id })
+        .getOne();
+        
+       // findOne({ where: { id: id }, relations: ['credit'] });
+        payment.paymentDate = new Date();
+        payment.balance = payment.balance - payment.payment;
+        const saved = await this.paymentDetailRepository.save(payment);
+        console.log("pago guardado: ", saved);
+        if (saved) {
+            response.success = true;
+            response.collection = new CollectionDto(saved);
+            this.uptadeBalanceNextPayment(payment.balance, payment.credit.id);
+        }
+        return response;
+    }
+
+    private async uptadeBalanceNextPayment(balance: number, creditId: number) {
+        console.log("credit id: ", creditId);
+        const date = null;
+        var nextPayment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.credit', 'credit')
+            .where('credit.id = :creditId', { creditId })
+            .andWhere('paymentsDetail.paymentDate IS NULL')
+            .getOne();
+        console.log("siguiente pago: ", nextPayment);
+        if (nextPayment) nextPayment.balance = balance;
+        const saved = await this.paymentDetailRepository.save(nextPayment);
     }
 
 
