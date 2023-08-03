@@ -11,13 +11,14 @@ import { LoginUserDto } from '../user/dto/login-user.dto';
 
 import { UserService } from '../user/user.service';
 import { TokenService } from '../token/token.service';
+import { RoleService } from 'src/role/role.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
-  ) {}
+  ) { }
 
   async login(userDto: LoginUserDto) {
     const { id } = await this.validateUser(userDto);
@@ -30,21 +31,25 @@ export class AuthService {
       const { id } = await this.tokenService.verifyRefreshToken(refreshToken);
 
       return this.tokenService.removeRefreshToken(id);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   async registration(userDto: CreateUserDto) {
     const candidate = await this.userService.findOneByEmail(userDto.email);
+    console.log("existe email: ", candidate);
 
     if (candidate) return null;
 
     const hashedPassword = await bcrypt.hash(userDto.password, 7);
-    const user = await this.userService.create({
+    const response: any = await this.userService.create({
       ...userDto,
       password: hashedPassword,
     });
 
-    return this.tokenService.generateTokens(user.id);
+    return response;
+    // const token = await this.tokenService.generateTokens(user.id);
+    // console.log("token: ", token);
+    // return token;
   }
 
   async updateAccessToken(refreshToken: string) {

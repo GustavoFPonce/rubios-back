@@ -21,13 +21,16 @@ export class UserService {
 
   async getAll() {
     const users = await this.userRepository.find({
+      order: {
+        id: 'DESC', // Orden descendente por el campo numeroRegistro
+      },
       relations: ['role'],
     });
 
     const usersDto = users.map((user: User) => {
       return new UserDto(user)
     });
-    console.log("usuariosDto: ", usersDto);
+    // console.log("usuariosDto: ", usersDto);
     return usersDto;
   }
 
@@ -41,6 +44,7 @@ export class UserService {
             .orWhere('user.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
         });
       }))
+      .orderBy('user.id', 'DESC')
       .getMany();
 
     const usersDto = users.map((user) => {
@@ -48,7 +52,7 @@ export class UserService {
     })
 
     console.log("usuarios filtrados por nombre ", usersDto);
-      return usersDto;
+    return usersDto;
   }
 
   async findByRole(role: number) {
@@ -59,6 +63,9 @@ export class UserService {
     const role = (await this.roleService.findOneByName(Role.debtCollector));
     const debtCollectors = await this.userRepository.find({
       where: { role: role.id },
+      order: {
+        id: 'DESC', // Orden descendente por el campo numeroRegistro
+      },
       relations: ['role'], // Carga la relación "role" en la consulta
     });
     // console.log("debtCollectors: ", debtCollectors);
@@ -79,7 +86,7 @@ export class UserService {
 
   async findOneByEmail(email: string) {
     const user = await this.userRepository.findOne(
-      //{ email },
+      { email },
       { relations: ['role'] },
     );
 
@@ -87,14 +94,20 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto) {
+    var response = { success: false };
     const role = await this.roleService.findOneByName(createUserDto.roleName);
+    console.log("rol obtenido: ", role);
+    console.log("usuario a registrar: ", createUserDto);
 
     const user = await this.userRepository.create({
       ...createUserDto,
-      // role,
+      role,
     });
 
-    return this.userRepository.save(user);
+    const responseSave = this.userRepository.save(user);
+    if (responseSave) response.success = true;
+    return response;
+
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -105,19 +118,28 @@ export class UserService {
     const user = await this.userRepository.preload({
       id,
       ...updateUserDto,
-      //role,
+      role,
     });
 
-    if (!user) {
-      throw new NotFoundException(`There is no user under id ${id}`);
-    }
+    console.log("user modificado: ", user);
 
-    return this.userRepository.save(user);
+    // if (!user) {
+    //   throw new NotFoundException(`There is no user under id ${id}`);
+    // }
+
+    const response = await this.userRepository.save(user);
+    console.log("response: ", response);
+    return response;
   }
 
   async remove(id: string) {
+    var response = {success: false};
     const user = await this.findOne(id);
 
-    return this.userRepository.remove(user);
+    const responseRemove = await this.userRepository.remove(user);
+    console.log("response: ", response);
+    if(responseRemove) response.success = true;
+    return response;
   }
+
 }

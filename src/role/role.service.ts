@@ -9,7 +9,7 @@ import { Role } from './entities/role.entity';
 export class RoleService {
   constructor(
     @InjectRepository(Role) private readonly roleRepository: Repository<Role>,
-  ) {}
+  ) { }
 
   async findOneByName(name: string) {
     const role = await this.roleRepository.findOne({ name });
@@ -18,9 +18,11 @@ export class RoleService {
       return role;
     }
 
+    console.log("role encontrado: ", role);
+
     throw new NotFoundException(`There is no role under this name ${name}`);
   }
-  
+
 
 
   async checkPermission(name: string, neededPermission: string) {

@@ -18,7 +18,7 @@ import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('/login')
   async login(
@@ -48,20 +48,16 @@ export class AuthController {
     @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log("usuario: ", createUserDto);
+    //console.log("passthrounh ", res);
     const result = await this.authService.registration(createUserDto);
-
+    console.log("result: ", result);
     if (!result) {
       throw new HttpException(
         'User with this email already exists',
         HttpStatus.BAD_REQUEST,
       );
     }
-
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
     return result;
   }
 

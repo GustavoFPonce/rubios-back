@@ -23,11 +23,11 @@ export class User {
   @Column()
   name: string;
 
-  // @Column()
-  // email: string;
+  @Column()
+  email: string;
 
-  // @Column()
-  // password: string;
+  @Column()
+  password: string;
 
   @Column()
   address: string;
@@ -35,8 +35,11 @@ export class User {
   @Column()
   phoneNumber: string;
 
-  // @Column()
-  // refreshToken: string;
+  @Column()
+  userName: string;
+
+  @Column()
+  refreshToken: string;
   
   @ManyToOne(() => Role, (role: Role) => role.users)
   @JoinColumn({ name: 'role' }) // Nombre de la columna que contiene la clave foránea a la tabla Role

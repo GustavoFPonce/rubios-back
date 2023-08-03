@@ -3,18 +3,22 @@ import { User } from "../entities/user.entity";
 
 export class UserDto {
     id: number;
+    lastName: string;
     name: string;
     address: string;
     phoneNumber: string;
-    role: string;
+    roleName: string;
+    email: string;
 
     constructor(user: User) {
         const userDto: UserDto = {
             id: parseInt(user.id),
-            name: user.lastName + " " + user.name,
+            lastName: user.lastName,
+            name: user.name,
             address: user.address,
             phoneNumber: user.phoneNumber,
-            role: `${RoleType[user.role.name]}`
+            roleName: `${RoleType[user.role.name]}`,
+            email: user.email
         };
         return userDto;
     }
