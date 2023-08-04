@@ -21,9 +21,12 @@ export class AuthService {
   ) { }
 
   async login(userDto: LoginUserDto) {
-    const { id } = await this.validateUser(userDto);
-
-    return this.tokenService.generateTokens(id);
+    const {id} = await this.validateUser(userDto);
+    //console.log("response validation user: ", responseValidation);
+    const token = await this.tokenService.generateTokens(id);
+    console.log("token generado: ", token);
+    return token;
+   // return null;
   }
 
   async logout(refreshToken) {
@@ -75,22 +78,22 @@ export class AuthService {
 
   private async validateUser(userDto: LoginUserDto) {
     const user = await this.userService.findOneByEmail(userDto.email);
-
+    console.log("user validation: ", user);
     if (!user) {
       throw new NotFoundException(
-        `There is no user under this email ${userDto.email}`,
+        `El email ${userDto.email} no se encuentra registrado`,
       );
     }
 
     const passwordEquals = await bcrypt.compare(
       userDto.password,
-      //user.password,
+      user.password,
     );
 
     if (passwordEquals) {
       return user;
     }
 
-    throw new UnauthorizedException({ message: 'Incorrect password' });
+    throw new UnauthorizedException({ message: 'Contraseña incorrecta' });
   }
 }

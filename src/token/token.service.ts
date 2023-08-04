@@ -14,7 +14,7 @@ export class TokenService {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async setRefreshToken(id: string, refreshToken: string) {
     const user = await this.userService.findOne(id);
@@ -60,6 +60,7 @@ export class TokenService {
   }
 
   async generateTokens(id: string) {
+    console.log("id token: ", id);
     const payload = { id };
 
     const accessToken = this.jwtService.sign(payload, {

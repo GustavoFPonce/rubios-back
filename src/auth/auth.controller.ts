@@ -25,11 +25,12 @@ export class AuthController {
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log("llegue a login: ", loginUserDto);
     const result = await this.authService.login(loginUserDto);
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    // res.cookie('refreshToken', result.refreshToken, {
+    //   httpOnly: true,
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    // });
 
     return result;
   }

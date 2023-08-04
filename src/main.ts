@@ -7,10 +7,9 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as express from 'express';
 import { join } from 'path';
-import * as dotenv from 'dotenv';
 
 async function bootstrap() {
-  dotenv.config();
+  require('dotenv').config();
   const app = await NestFactory.create(AppModule);
 
   // Configurar la carpeta "public" como directorio estático para servir los archivos React
@@ -18,7 +17,7 @@ async function bootstrap() {
   app.use(express.static(join(__dirname, '..', 'public')));
 
 
-  
+  console.log("clave secreta: ", process.env.JWT_ACCESS_SECRET);
   app.use(cookieParser());
 
   app.useGlobalPipes(
