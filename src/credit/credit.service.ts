@@ -132,12 +132,13 @@ export class CreditService {
                     }
                 });
         } else {
-            credits = await this.creditRepository.find({ where: { status: StatusCredit.active, debtCollector: user.id },
-                 relations: ['debtCollector', 'client'],
-                 order: {
+            credits = await this.creditRepository.find({
+                where: { status: StatusCredit.active, debtCollector: user.id },
+                relations: ['debtCollector', 'client'],
+                order: {
                     date: 'DESC',
                 }
-         });
+            });
         }
         // console.log("creditos activos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
@@ -148,9 +149,11 @@ export class CreditService {
 
     async byStatus(status: StatusCredit) {
         console.log("status: ", status);
-        return this.creditRepository.find({ where: {status}, order: {
-            date: 'DESC',
-        } })
+        return this.creditRepository.find({
+            where: { status }, order: {
+                date: 'DESC',
+            }
+        })
     }
 
     async byDebtCollector(id: number) {
@@ -193,7 +196,7 @@ export class CreditService {
             where: {
                 status: StatusCredit[`${status}`],
                 date: Between(start, end),
-            },            
+            },
             order: {
                 date: 'DESC',
             },
@@ -210,7 +213,7 @@ export class CreditService {
         return await this.creditRepository.find({
             where: {
                 date: Between(start, end),
-            },            
+            },
             order: {
                 date: 'DESC',
             },
@@ -269,6 +272,7 @@ export class CreditService {
     }
 
     async getCollectionsByDay(userId: number) {
+        console.log("userId: ", userId);
         const startDate = new Date();
         startDate.setHours(0, 0, 0, 0);
         const endDate = new Date();

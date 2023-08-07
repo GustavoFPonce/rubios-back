@@ -12,21 +12,55 @@ import { LoginUserDto } from '../user/dto/login-user.dto';
 import { UserService } from '../user/user.service';
 import { TokenService } from '../token/token.service';
 import { RoleService } from 'src/role/role.service';
+import { LoggedUserDto } from 'src/user/dto/logged-user.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
+    private readonly jwtService: JwtService
   ) { }
 
   async login(userDto: LoginUserDto) {
-    const {id} = await this.validateUser(userDto);
+    var loggedUser = new LoggedUserDto();
+    const user = await this.validateUser(userDto);
     //console.log("response validation user: ", responseValidation);
-    const token = await this.tokenService.generateTokens(id);
+    // const token = await this.tokenService.generateTokens(user.id);
+    // loggedUser.accessToken = token.accessToken;
+    // loggedUser.refreshToken = token.refreshToken;
+    const token = await this.createTokens(user.id);
+    loggedUser.accessToken = token.accessToken;
+    loggedUser.refreshToken = token.refreshToken;
+    loggedUser.userName = user.name;
+    loggedUser.role = user.role.name;
+
     console.log("token generado: ", token);
-    return token;
-   // return null;
+
+    return loggedUser;
+    // return null;
+  }
+
+
+  private async createTokens(userId: number | string) {
+    const payload = { sub: userId };
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: '30m',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '30d',
+    });
+    return {
+      accessToken, refreshToken
+    };
+  }
+
+  async validateUserById(userId: number) {
+    console.log("validando usuario: ", userId);
   }
 
   async logout(refreshToken) {

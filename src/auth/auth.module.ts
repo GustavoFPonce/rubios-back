@@ -6,11 +6,18 @@ import { TokenModule } from '../token/token.module';
 import { AuthController } from './auth.controller';
 
 import { AuthService } from './auth.service';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
-  imports: [UserModule, TokenModule],
+  imports: [PassportModule, UserModule, TokenModule,
+    JwtModule.register({
+      secret: process.env.JWT_ACCESS_SECRET, // Cambia esto a tu clave secreta
+      signOptions: { expiresIn: '1h' }, // Configura el tiempo de expiración
+    }),],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

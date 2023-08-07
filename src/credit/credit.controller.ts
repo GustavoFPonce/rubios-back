@@ -1,9 +1,10 @@
-import { Body, Controller, Post, UseGuards, Response, Get, Query, Put, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Response, Get, Query, Put, Param, Delete, Req } from '@nestjs/common';
 import { CreditService } from './credit.service';
 import { CreditCreateDto } from './dto/credit-create-dto';
-import { CreditSavedDto } from './dto/credit-saved-dto';
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
 @Controller('credit')
+@UseGuards(JwtAuthGuard)
 export class CreditController {
     constructor(private readonly creditService: CreditService) { }
 
@@ -41,10 +42,11 @@ export class CreditController {
     }
 
     @Get()
-    async getAll() {
-        // console.log("pidiendo los creditos");
-        const id = 1;
-        //const id = 3;
+    async getAll(
+        @Req() req: any
+    ) {
+        const id = req.user.userId;
+        console.log("id: ", id);
         return this.creditService.getAll(id);
     }
 
@@ -89,9 +91,13 @@ export class CreditController {
         return this.creditService.getDay();
     }
 
+
     @Get('collections-by-day')
-    async getCollectionsByDay() {
-        const userId = 2;
+    async getCollectionsByDay(
+        @Req() req: any
+    ) {
+        console.log("request: ", req.user);
+        const userId = req.user.userId;
         return await this.creditService.getCollectionsByDay(userId);
     }
 
