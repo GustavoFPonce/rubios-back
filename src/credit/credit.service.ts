@@ -277,6 +277,38 @@ export class CreditService {
         startDate.setHours(0, 0, 0, 0);
         const endDate = new Date();
         endDate.setHours(23, 59, 59, 999);
+
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        console.log("user encontrado: ", user);
+        if (user.role.name == "admin") {
+            return await this.getCollectionsByDayAdmin(startDate, endDate);
+        } else {
+            return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate);
+        }
+
+    }
+
+    private async getCollectionsByDayAdmin(startDate: Date, endDate: Date) {
+        var collections = await this.paymentDetailRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.credit', 'credit')
+            .leftJoinAndSelect('credit.client', 'client')
+            .where('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
+                startDate,
+                endDate,
+            })
+            .orderBy('paymentsDetail.paymentDate', 'DESC')
+            .getMany();
+
+        console.log("cobranzas obtenidas: ", collections);
+
+        const collectionsDto = collections.map(collection => {
+            return new CollectionDto(collection);
+        })
+        return collectionsDto
+    }
+
+    private async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date) {
         var collections = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
