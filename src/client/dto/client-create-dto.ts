@@ -12,5 +12,5 @@ export class ClientCreateDto{
     address: string;
 
     @IsString()
-    phone: string;
+    phoneNumber: string;
 }

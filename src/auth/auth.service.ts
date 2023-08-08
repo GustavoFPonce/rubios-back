@@ -47,7 +47,7 @@ export class AuthService {
     const payload = { sub: userId };
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: '30m',
+      expiresIn: '30d',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
@@ -60,7 +60,7 @@ export class AuthService {
   }
 
   async validateUserById(userId: number) {
-    console.log("validando usuario: ", userId);
+    // console.log("validando usuario: ", userId);
   }
 
   async logout(refreshToken) {
