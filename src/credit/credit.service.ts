@@ -152,7 +152,7 @@ export class CreditService {
         return this.creditRepository.find({
             where: { status }, order: {
                 date: 'DESC',
-            }
+            }, relations: ['paymentsDetail']
         })
     }
 

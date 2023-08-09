@@ -15,9 +15,9 @@ export class OrdersProducts {
   @PrimaryColumn()
   productId: string;
 
-  @ManyToOne((type) => Product, (product) => product.OrdersProducts)
-  @JoinColumn({ name: 'productId' })
-  product: Product;
+  // @ManyToOne((type) => Product, (product) => product.OrdersProducts)
+  // @JoinColumn({ name: 'productId' })
+  // product: Product;
 
   @Column()
   quantity: number;

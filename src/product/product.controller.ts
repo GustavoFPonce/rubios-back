@@ -17,8 +17,10 @@ import { Permission } from 'src/role/decorators/permission.decorator';
 import { PermissionGuard } from 'src/role/guards/permission.guard';
 
 import { ProductService } from './product.service';
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
 @Controller('product')
+@UseGuards(JwtAuthGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 

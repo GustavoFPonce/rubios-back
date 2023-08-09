@@ -16,15 +16,16 @@ export class ProductService {
   ) {}
 
   async findAll() {
-    const products = await this.productRepository.find();
+    const products = await this.productRepository.find({relations: ['category']});
 
     return products;
   }
 
   async findAllByCategory(category: string) {
-    const products = await this.productRepository.findOne({ category });
+    //const products = await this.productRepository.findOne({ category });
 
-    return products;
+    //return products;
+    return null
   }
 
   async findManyByIds(arrayOfIds: Array<string>) {
@@ -47,22 +48,22 @@ export class ProductService {
   }
 
   async create(createProductDto: CreateProductDto) {
-    const product = await this.productRepository.create(createProductDto);
+    //const product = await this.productRepository.create(createProductDto);
 
-    return this.productRepository.save(product);
+    //return this.productRepository.save(product);
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    const product = await this.productRepository.preload({
-      id,
-      ...updateProductDto,
-    });
+    // const product = await this.productRepository.preload({
+    //   id,
+    //   ...updateProductDto,
+    // });
 
-    if (!product) {
-      throw new NotFoundException(`There is no product under id ${id}`);
-    }
+    // if (!product) {
+    //   throw new NotFoundException(`There is no product under id ${id}`);
+    // }
 
-    return this.productRepository.save(product);
+    // return this.productRepository.save(product);
   }
 
   async remove(id: string) {

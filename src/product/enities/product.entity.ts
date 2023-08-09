@@ -1,42 +1,33 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { OrdersProducts } from 'src/order/entities/orders-products.entity';
+import { Category } from 'src/category/entities/category.entity';
 
 @Entity()
 export class Product {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn()
   id: string;
 
-  @Column({ length: 50 })
+  @Column()
+  code: string;
+
+  @Column()
   name: string;
 
-  @Column({ length: 50 })
-  vendorCode: string;
-
-  @Column({ length: 10 })
-  weight: string;
-
-  @Column('decimal', {
-    precision: 8,
-    scale: 2,
-  })
-  price: number;
-
   @Column()
-  photo: string;
-
-  @Column({ length: 255 })
   description: string;
+  
+  @Column()
+  costPesos: number;
 
   @Column()
-  size: string;
+  costDollar: number;
 
-  @Column({ length: 50 })
-  category: string;
+  @Column()
+  stock: number;
 
-  @OneToMany(
-    () => OrdersProducts,
-    (OrdersProducts: OrdersProducts) => OrdersProducts.product,
-  )
-  OrdersProducts: OrdersProducts[];
+  @ManyToOne(
+    () => Category, (category: Category) => category.products)
+    @JoinColumn({ name: 'category_id' })
+  category: Category;
 }

@@ -12,6 +12,7 @@ import { StripeModule } from 'nestjs-stripe';
 import { CreditModule } from './credit/credit.module';
 import { ClientModule } from './client/client.module';
 import { join } from 'path';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { join } from 'path';
     TokenModule,
     CreditModule,
     ClientModule,
+    CategoryModule,
   ],
 })
 export class AppModule {}

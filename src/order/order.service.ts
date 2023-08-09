@@ -139,7 +139,7 @@ export class OrderService {
     productsMap: Map<string, number>,
   ) {
     const price = products.reduce(
-      (sum, current) => sum + +current.price * productsMap.get(current.id),
+      (sum, current) => sum  * productsMap.get(current.id),
       0,
     );
 
@@ -182,7 +182,7 @@ export class OrderService {
         product_data: {
           name: product.name,
         },
-        unit_amount: product.price * 100,
+        //unit_amount: product.price * 100,
       },
       quantity: productsMap.get(product.id),
     }));
