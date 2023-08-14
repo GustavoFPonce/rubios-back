@@ -1,27 +1,29 @@
 import { IsNumber, IsString } from 'class-validator';
 
-export class CreateProductDto {
+export class CreateProductDto { 
+
+  @IsString()
+  readonly code: string;
+
   @IsString()
   readonly name: string;
 
-  @IsString()
-  readonly vendorCode: string;
-
-  @IsString()
-  readonly weight: string;
-
   @IsNumber()
-  readonly price: number;
-
-  @IsString()
-  readonly photo: string;
+  readonly categoryId: number;
 
   @IsString()
   readonly description: string;
 
-  @IsString()
-  readonly size: string;
+  @IsNumber()
+  readonly stock: number;
 
-  @IsString()
-  readonly category: string;
+  @IsNumber()
+  readonly costPesos: number;
+
+  @IsNumber()
+  readonly costDollar: number;
+
+  @IsNumber()
+  readonly price: number;
+
 }

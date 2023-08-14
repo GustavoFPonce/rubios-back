@@ -4,12 +4,14 @@ import { Category } from './entities/category.entity';
 import { Brackets, Like, Repository } from 'typeorm';
 import { CategoryCreateDto } from './dto/category-create-dto';
 import { CategoryEditDto } from './dto/category-edit-dto';
+import { ProductService } from 'src/product/product.service';
 
 @Injectable()
 export class CategoryService {
 
     constructor(
-        @InjectRepository(Category) private readonly categoryRepository: Repository<Category>
+        @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
+       // private readonly productService: ProductService
     ) { }
 
     async getAll() {
@@ -53,4 +55,13 @@ export class CategoryService {
         }
         return response;
     }
+
+    async getById(id: number) {
+        return this.categoryRepository.findOne(id);
+    }
+
+    // async getProducts(id: number) {
+    //     return await this.productService.getByCategory(id);
+
+    // }
 }

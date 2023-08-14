@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserModule } from './user/user.module';
-import { OrderModule } from './order/order.module';
 import { ProductModule } from './product/product.module';
 import { RoleModule } from './role/role.module';
 import { AuthModule } from './auth/auth.module';
@@ -33,7 +32,6 @@ import { CategoryModule } from './category/category.module';
       apiVersion: '2020-08-27',
     }),
     UserModule,
-    OrderModule,
     ProductModule,
     RoleModule,
     AuthModule,

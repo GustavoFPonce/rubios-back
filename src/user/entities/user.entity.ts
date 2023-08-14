@@ -8,7 +8,6 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { Order } from '../../order/entities/order.entity';
 import { Role } from '../../role/entities/role.entity';
 import { Credit } from 'src/credit/entities/credit.entity';
 
@@ -49,7 +48,4 @@ export class User {
   credits: Credit[];
 
 
-
-  // @OneToMany(() => Order, (order: Order) => order.user)
-  // orders: Order[];
 }

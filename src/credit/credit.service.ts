@@ -6,7 +6,6 @@ import { Credit } from './entities/credit.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreditCreateDto } from './dto/credit-create-dto';
 import { StatusCredit } from './enum';
-import { Status } from '../order/enums/status.enum';
 import { PaymentDetail } from './entities/payment-detail.entity';
 import { CreditSavedDto } from './dto/credit-saved-dto';
 import { User } from 'src/user/entities/user.entity';

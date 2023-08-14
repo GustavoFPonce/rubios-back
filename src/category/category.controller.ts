@@ -47,4 +47,12 @@ export class CategoryController {
         console.log("id controller: ", id);
         return await this.categoryService.update(id, category);
     }
+
+    // @Get(':id/products')
+    // async getProducts(
+    //     @Param('id') id: number
+    // ) {
+    //     console.log("id recibido: ", id);
+    //     return await this.categoryService.getProducts(id);
+    // }
 }

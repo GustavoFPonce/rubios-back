@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
-import { OrdersProducts } from 'src/order/entities/orders-products.entity';
 import { Category } from 'src/category/entities/category.entity';
+import { Inventory } from './inventory';
 
 @Entity()
 export class Product {
@@ -16,18 +16,15 @@ export class Product {
 
   @Column()
   description: string;
-  
-  @Column()
-  costPesos: number;
 
   @Column()
-  costDollar: number;
-
-  @Column()
-  stock: number;
+  price: number;
 
   @ManyToOne(
     () => Category, (category: Category) => category.products)
     @JoinColumn({ name: 'category_id' })
   category: Category;
+
+  @OneToMany(()=> Inventory, (inventory: Inventory)=> inventory.product)
+  inventories: Inventory[]
 }

@@ -6,48 +6,56 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-
-import { Permission } from 'src/role/decorators/permission.decorator';
-
-import { PermissionGuard } from 'src/role/guards/permission.guard';
-
 import { ProductService } from './product.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
 @Controller('product')
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService) { }
 
   @Get()
   async findAll() {
+    console.log("pidiendo productos");
     return this.productService.findAll();
   }
 
   @Get('category/:category')
-  async findAllByCategory(@Param('category') category: string) {
+  async findAllByCategory(
+    @Param('category') category: string) {
     return this.productService.findAllByCategory(category);
   }
 
+
+  @Get('search')
+  async getByName(
+    @Query('name') name: string
+  ) {
+    console.log("name: ", name);
+    if (name) {
+      return await this.productService.getByName(name);
+    }
+  }
+
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(
+    @Param('id') id: string
+  ) {
     return this.productService.findOne(id);
   }
 
-  @Permission('CRUD_PRODUCT_ALL')
-  @UseGuards(PermissionGuard)
   @Post()
   async create(@Body() createProductDto: CreateProductDto) {
+    console.log("product: ", createProductDto);
     return this.productService.create(createProductDto);
   }
 
-  @Permission('CRUD_PRODUCT_ALL')
-  @UseGuards(PermissionGuard)
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -56,10 +64,9 @@ export class ProductController {
     return this.productService.update(id, updateProductDto);
   }
 
-  @Permission('CRUD_PRODUCT_ALL')
-  @UseGuards(PermissionGuard)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.productService.remove(id);
   }
+
 }
