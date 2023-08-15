@@ -10,7 +10,7 @@
     "copy": "cd ./client-app && npm run build && xcopy /E /I /Y \".\\public\" \"..\\dist\\public\"",
     "build": "nest build && npm run copy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "start": "node .",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",

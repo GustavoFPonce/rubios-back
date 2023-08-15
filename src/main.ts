@@ -7,6 +7,8 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as express from 'express';
 import { join } from 'path';
+const port = process.env.PORT || 5000;
+
 
 async function bootstrap() {
   require('dotenv').config();
@@ -17,7 +19,7 @@ async function bootstrap() {
   app.use(express.static(join(__dirname, '..', 'public')));
 
 
-  console.log("clave secreta: ", process.env.JWT_ACCESS_SECRET);
+  //console.log("clave secreta: ", process.env.JWT_ACCESS_SECRET);
   app.use(cookieParser());
 
   app.useGlobalPipes(
@@ -34,6 +36,6 @@ async function bootstrap() {
   //   origin: 'http://localhost:3000',
   // });
   //app.useGlobalFilters(new AllExceptionsFilter(httpRef, logger));
-  await app.listen(5000);
+await app.listen(port);
 }
 bootstrap();
