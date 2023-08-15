@@ -13,7 +13,7 @@ import { JwtStrategy } from './jwt.strategy';
 @Module({
   imports: [PassportModule, UserModule, TokenModule,
     JwtModule.register({
-      secret: process.env.JWT_ACCESS_SECRET, // Cambia esto a tu clave secreta
+      secret: 'mySuperSecretKey', // Cambia esto a tu clave secreta
       signOptions: { expiresIn: '1h' }, // Configura el tiempo de expiración
     }),],
   controllers: [AuthController],

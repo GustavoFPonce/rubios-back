@@ -8,7 +8,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(private readonly authService: AuthService) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: process.env.JWT_ACCESS_SECRET, // Cambia esto a tu clave secreta
+            secretOrKey: 'mySuperSecretKey', // Cambia esto a tu clave secreta
         });
     }
 

@@ -27,10 +27,6 @@ import { CategoryModule } from './category/category.module';
       synchronize: false,
       entities: [join(__dirname, '**', '*.entity.{ts,js}')],
     }),
-    StripeModule.forRoot({
-      apiKey: process.env.STRIPE_API_KEY,
-      apiVersion: '2020-08-27',
-    }),
     UserModule,
     ProductModule,
     RoleModule,

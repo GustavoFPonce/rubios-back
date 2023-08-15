@@ -13,7 +13,7 @@ import { TokenService } from './token.service';
     UserModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: process.env.JWT_ACCESS_SECRET,
+      secret: 'mySuperSecretKey',
       signOptions: {
         expiresIn: '5m',
       },

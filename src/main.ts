@@ -18,7 +18,7 @@ async function bootstrap() {
   console.log("join: ", join(__dirname, '..', 'public'));
   app.use(express.static(join(__dirname, '..', 'public')));
 
-  //console.log("clave secreta: ", process.env.JWT_ACCESS_SECRET);
+  //console.log("clave secreta: ", 'mySuperSecretKey');
   app.use(cookieParser());
 
   app.useGlobalPipes(

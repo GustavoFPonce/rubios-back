@@ -45,7 +45,7 @@ export class TokenService {
 
   verifyRefreshToken(refreshToken: string) {
     const decodedId = this.jwtService.verify(refreshToken, {
-      secret: process.env.JWT_REFRESH_SECRET,
+      secret: 'myRefreshToken',
     });
 
     return decodedId;
@@ -53,7 +53,7 @@ export class TokenService {
 
   verifyAccessToken(accessToken: string) {
     const decodedId = this.jwtService.verify(accessToken, {
-      secret: process.env.JWT_ACCESS_SECRET,
+      secret: 'mySuperSecretKey',
     });
 
     return decodedId;
@@ -64,12 +64,12 @@ export class TokenService {
     const payload = { id };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
+      secret: 'mySuperSecretKey',
       expiresIn: '30m',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
+      secret: 'myRefreshToken',
       expiresIn: '30d',
     });
 
