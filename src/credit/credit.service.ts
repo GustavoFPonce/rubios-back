@@ -127,7 +127,7 @@ export class CreditService {
                 {
                     where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'],
                     order: {
-                        date: 'DESC',
+                        id: 'DESC',
                     }
                 });
         } else {
@@ -135,14 +135,14 @@ export class CreditService {
                 where: { status: StatusCredit.active, debtCollector: user.id },
                 relations: ['debtCollector', 'client'],
                 order: {
-                    date: 'DESC',
+                    id: 'DESC',
                 }
             });
         }
         // console.log("creditos activos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
 
-        // console.log("creditos activos: ", creditsDto);
+        console.log("creditos activos: ", creditsDto);
         return creditsDto;
     }
 
