@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 
 async function bootstrap() {
   require('dotenv').config();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: true });
 
   // Configurar la carpeta "public" como directorio estático para servir los archivos React
   console.log("join: ", join(__dirname, '..', 'public'));
@@ -28,7 +28,9 @@ async function bootstrap() {
     }),
   );
   //habilitar cors
-  app.enableCors();
+  app.enableCors({
+    origin: 'http://antofanari-001-site6.gtempurl.com'
+  });
 
   //habilitar cors para un origen especifico
   // app.enableCors({
