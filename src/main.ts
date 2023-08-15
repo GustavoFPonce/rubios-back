@@ -18,7 +18,6 @@ async function bootstrap() {
   console.log("join: ", join(__dirname, '..', 'public'));
   app.use(express.static(join(__dirname, '..', 'public')));
 
-
   //console.log("clave secreta: ", process.env.JWT_ACCESS_SECRET);
   app.use(cookieParser());
 
@@ -36,6 +35,6 @@ async function bootstrap() {
   //   origin: 'http://localhost:3000',
   // });
   //app.useGlobalFilters(new AllExceptionsFilter(httpRef, logger));
-await app.listen(port);
+  await app.listen(port);
 }
 bootstrap();
