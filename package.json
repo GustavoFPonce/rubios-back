@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "start": "node main.js"
+    "start": "node dist/main.js"
   },
   "dependencies": {
     "@nestjs/common": "^8.0.0",
