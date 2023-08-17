@@ -29,5 +29,6 @@ export class CreditCreateDto{
     @IsString()
     readonly information: string
 
-
+    @IsString()
+    readonly typeCurrency: string
 }

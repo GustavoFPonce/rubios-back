@@ -1,18 +1,22 @@
 import { IsPhoneNumber } from 'class-validator';
+import { format } from 'date-fns';
 export class CollectionDto {
     id: number;
+    debtCollector: string;
     client: string;
     informationClient: InformationClient;
     paymentDueDate: string;
     paymentDate: string;
     payment: number;
-    balance: number
+    balance: number;
+    typeCurrency: string;
 
 
 
     constructor(paymentDetail: any) {
         const collectionDto: CollectionDto = {
             id: paymentDetail.id,
+            debtCollector: paymentDetail.credit.debtCollector.lastName + " " + paymentDetail.credit.debtCollector.name,
             client: paymentDetail.credit.client.lastName + " " + paymentDetail.credit.client.name,
             informationClient: {
                 phoneNumber: paymentDetail.credit.client.phoneNumber,
@@ -20,10 +24,11 @@ export class CollectionDto {
                 paymentInformation: paymentDetail.credit.information,
                 email: null
             },
-            paymentDueDate: paymentDetail.paymentDueDate,
-            paymentDate: paymentDetail.paymentDate,
+            paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
+            paymentDate: (paymentDetail.paymentDate)?format(paymentDetail.paymentDate, "dd-MM-yyyy"): null,
             payment: paymentDetail.payment,
-            balance: parseInt(paymentDetail.balance)
+            balance: paymentDetail.balance,
+            typeCurrency: paymentDetail.credit.typeCurrency
         };
         return collectionDto;
     }

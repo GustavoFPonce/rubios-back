@@ -50,18 +50,6 @@ export class CreditController {
         return this.creditService.getAll(id);
     }
 
-    @Get('by-status-date-range')
-    async getByStatusByDateRange(
-        @Query('status') status: any,
-        @Query('startDate') startDate: any,
-        @Query('endDate') endDate: any
-    ) {
-        console.log("status: ", status);
-        console.log("startDate: ", startDate);
-        console.log("endDate: ", endDate);
-        return this.creditService.getByFilterStatusByDate(status, startDate, endDate);
-    }
-
     @Get('by-client-name')
     async getByClientName(
         @Query('name') name: string
@@ -107,5 +95,47 @@ export class CreditController {
     ) {
         return this.creditService.registerPayment(id);
     }
+
+    @Get('search-collections')
+    async searchCollections(
+        @Req() req: any,
+        @Query('status') status: string,
+        @Query('currency') currency: string,
+        @Query('user') debtcollector: string
+    ) {
+        console.log("status: ", status);
+        console.log("moneda: ", currency);
+        console.log("user: ", debtcollector);
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+        const userId = req.user.userId;
+        return await this.creditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate);
+
+    }
+
+
+    @Get('search')
+    async searchByFilter(
+        @Query('status') status: any,
+        @Query('user') user: string,
+        @Query('currency') currency: string,
+        @Query('startDate') startDate: any,
+        @Query('endDate') endDate: any
+    ) {
+        console.log("status: ", status);
+        console.log("currency: ", currency);
+        console.log("startDate: ", startDate);
+        console.log("endDate: ", endDate);
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return await this.creditService.searchCredits(status, user, currency, start, end);
+        
+    }
+
+
 
 }

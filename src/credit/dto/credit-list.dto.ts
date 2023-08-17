@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { Credit } from "../entities/credit.entity";
 
 export class CreditListDto {
@@ -14,6 +15,7 @@ export class CreditListDto {
     information: string;
     interestRate: number;
     firstPayment: string;
+    typeCurrency: string
 
 
 
@@ -23,7 +25,7 @@ export class CreditListDto {
             client: credit.client.lastName + " " + credit.client.name,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             debtCollectorId: parseInt(credit.debtCollector.id),
-            date: credit.date.toISOString().split('T')[0],
+            date: format(credit.date, "dd-MM-yyyy"),
             principal: credit.principal,
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
@@ -31,9 +33,10 @@ export class CreditListDto {
             payDay: credit.payDay,
             information: credit.information,
             interestRate: credit.interestRate,
-            firstPayment: credit.firstPayment.toISOString().split('T')[0]
+            firstPayment: format(credit.firstPayment, "dd-MM-yyyy"),
+            typeCurrency: credit.typeCurrency
         };
-        // console.log("credit list dto: ", credit);
+        //console.log("credit list dto class: ", credit);
         return creditDto;
 
     }

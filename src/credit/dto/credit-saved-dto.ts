@@ -33,4 +33,7 @@ export class CreditSavedDto {
 
     @IsString()
      information: string
+
+     @IsString()
+     typeCurrency: string
 }

@@ -49,6 +49,9 @@ export class Credit {
     @Column()
     information: string
 
+    @Column()
+    typeCurrency: string
+
     @OneToMany(() => PaymentDetail, (detail: PaymentDetail) => detail.credit)
     paymentsDetail: PaymentDetail[]
 }
