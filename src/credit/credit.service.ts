@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Between, Brackets, Repository } from 'typeorm';
-import { format, parseISO, formatISO, addWeeks, addMonths, addDays } from 'date-fns';
+import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays } from 'date-fns';
 import { es } from 'date-fns/locale'
 import { Credit } from './entities/credit.entity';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
@@ -170,9 +170,11 @@ export class CreditService {
         return credits;
     }
 
-    async searchCredits(status: string,
+    async searchCredits(
+        status: string,
         user: string,
         currency: string,
+        frequency: string,
         start: Date,
         end: Date) {
         const conditions: any = [
@@ -180,8 +182,9 @@ export class CreditService {
         ];
         var credits: any;
         if (currency != 'all') conditions.push({ typeCurrency: currency });
-        if (status != 'all') conditions.push({ status: StatusCredit[`${status}`] });
+        if (status != 'all') conditions.push({ status: status });
         if (currency != 'all') conditions.push({ typeCurrency: currency });
+        if (frequency != 'all') conditions.push({ paymentFrequency: frequency });
         if (user == 'all') {
             credits = await this.searchCreditsByConditions(conditions);
         } else {
@@ -210,6 +213,7 @@ export class CreditService {
     }
 
     async searchCreditsByConditions(conditions: []) {
+        console.log("condiciones: ", conditions);
         return await this.creditRepository.createQueryBuilder('credit')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .leftJoinAndSelect('credit.client', 'client')
@@ -232,9 +236,9 @@ export class CreditService {
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where(new Brackets((qb) => {
                 filters.forEach((term, index) => {
-                    if(term !='de'){
-                    qb.orWhere('client.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
-                        .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
+                    if (term != 'de') {
+                        qb.orWhere('client.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
+                            .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
                     }
                 });
             }))
@@ -271,55 +275,47 @@ export class CreditService {
     }
 
     async getDay() {
-        const date = new Date();
         //return this.getDayString(date);
+        const date = new Date();
+        const dateString = format(date, 'dd-MM-yyyy');
+        console.log("date string: ", dateString);
         return {
             day: this.getDayString(date),
             date: format(date, 'dd-MM-yyyy')
         }
     }
 
-    async getCollectionsByDay(userId: number) {
-        console.log("userId: ", userId);
-        const startDate = new Date();
+    async getCollectionsByDate(userId: number, dateQuery: string) {
+        console.log("fecha hoy: ", new Date());
+        const [day, month, year] = dateQuery.split('-');
+        const dateObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const dayType = (this.areDatesEqual(dateObject, new Date())) ? 'current' : 'not-current';
+        const date = dateObject;
+        const startDate = new Date(date);
         startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date();
+        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
+        const endDate = new Date(date);
         endDate.setHours(23, 59, 59, 999);
-        const date = new Date();
+        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
 
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        console.log("user encontrado: ", user);
+        // console.log("user encontrado: ", user);
         if (user.role.name == "admin") {
-            return await this.getCollectionsByDayAdmin(startDate, endDate, date);
+            return await this.getCollectionsByDayAdmin(startDate, endDate, dayType);
         } else {
-            return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate, date);
+            return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate, dayType);
         }
 
     }
 
-    async getCollectionsByDayAdmin(startDate: Date, endDate: Date, date: Date) {
-        console.log("starDate: ", startDate);
-        console.log("endDate: ", endDate);
-        console.log("date: ", date);
+    async getCollectionsByDayAdmin(startDate: Date, endDate: Date, day: string) {
         var collections = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-            .where(new Brackets((qb) => {
-                qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
-                    startDate,
-                    endDate,
-                })
-                    .orWhere(
-                        '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
-                        { startDate }
-                    )
-                    .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
-                        startDate,
-                        endDate,
-                    })
-            }))
+            .where('credit.status = :status', { status: StatusCredit.active })
+            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
 
@@ -331,14 +327,33 @@ export class CreditService {
         return collectionsDto
     }
 
-    async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date, date: Date) {
-        console.log("date: ", date);
+    async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date, day: string) {
         var collections = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-            .where(new Brackets((qb) => {
+            .where('credit.status = :status', { status: StatusCredit.active })
+            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            .andWhere('credit.debtCollector_Id = :userId', { userId })
+            .orderBy('paymentsDetail.paymentDueDate', 'ASC')
+            .getMany();
+
+        console.log("cobranzas obtenidas: ", collections);
+
+        const collectionsDto = collections.map(collection => {
+            return new CollectionDto(collection);
+        })
+        return collectionsDto;
+    }
+
+    private getConditionsFilterByDay(startDate: Date, endDate: Date, day: string) {
+        console.log("inicio: ", startDate);
+        console.log("fin: ", endDate);
+        console.log("tipo de dia: ", day);
+        if (day == 'current') {
+            console.log("estoy en current");
+            return new Brackets((qb) => {
                 qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
                     startDate,
                     endDate,
@@ -351,17 +366,16 @@ export class CreditService {
                         startDate,
                         endDate,
                     })
-            }))
-            .andWhere('credit.debtCollector_Id = :userId', { userId })
-            .orderBy('paymentsDetail.paymentDueDate', 'ASC')
-            .getMany();
-
-        console.log("cobranzas obtenidas: ", collections);
-
-        const collectionsDto = collections.map(collection => {
-            return new CollectionDto(collection);
-        })
-        return collectionsDto;
+            })
+        } else {
+            console.log("estoy en not-current");
+            return new Brackets((qb) => {
+                qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
+                    startDate,
+                    endDate,
+                })
+            })
+        }
     }
 
 
@@ -407,25 +421,34 @@ export class CreditService {
 
     async searchCollections(
         userId: string,
-        status: string,
+        statusCredit: string,
         currency: string,
         user: string,
         start: Date,
-        end: Date
+        end: Date,
+        statusPayment: string
     ) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
+        endDate.setHours(23, 59, 59, 999);
+        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
         var collections: any;
         const userLogged = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        console.log("user encontrado: ", user);
+        // console.log("user encontrado: ", userLogged);
+        const areDateEqual = this.areDatesEqual(startDate, endDate);
+        console.log("son iguales: ", areDateEqual);
         if (userLogged.role.name == "admin") {
             if (user == 'all') {
-                collections = await this.searchCollectionsByConditions(status, currency, start, end);
+                collections = await this.searchCollectionsByConditions(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual);
             } else {
-                collections = await this.searchCollectionsByUserByConditions(status, currency, parseInt(user), start, end);
+                collections = await this.searchCollectionsByUserByConditions(statusCredit, currency, parseInt(user), startDate, endDate, statusPayment, areDateEqual);
 
             };
         } else {
             console.log("entrando por aqui 1");
-            collections = await this.searchCollectionsByUserByConditions(status, currency, parseInt(userLogged.id), start, end);
+            collections = await this.searchCollectionsByUserByConditions(statusCredit, currency, parseInt(userLogged.id), startDate, endDate, statusPayment, areDateEqual);
 
         }
         console.log("collections: ", collections);
@@ -435,109 +458,74 @@ export class CreditService {
         return collectionsDto
     }
 
-    async searchCollectionsByConditions(status: string, currency: string, startDate: Date, endDate: Date) {
-        return await this.creditRepository
-            .createQueryBuilder('credit')
-            .leftJoinAndSelect('credit.paymentsDetail', 'paymentsDetail')
+    async searchCollectionsByConditions(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+        return await this.paymentDetailRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-            .where(new Brackets((qb) => {
-                qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
-                    startDate,
-                    endDate,
-                })
-                    .orWhere(
-                        '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
-                        { startDate }
-                    )
-
-                if (status != 'all' && status == 'canceled') qb.andWhere('paymentsDetail.paymentDate IS NOT NULL');
-                if (status != 'all' && status == 'active') qb.andWhere('paymentsDetail.paymentDate IS NULL');
-                if (currency != 'all') qb.andWhere('credit.typeCurrency = :currency', { currency });
-            }))
+            .where(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
             .orderBy('paymentsDetail.paymentDate', 'ASC')
             .getMany();
     }
 
-    async searchCollectionsByUserByConditions(status: string, currency: string, user: number, startDate: Date, endDate: Date) {
-        console.log("entrando por aqui 2");
-        console.log("status: ", status);
-        console.log("currency: ", currency);
+    async searchCollectionsByUserByConditions(statusCredit: string, currency: string, user: number, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where('credit.debtCollector_Id = :user', { user })
-            .andWhere(new Brackets((qb) => {
-                qb.andWhere(
-                    '(paymentsDetail.paymentDueDate <= :endDate)',
-                    { endDate }
-                )
-                if (status != 'all' && status == 'canceled') qb.andWhere('paymentsDetail.paymentDate IS NOT NULL');
-                if (status != 'all' && status == 'active') qb.andWhere('paymentsDetail.paymentDate IS NULL');
-                if (currency != 'all') qb.andWhere('credit.typeCurrency = :currency', { currency });
-            }))
+            .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
             .orderBy('paymentsDetail.paymentDate', 'ASC')
             .getMany();
     }
 
-    // async getCollectionsByStatusByUser(status: string, user: number, startDate: Date, endDate: Date) {
-    //     const statusCondition = (status == "active") ? 'paymentsDetail.paymentDate IS NULL' : 'paymentsDetail.paymentDate IS NOT NULL'
-    //     var collections = await this.paymentDetailRepository
-    //         .createQueryBuilder('paymentsDetail')
-    //         .leftJoinAndSelect('paymentsDetail.credit', 'credit')
-    //         .leftJoinAndSelect('credit.client', 'client')
-    //         .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-    //         .where(new Brackets((qb) => {
-    //             qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
-    //                 startDate,
-    //                 endDate,
-    //             })
-    //                 .orWhere(
-    //                     '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
-    //                     { startDate }
-    //                 )
-    //         }))
-    //         .andWhere(`(${statusCondition})`)
-    //         .andWhere('credit.debtCollector_Id = :user', { user })
-    //         .orderBy('paymentsDetail.paymentDate', 'ASC')
-    //         .getMany();
+    private getConditionsFilterCollections(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+        var conditions: any;
+        if (statusCredit == StatusCredit.active.toString()) {
+            console.log("soy activo");
+            conditions = new Brackets((qb) => {
+                if (areDateEqual) {
+                    qb.andWhere(
+                        '(paymentsDetail.paymentDueDate <= :endDate)',
+                        { endDate }
+                    )
+                } else {
+                    qb.andWhere(
+                        '(paymentsDetail.paymentDueDate >= :startDate AND paymentsDetail.paymentDueDate <= :endDate)',
+                        { startDate, endDate }
+                    )
+                }
+                if (statusPayment != 'all' && statusPayment == 'canceled') qb.andWhere('paymentsDetail.paymentDate IS NOT NULL');
+                if (statusPayment != 'all' && statusPayment == 'active') qb.andWhere('paymentsDetail.paymentDate IS NULL');
+                if (currency != 'all') qb.andWhere('credit.typeCurrency = :currency', { currency });
+                qb.andWhere('credit.status = :statusCredit', { statusCredit })
+            });
 
-    //     console.log("cobranzas obtenidas: ", collections);
-    //     const collectionsDto = collections.map(collection => {
-    //         return new CollectionDto(collection);
-    //     })
-    //     return collectionsDto
-    // }
+        } else {
+            console.log("soy no activo");
+            conditions = new Brackets((qb) => {
+                qb.andWhere(
+                    '(paymentsDetail.paymentDueDate >= :startDate AND paymentsDetail.paymentDueDate <= :endDate)',
+                    { startDate, endDate }
+                )
+                if (statusPayment != 'all' && statusPayment == 'canceled') qb.andWhere('paymentsDetail.paymentDate IS NOT NULL');
+                if (statusPayment != 'all' && statusPayment == 'active') qb.andWhere('paymentsDetail.paymentDate IS NULL');
+                if (currency != 'all') qb.andWhere('credit.typeCurrency = :currency', { currency });
+                if (statusCredit != 'all') qb.andWhere('credit.status = :statusCredit', { statusCredit })
+            });
+        }
+        return conditions;
 
-    // async getCollectionsByStatus(status: string, startDate: Date, endDate: Date) {
-    //     const statusCondition = (status == "active") ? 'paymentsDetail.paymentDate IS NULL' : 'paymentsDetail.paymentDate IS NOT NULL'
-    //     var collections = await this.paymentDetailRepository
-    //         .createQueryBuilder('paymentsDetail')
-    //         .leftJoinAndSelect('paymentsDetail.credit', 'credit')
-    //         .leftJoinAndSelect('credit.client', 'client')
-    //         .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-    //         .where(`(${statusCondition})`)
-    //         .andWhere(new Brackets((qb) => {
-    //             qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
-    //                 startDate,
-    //                 endDate,
-    //             })
-    //                 .orWhere(
-    //                     '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
-    //                     { startDate }
-    //                 )
-    //         }))
-    //         .orderBy('paymentsDetail.paymentDate', 'ASC')
-    //         .getMany();
+    }
 
-    //     console.log("cobranzas obtenidas: ", collections);
-    //     const collectionsDto = collections.map(collection => {
-    //         return new CollectionDto(collection);
-    //     })
-    //     return collectionsDto
-    // }
-
+    private areDatesEqual(start: Date, end: Date) {
+        return (
+            start.getFullYear() === end.getFullYear() &&
+            start.getMonth() === end.getMonth() &&
+            start.getUTCDate() === end.getUTCDate()
+        );
+    }
 
 }

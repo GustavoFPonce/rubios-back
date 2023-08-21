@@ -75,18 +75,20 @@ export class CreditController {
     }
 
     @Get('day')
-    async getDay() {
+    async getDay(
+    ) {
         return this.creditService.getDay();
     }
 
 
-    @Get('collections-by-day')
-    async getCollectionsByDay(
-        @Req() req: any
+    @Get('collections-by-date')
+    async getCollectionsByDate(
+        @Req() req: any,
+        @Query('date') date: string,
     ) {
-        console.log("request: ", req.user);
+        console.log("date: ", date);
         const userId = req.user.userId;
-        return await this.creditService.getCollectionsByDay(userId);
+        return await this.creditService.getCollectionsByDate(userId, date);
     }
 
     @Put((':id/register-payment'))
@@ -101,17 +103,19 @@ export class CreditController {
         @Req() req: any,
         @Query('status') status: string,
         @Query('currency') currency: string,
-        @Query('user') debtcollector: string
+        @Query('user') debtcollector: string,
+        @Query('startDate') startDate: any,
+        @Query('endDate') endDate: any,
+        @Query('statusPayment') statusPayment: string,
     ) {
         console.log("status: ", status);
         console.log("moneda: ", currency);
         console.log("user: ", debtcollector);
-        const startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date();
-        endDate.setHours(23, 59, 59, 999);
+        console.log("startDate: ", startDate);
+        console.log("endDate: ", endDate);
+     
         const userId = req.user.userId;
-        return await this.creditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate);
+        return await this.creditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate, statusPayment);
 
     }
 
@@ -121,19 +125,21 @@ export class CreditController {
         @Query('status') status: any,
         @Query('user') user: string,
         @Query('currency') currency: string,
+        @Query('frequency') frequency: string,
         @Query('startDate') startDate: any,
         @Query('endDate') endDate: any
     ) {
         console.log("status: ", status);
         console.log("currency: ", currency);
+        console.log("frequency: ", frequency);
         console.log("startDate: ", startDate);
         console.log("endDate: ", endDate);
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-        return await this.creditService.searchCredits(status, user, currency, start, end);
-        
+        return await this.creditService.searchCredits(status, user, currency, frequency, start, end);
+
     }
 
 
