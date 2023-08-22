@@ -36,7 +36,7 @@ export class CreditController {
         @Param('id') id: number,
         @Body() credit: any
     ) {
-        console.log("llegue a modificar créditos");
+        //console.log("llegue a modificar créditos: ", credit);
         var response = await this.creditService.update(id, credit);
         return response;
     }

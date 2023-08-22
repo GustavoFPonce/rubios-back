@@ -32,8 +32,11 @@ export class CreditSavedDto {
      payment: number;
 
     @IsString()
-     information: string
+     information: string;
 
      @IsString()
-     typeCurrency: string
+     typeCurrency: string;
+
+     @IsString()
+     status: string
 }

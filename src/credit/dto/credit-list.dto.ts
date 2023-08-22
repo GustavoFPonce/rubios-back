@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { Credit } from "../entities/credit.entity";
+import { StatusCredit } from "../enum";
 
 export class CreditListDto {
     id: number;
@@ -15,7 +16,8 @@ export class CreditListDto {
     information: string;
     interestRate: number;
     firstPayment: string;
-    typeCurrency: string
+    typeCurrency: string;
+    status: string
 
 
 
@@ -34,7 +36,8 @@ export class CreditListDto {
             information: credit.information,
             interestRate: credit.interestRate,
             firstPayment: format(credit.firstPayment, "dd-MM-yyyy"),
-            typeCurrency: credit.typeCurrency
+            typeCurrency: credit.typeCurrency,
+            status: `${StatusCredit[credit.status]}`
         };
         //console.log("credit list dto class: ", credit);
         return creditDto;

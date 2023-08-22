@@ -96,24 +96,11 @@ export class CreditService {
         var response = { success: false };
         const debtCollector = await this.userRepository.findOne(credit.debtCollectorId);
         var creditSaved = await this.creditRepository.findOne(credit.id);
-        // console.log("credito en bbdd1: ", creditSaved);
         creditSaved.debtCollector = debtCollector;
         creditSaved.information = credit.information;
         creditSaved.typeCurrency = credit.typeCurrency;
-        // creditSaved.firstPayment = parseISO(credit.firstPayment);
-        // for (const [clave, valor] of Object.entries(credit)) {
-        //     // if (valor !== 'firstPayment' && valor !== 'paymentFrecuency') {
-        //     creditSaved[clave] = valor;
-        //     //}
-        //     //    if (valor == 'paymentFrecuency') {
-        //     //         if (credit.paymentFrequency !== creditSaved.paymentFrequency) {
-        //     //         }
-        //     //     }
-        // }
-        // console.log("credito en bbdd2: ", creditSaved);
-        // console.log('credit update: ', credit);
+        creditSaved.status = parseInt(`${StatusCredit[credit.status]}`);
         const saved = await this.creditRepository.save(creditSaved);
-        // console.log("credito en bbdd: ", saved);
         if (saved) response.success = true;
         return response;
         //return null;
@@ -387,6 +374,7 @@ export class CreditService {
         // findOne({ where: { id: id }, relations: ['credit'] });
         payment.paymentDate = new Date();
         payment.balance = payment.balance - payment.payment;
+        console.log("saldo: ", payment.balance);
         const saved = await this.paymentDetailRepository.save(payment);
         console.log("pago guardado: ", saved);
         if (saved) {
@@ -397,6 +385,7 @@ export class CreditService {
         return response;
     }
 
+
     private async uptadeBalanceNextPayment(balance: number, creditId: number) {
         console.log("credit id: ", creditId);
         const date = null;
@@ -406,8 +395,21 @@ export class CreditService {
             .andWhere('paymentsDetail.paymentDate IS NULL')
             .getOne();
         console.log("siguiente pago: ", nextPayment);
-        if (nextPayment) nextPayment.balance = balance;
-        const saved = await this.paymentDetailRepository.save(nextPayment);
+        if (nextPayment) {
+            nextPayment.balance = balance;
+            const saved = await this.paymentDetailRepository.save(nextPayment);
+        } else {
+            this.cancelCredit(creditId);
+        }
+
+    }
+
+    private async cancelCredit(id: number) {
+        var credit = await this.creditRepository.findOne(id);
+        if (credit) {
+            credit.status = StatusCredit.canceled;
+            await this.creditRepository.save(credit);
+        }
     }
 
 
