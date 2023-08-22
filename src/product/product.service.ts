@@ -51,13 +51,13 @@ export class ProductService {
   }
 
   async findOne(id: string) {
-    const product = await this.productRepository.findOne(id);
+    const product = await this.productRepository.findOne({where: id, relations: ['inventories', 'category']});
 
     if (!product) {
       throw new NotFoundException(`There is no product under id ${id}`);
     }
-
-    return product;
+    console.log("producto obtenido: ", product);
+    return new ProductDto(product);
   }
 
   async create(createProductDto: CreateProductDto) {
@@ -97,7 +97,7 @@ export class ProductService {
     newInventory.amount = inventoryCreate.amount;
     newInventory.costPesos = inventoryCreate.costPesos;
     newInventory.costDollar = inventoryCreate.costDollar;
-    newInventory.product = product;
+    //newInventory.product = product;
     const inventory = this.inventoryRepository.create(newInventory);
     const inventoryResponse = await this.inventoryRepository.save(inventory);
     if (inventoryResponse) response.success = true;
@@ -128,7 +128,7 @@ export class ProductService {
   }
 
   async remove(id: string) {
-    const product = await this.findOne(id);
+    const product = await this.productRepository.findOne(id);
 
     return this.productRepository.remove(product);
   }

@@ -45,6 +45,7 @@ export class ClientController {
         @Param('id') id: number,
         @Body() client: ClientCreateDto
     ) {
+        console.log("editar cliente: ", client);
         return this.clientService.update(id, client);
     }
 }

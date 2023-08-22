@@ -8,7 +8,9 @@ export class ProductDto{
     category: string;
     categoryId: string;
     stock: number;
-    price: number
+    price: number;
+    costDollar: number;
+    costPesos: number
 
 
     constructor(product: Product){
@@ -22,7 +24,10 @@ export class ProductDto{
             stock: product.inventories.reduce((acumulador, inventario) => {
                 return acumulador + inventario.amount;
               }, 0),
-            price: product.price
+            price: product.price,
+            costDollar:1000,
+            costPesos:1000
+
         };
         return productDto;
     }
