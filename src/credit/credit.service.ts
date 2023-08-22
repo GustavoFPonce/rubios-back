@@ -277,11 +277,9 @@ export class CreditService {
     async getDay() {
         //return this.getDayString(date);
         const date = new Date();
-        const dateString = format(date, 'dd-MM-yyyy');
-        console.log("date string: ", dateString);
         return {
             day: this.getDayString(date),
-            date: format(date, 'dd-MM-yyyy')
+            date: date
         }
     }
 
@@ -291,15 +289,9 @@ export class CreditService {
         const dateObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         const dayType = (this.areDatesEqual(dateObject, new Date())) ? 'current' : 'not-current';
         const date = dateObject;
-        const startDate = new Date(date);
-        startDate.setHours(0, 0, 0, 0);
-        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
-        const endDate = new Date(date);
-        endDate.setHours(23, 59, 59, 999);
-        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
-
+        const startDate = this.getStartDateEndDate(date, date).startDate;
+        const endDate = this.getStartDateEndDate(date, date).endDate;
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        // console.log("user encontrado: ", user);
         if (user.role.name == "admin") {
             return await this.getCollectionsByDayAdmin(startDate, endDate, dayType);
         } else {
@@ -428,17 +420,25 @@ export class CreditService {
         end: Date,
         statusPayment: string
     ) {
-        const startDate = new Date(start);
-        const endDate = new Date(end);
-        startDate.setHours(0, 0, 0, 0);
-        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
-        endDate.setHours(23, 59, 59, 999);
-        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
-        var collections: any;
+        const startDate = this.getStartDateEndDate(start, end).startDate;
+        const endDate = this.getStartDateEndDate(start, end).endDate;
         const userLogged = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        // console.log("user encontrado: ", userLogged);
+        const collections = await this.getCollectionsByUserRole(userLogged, statusCredit, currency, user, startDate, endDate, statusPayment);
+        const collectionsDto = collections.map(collection => {
+            return new CollectionDto(collection);
+        })
+        return collectionsDto
+    }
+
+    private async getCollectionsByUserRole(userLogged: User,
+        statusCredit: string,
+        currency: string,
+        user: string,
+        startDate: Date,
+        endDate: Date,
+        statusPayment: string) {
         const areDateEqual = this.areDatesEqual(startDate, endDate);
-        console.log("son iguales: ", areDateEqual);
+        var collections: any;
         if (userLogged.role.name == "admin") {
             if (user == 'all') {
                 collections = await this.searchCollectionsByConditions(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual);
@@ -451,11 +451,19 @@ export class CreditService {
             collections = await this.searchCollectionsByUserByConditions(statusCredit, currency, parseInt(userLogged.id), startDate, endDate, statusPayment, areDateEqual);
 
         }
-        console.log("collections: ", collections);
-        const collectionsDto = collections.map(collection => {
-            return new CollectionDto(collection);
-        })
-        return collectionsDto
+        return collections;
+    }
+
+    private getStartDateEndDate(start: Date, end: Date) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
+        endDate.setHours(23, 59, 59, 999);
+        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
+        return {
+            startDate, endDate
+        }
     }
 
     async searchCollectionsByConditions(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
@@ -482,39 +490,63 @@ export class CreditService {
     }
 
     private getConditionsFilterCollections(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+        console.log("estado de pago: ", statusPayment);
+        const commonConditions = qb2 => {
+            if (currency != 'all') qb2.andWhere('credit.typeCurrency = :currency', { currency });
+            if (statusPayment == 'canceled') qb2.andWhere('paymentsDetail.paymentDate IS NOT NULL');
+            if (statusPayment == 'active') qb2.andWhere('paymentsDetail.paymentDate IS NULL');
+            qb2.andWhere('credit.status = :statusCredit', { statusCredit })
+        }
+
         var conditions: any;
         if (statusCredit == StatusCredit.active.toString()) {
-            console.log("soy activo");
             conditions = new Brackets((qb) => {
                 if (areDateEqual) {
-                    qb.andWhere(
-                        '(paymentsDetail.paymentDueDate <= :endDate)',
-                        { endDate }
+                    console.log("estoy en son iguales: ", areDateEqual);
+                    qb.where(
+                        qb2 => {
+                            qb2.where(
+                                '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
+                                { startDate }
+                            );
+                            commonConditions(qb2)
+                            qb2.orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
+                                startDate,
+                                endDate,
+                            })
+                            commonConditions(qb2)
+                            qb2.orWhere(
+                                '(paymentsDetail.paymentDueDate >= :startDate AND paymentsDetail.paymentDueDate <= :endDate)',
+                                { startDate, endDate }
+                            );
+                            commonConditions(qb2)
+                        }
                     )
                 } else {
-                    qb.andWhere(
-                        '(paymentsDetail.paymentDueDate >= :startDate AND paymentsDetail.paymentDueDate <= :endDate)',
-                        { startDate, endDate }
+                    qb.where(
+                        qb2 => {
+                            qb2.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
+                                startDate,
+                                endDate,
+                            })
+                            commonConditions(qb2)
+                        }
                     )
                 }
-                if (statusPayment != 'all' && statusPayment == 'canceled') qb.andWhere('paymentsDetail.paymentDate IS NOT NULL');
-                if (statusPayment != 'all' && statusPayment == 'active') qb.andWhere('paymentsDetail.paymentDate IS NULL');
-                if (currency != 'all') qb.andWhere('credit.typeCurrency = :currency', { currency });
-                qb.andWhere('credit.status = :statusCredit', { statusCredit })
             });
-
         } else {
             console.log("soy no activo");
             conditions = new Brackets((qb) => {
-                qb.andWhere(
-                    '(paymentsDetail.paymentDueDate >= :startDate AND paymentsDetail.paymentDueDate <= :endDate)',
-                    { startDate, endDate }
+                qb.where(
+                    qb2 => {
+                        qb2.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
+                            startDate,
+                            endDate,
+                        })
+                        commonConditions(qb2)
+                    }
                 )
-                if (statusPayment != 'all' && statusPayment == 'canceled') qb.andWhere('paymentsDetail.paymentDate IS NOT NULL');
-                if (statusPayment != 'all' && statusPayment == 'active') qb.andWhere('paymentsDetail.paymentDate IS NULL');
-                if (currency != 'all') qb.andWhere('credit.typeCurrency = :currency', { currency });
-                if (statusCredit != 'all') qb.andWhere('credit.status = :statusCredit', { statusCredit })
-            });
+            })
         }
         return conditions;
 
