@@ -1,6 +1,6 @@
 import { Product } from "../enities/product.entity";
 
-export class ProductDto{
+export class ProductDto {
     id: string;
     code: string;
     name: string;
@@ -8,13 +8,14 @@ export class ProductDto{
     category: string;
     categoryId: string;
     stock: number;
-    price: number;
+    pricePesos: number;
+    priceDollar: number;
+    costPesos: number;
     costDollar: number;
-    costPesos: number
 
 
-    constructor(product: Product){
-        const productDto: ProductDto ={
+    constructor(product: Product) {
+        const productDto: ProductDto = {
             id: product.id,
             code: product.code,
             name: product.name,
@@ -23,10 +24,11 @@ export class ProductDto{
             categoryId: product.category.id,
             stock: product.inventories.reduce((acumulador, inventario) => {
                 return acumulador + inventario.amount;
-              }, 0),
-            price: product.price,
-            costDollar:1000,
-            costPesos:1000
+            }, 0),
+            costPesos: 0,
+            costDollar: 0,
+            pricePesos: (product.pricePesos)?product.pricePesos:0,
+            priceDollar: (product.priceDollar)?product.priceDollar:0,
 
         };
         return productDto;

@@ -5,6 +5,7 @@ import { StatusCredit } from "../enum";
 export class CreditListDto {
     id: number;
     client: string;
+    clientId: number;
     debtCollector: string;
     debtCollectorId: number;
     date: string;
@@ -25,6 +26,7 @@ export class CreditListDto {
         const creditDto: CreditListDto = {
             id: credit.id,
             client: credit.client.lastName + " " + credit.client.name,
+            clientId: credit.client.id,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             debtCollectorId: parseInt(credit.debtCollector.id),
             date: format(credit.date, "dd-MM-yyyy"),

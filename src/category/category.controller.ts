@@ -35,7 +35,7 @@ export class CategoryController {
     async create(
         @Body() category: CategoryCreateDto
     ) {
-        console.log("category: ", category);
+        // console.log("category: ", category);
         return await this.categoryService.create(category);
     }
 
@@ -48,11 +48,11 @@ export class CategoryController {
         return await this.categoryService.update(id, category);
     }
 
-    // @Get(':id/products')
-    // async getProducts(
-    //     @Param('id') id: number
-    // ) {
-    //     console.log("id recibido: ", id);
-    //     return await this.categoryService.getProducts(id);
-    // }
+    @Get(':id/products')
+    async getProducts(
+        @Param('id') id: number
+    ) {
+        console.log("id recibido: ", id);
+        return await this.categoryService.getProducts(id);
+    }
 }

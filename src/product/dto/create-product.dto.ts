@@ -24,6 +24,9 @@ export class CreateProductDto {
   readonly costDollar: number;
 
   @IsNumber()
-  readonly price: number;
+  readonly pricePesos: number;
+
+  @IsNumber()
+  readonly priceDollar: number;
 
 }

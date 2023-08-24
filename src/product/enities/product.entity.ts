@@ -18,7 +18,10 @@ export class Product {
   description: string;
 
   @Column()
-  price: number;
+  pricePesos: number;
+
+  @Column()
+  priceDollar: number;
 
   @ManyToOne(
     () => Category, (category: Category) => category.products)

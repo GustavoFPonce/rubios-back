@@ -20,7 +20,6 @@ import { Category } from 'src/category/entities/category.entity';
     UserModule,
     AuthModule,
     RoleModule,
-    CategoryModule
   ],
   controllers: [ProductController],
   providers: [ProductService],

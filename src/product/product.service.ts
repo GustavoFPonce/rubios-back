@@ -20,16 +20,17 @@ export class ProductService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
-    private readonly categoryService: CategoryService
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
   ) { }
 
   async findAll() {
     const products = await this.productRepository.find({ relations: ['category', 'inventories'] });
-    console.log("products: ", products);
+    // console.log("products: ", products);
     const productsDto = products.map((product) => {
       return new ProductDto(product);
     })
-    console.log("productsDto: ", productsDto);
+    //console.log("productsDto: ", productsDto);
     return productsDto;
     //return null;
   }
@@ -51,7 +52,8 @@ export class ProductService {
   }
 
   async findOne(id: string) {
-    const product = await this.productRepository.findOne({where: id, relations: ['inventories', 'category']});
+    console.log("id product: ", id);
+    const product = await this.productRepository.findOne({ where: {id: id}, relations: ['inventories', 'category'] });
 
     if (!product) {
       throw new NotFoundException(`There is no product under id ${id}`);
@@ -64,13 +66,14 @@ export class ProductService {
     var response = { success: false, message: '' };
     const existCode = await this.existCodeProduct(createProductDto.code);
     if (!existCode) {
-      const category = await this.categoryService.getById(createProductDto.categoryId);
+      const category = await this.categoryRepository.findOne(createProductDto.categoryId);
       var newProduct = new Product();
-      newProduct.code = createProductDto.code,
-        newProduct.name = createProductDto.name,
-        newProduct.category = category,
-        newProduct.description = createProductDto.description,
-        newProduct.price = createProductDto.price
+      newProduct.code = createProductDto.code;
+      newProduct.name = createProductDto.name;
+      newProduct.category = category;
+      newProduct.description = createProductDto.description;
+      newProduct.pricePesos = createProductDto.pricePesos;
+      newProduct.priceDollar = createProductDto.priceDollar;
       const product = this.productRepository.create(newProduct);
       const responseProduct = await this.productRepository.save(product);
       console.log("responseProduct: ", responseProduct);
@@ -91,13 +94,13 @@ export class ProductService {
 
   async addInventory(inventoryCreate: InventoryCreateDto, productId: string) {
     var response = { success: false };
-    const product = await this.findOne(productId);
+    const product = await this.productRepository.findOne(productId);
     var newInventory = new Inventory();
     newInventory.date = new Date();
     newInventory.amount = inventoryCreate.amount;
     newInventory.costPesos = inventoryCreate.costPesos;
     newInventory.costDollar = inventoryCreate.costDollar;
-    //newInventory.product = product;
+    newInventory.product = product;
     const inventory = this.inventoryRepository.create(newInventory);
     const inventoryResponse = await this.inventoryRepository.save(inventory);
     if (inventoryResponse) response.success = true;
@@ -115,27 +118,36 @@ export class ProductService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
-    // const product = await this.productRepository.preload({
-    //   id,
-    //   ...updateProductDto,
-    // });
-
-    // if (!product) {
-    //   throw new NotFoundException(`There is no product under id ${id}`);
-    // }
-
-    // return this.productRepository.save(product);
+    console.log("id: ", id);
+    var response = { success: false };
+    var product = await this.productRepository.findOne(id);
+    const category = await this.categoryRepository.findOne(updateProductDto.categoryId);
+    console.log("producto encontrado: ", product);
+    if (!product) {
+      throw new NotFoundException(`No existe le producto con el id: ${id}`);
+    }
+    product.code = updateProductDto.code;
+    product.description = updateProductDto.description;
+    product.name = updateProductDto.name;
+    product.pricePesos = updateProductDto.pricePesos;
+    product.priceDollar = updateProductDto.priceDollar;
+    product.category = category;
+    const responseUpdate = await this.productRepository.save(product);
+    console.log("responseUpdate: ", responseUpdate);
+    if (responseUpdate) response.success = true;
+    return response;
   }
 
   async remove(id: string) {
-    const product = await this.productRepository.findOne(id);
-
-    return this.productRepository.remove(product);
+    var response = { success: false }
+    const responseDelete = await this.productRepository.delete(id);
+    if (responseDelete.affected > 0) response.success = true;
+    return response;
   }
 
   async getByName(name: string) {
     const products = await this.productRepository.find({ where: [{ name: Like(`%${name}%`) }], relations: ['category', 'inventories'] });
-    console.log("products: ", products);
+    // console.log("products: ", products);
     const productsDto = products.map((product) => {
       return new ProductDto(product);
     });

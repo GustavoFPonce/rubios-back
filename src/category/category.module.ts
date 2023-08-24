@@ -7,7 +7,7 @@ import { ProductModule } from 'src/product/product.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Category]), 
-  //ProductModule
+  ProductModule
 ],
   controllers: [CategoryController],
   exports: [CategoryService],

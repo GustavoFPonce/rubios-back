@@ -11,7 +11,7 @@ export class CategoryService {
 
     constructor(
         @InjectRepository(Category) private readonly categoryRepository: Repository<Category>,
-       // private readonly productService: ProductService
+        private readonly productService: ProductService
     ) { }
 
     async getAll() {
@@ -37,14 +37,14 @@ export class CategoryService {
         const response = { success: false };
         const category = this.categoryRepository.create(categoryCreate)
         const savedCategory = await this.categoryRepository.save(category);
-        console.log("saved category: ", savedCategory);
+        // console.log("saved category: ", savedCategory);
         if (savedCategory) response.success = true;
         return response;
     }
 
     async update(id: number, category: CategoryEditDto) {
         console.log("id: ", id);
-        console.log("category: ", category);
+        // console.log("category: ", category);
         var response = { success: false };
         var categorySaved = await this.categoryRepository.findOne(id);
         if (categorySaved) {
@@ -60,8 +60,8 @@ export class CategoryService {
         return this.categoryRepository.findOne(id);
     }
 
-    // async getProducts(id: number) {
-    //     return await this.productService.getByCategory(id);
+    async getProducts(id: number) {
+        return this.productService.getByCategory(id);
 
-    // }
+    }
 }

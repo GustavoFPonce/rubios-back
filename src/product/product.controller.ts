@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -22,7 +23,7 @@ export class ProductController {
 
   @Get()
   async findAll() {
-    console.log("pidiendo productos");
+    // console.log("pidiendo productos");
     return this.productService.findAll();
   }
 
@@ -56,11 +57,12 @@ export class ProductController {
     return this.productService.create(createProductDto);
   }
 
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
   ) {
+    //console.log("producto a editar: ", updateProductDto);
     return this.productService.update(id, updateProductDto);
   }
 
