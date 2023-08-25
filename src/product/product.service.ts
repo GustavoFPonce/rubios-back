@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Like, Repository } from 'typeorm';
+import { Between, Like, Repository } from 'typeorm';
 
 import { Product } from './enities/product.entity';
 
@@ -12,6 +12,8 @@ import { CategoryService } from 'src/category/category.service';
 import { ProductDto } from './dto/product-dto';
 import { InventoryCreateDto } from './dto/inventory-create-dto';
 import { Inventory } from './enities/inventory';
+import { InventoryListDto } from './dto/inventory-list-dto';
+import { getDateStartEnd } from 'src/common/get-date-start-end';
 
 @Injectable()
 export class ProductService {
@@ -53,7 +55,7 @@ export class ProductService {
 
   async findOne(id: string) {
     console.log("id product: ", id);
-    const product = await this.productRepository.findOne({ where: {id: id}, relations: ['inventories', 'category'] });
+    const product = await this.productRepository.findOne({ where: { id: id }, relations: ['inventories', 'category'] });
 
     if (!product) {
       throw new NotFoundException(`There is no product under id ${id}`);
@@ -165,5 +167,41 @@ export class ProductService {
       return new ProductDto(x);
     });
     return productsDto;
+  }
+
+  async getInventoryDetail(id: string) {
+    const product = await this.productRepository.findOne({ where: { id: id }, relations: ['inventories'] });
+    const inventories = product.inventories.sort((a, b) => {
+      if (a.date.getTime() !== b.date.getTime()) {
+        return b.date.getTime() - a.date.getTime();
+      }
+      return parseInt(b.id) - parseInt(a.id);
+    });
+    return inventories.map((x) => {
+      return new InventoryListDto(x);
+    });
+
+  }
+
+  async getInventoryByDate(id: number, start: Date, end: Date) {
+    const startDate = getDateStartEnd(start, end).startDate;
+    const endDate = getDateStartEnd(start, end).endDate;
+    const inventories = await this.inventoryRepository.find(
+      {
+        where: {
+          product: { id: id },
+          date: Between(startDate, endDate)
+        },
+        order: {
+          date: 'DESC',
+          id: 'DESC'
+        }
+      },
+    );
+
+    return inventories.map((x) => {
+      return new InventoryListDto(x);
+    })
+
   }
 }

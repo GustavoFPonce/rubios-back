@@ -15,6 +15,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { InventoryCreateDto } from './dto/inventory-create-dto';
 
 @Controller('product')
 //@UseGuards(JwtAuthGuard)
@@ -69,6 +70,33 @@ export class ProductController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.productService.remove(id);
+  }
+
+  @Get(':id/inventory')
+  async getInventoryDetail(
+    @Param('id') id: string
+  ){
+    console.log("pidiendo inventario: ", id);
+    return await this.productService.getInventoryDetail(id);
+  }
+
+  @Post(':id/inventory')
+  async addInventory(
+    @Param('id') id: string,
+    @Body() inventory: any
+  ){
+    return await this.productService.addInventory(inventory, id);
+  }
+
+  @Get(':id/inventory-by-date')
+  async getInventoryByDate(
+    @Param('id') id: number,
+    @Query('start') start: Date,
+    @Query('end') end: Date
+  ){
+    console.log("start: ", start);
+    console.log("end: ", end);
+    return await this.productService.getInventoryByDate(id, start, end);
   }
 
 }
