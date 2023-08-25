@@ -111,8 +111,8 @@ export class CreditController {
         console.log("status: ", status);
         console.log("moneda: ", currency);
         console.log("user: ", debtcollector);
-       
-     
+
+
         const userId = req.user.userId;
         return await this.creditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate, statusPayment);
 
