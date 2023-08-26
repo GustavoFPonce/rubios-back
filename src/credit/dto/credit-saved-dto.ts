@@ -38,5 +38,8 @@ export class CreditSavedDto {
      typeCurrency: string;
 
      @IsString()
-     status: string
+     status: string;
+
+     @IsNumber()
+      commission: number;
 }

@@ -18,7 +18,8 @@ export class CreditListDto {
     interestRate: number;
     firstPayment: string;
     typeCurrency: string;
-    status: string
+    status: string;
+    commission: number
 
 
 
@@ -39,7 +40,8 @@ export class CreditListDto {
             interestRate: credit.interestRate,
             firstPayment: format(credit.firstPayment, "dd-MM-yyyy"),
             typeCurrency: credit.typeCurrency,
-            status: `${StatusCredit[credit.status]}`
+            status: `${StatusCredit[credit.status]}`,
+            commission: credit.commission
         };
         //console.log("credit list dto class: ", credit);
         return creditDto;

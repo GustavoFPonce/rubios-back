@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Between, Brackets, Repository } from 'typeorm';
 import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays } from 'date-fns';
 import { es } from 'date-fns/locale'
@@ -14,6 +14,7 @@ import { Client } from 'src/client/entities/client.entity';
 import { filter } from 'rxjs';
 import { CollectionDto } from './dto/collection-dto';
 import { PaymentDetailDto } from './dto/payment-detail-dto';
+import { getDateObject } from 'src/common/get-date-object';
 
 @Injectable()
 export class CreditService {
@@ -32,7 +33,6 @@ export class CreditService {
     async create(creditCreateDto: CreditCreateDto, userId: number) {
         var response = { success: false }
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
-        var dateCurrent = new Date();
         console.log("nuevo credito: ", creditCreateDto);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
@@ -40,7 +40,7 @@ export class CreditService {
         createCredit.userId = userId;
         createCredit.client = client;
         createCredit.debtCollector = debtCollector;
-        createCredit.date = dateCurrent;
+        createCredit.date = parseISO(creditCreateDto.date);
         createCredit.firstPayment = parseISO(creditCreateDto.firstPayment);
         createCredit.paymentFrequency = creditCreateDto.paymentFrequency;
         createCredit.payDay = this.getDayString(dateFirstPayment);
@@ -51,10 +51,11 @@ export class CreditService {
         createCredit.payment = creditCreateDto.payment;
         createCredit.information = creditCreateDto.information;
         createCredit.typeCurrency = creditCreateDto.typeCurrency;
+        createCredit.commission = creditCreateDto.commission;
         console.log("credit creado: ", createCredit);
         const credit = await this.creditRepository.create(createCredit);
         const creditSaved = await this.creditRepository.save(credit);
-        console.log("credit guardado: ", credit);
+        console.log("credit guardado: ", creditSaved);
         this.addPaymentDetail(creditSaved);
         console.log("response: ", creditSaved);
         if (creditSaved) response.success = true;
@@ -68,7 +69,7 @@ export class CreditService {
         for (let i = 0; i < credit.numberPayment; i++) {
             var detail = new PaymentDetail();
             detail.payment = credit.payment;
-            detail.paymentDueDate = (i == 0) ? credit.firstPayment : this.getNextPaymenteDate(credit.paymentFrequency, i + 1, credit.firstPayment);
+            detail.paymentDueDate = (i == 0) ? credit.firstPayment : this.getNextPaymenteDate(credit.paymentFrequency, i, credit.firstPayment);
             detail.paymentDate = null;
             detail.credit = credit;
             detail.balance = (i == 0) ? parseFloat((credit.payment * credit.numberPayment).toFixed(2)) : 0;
@@ -81,7 +82,7 @@ export class CreditService {
     private getNextPaymenteDate(frequency: string, periodNumber: number, firstPayment: Date): Date {
         switch (frequency) {
             case 'Semanal':
-                return addWeeks(firstPayment, 7 * periodNumber);
+                return addDays(firstPayment, 7 * periodNumber);
 
             case 'Mensual':
                 return addMonths(firstPayment, 1 * periodNumber);
@@ -93,6 +94,7 @@ export class CreditService {
 
 
     async update(id: number, credit: CreditSavedDto) {
+        console.log("credit a editar: ", credit);
         var response = { success: false };
         const debtCollector = await this.userRepository.findOne(credit.debtCollectorId);
         var creditSaved = await this.creditRepository.findOne(credit.id);
@@ -100,6 +102,7 @@ export class CreditService {
         creditSaved.information = credit.information;
         creditSaved.typeCurrency = credit.typeCurrency;
         creditSaved.status = parseInt(`${StatusCredit[credit.status]}`);
+        creditSaved.commission = credit.commission;
         const saved = await this.creditRepository.save(creditSaved);
         if (saved) response.success = true;
         return response;
@@ -117,7 +120,8 @@ export class CreditService {
                 {
                     where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'],
                     order: {
-                        id: 'DESC',
+                        date: 'DESC',
+                        id: 'DESC'
                     }
                 });
         } else {
@@ -271,10 +275,13 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        console.log("fecha hoy: ", new Date());
-        const [day, month, year] = dateQuery.split('-');
-        const dateObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        const dayType = (this.areDatesEqual(dateObject, new Date())) ? 'current' : 'not-current';
+        console.log("fecha hoy: ", new Date().toLocaleDateString());
+        const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');
+        const dateCurrentLocalObject = getDateObject(dateCurrent);
+        const dateObject = getDateObject(dateQuery);
+        console.log("dateCurrente object: ", dateCurrentLocalObject);
+        console.log("dateObject: ", dateObject);
+        const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
         const date = dateObject;
         const startDate = this.getStartDateEndDate(date, date).startDate;
         const endDate = this.getStartDateEndDate(date, date).endDate;
@@ -293,8 +300,12 @@ export class CreditService {
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-            .where('credit.status = :status', { status: StatusCredit.active })
-            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            .where(this.getConditionsFilterByDay(startDate, endDate, day))
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status = :status', {
+                startDate,
+                endDate,
+                status: StatusCredit.canceled
+            })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
 
@@ -312,8 +323,12 @@ export class CreditService {
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-            .where('credit.status = :status', { status: StatusCredit.active })
-            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            .where(this.getConditionsFilterByDay(startDate, endDate, day))
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status = :status', {
+                startDate,
+                endDate,
+                status: StatusCredit.canceled
+            })
             .andWhere('credit.debtCollector_Id = :userId', { userId })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
@@ -327,9 +342,6 @@ export class CreditService {
     }
 
     private getConditionsFilterByDay(startDate: Date, endDate: Date, day: string) {
-        console.log("inicio: ", startDate);
-        console.log("fin: ", endDate);
-        console.log("tipo de dia: ", day);
         if (day == 'current') {
             console.log("estoy en current");
             return new Brackets((qb) => {
@@ -560,6 +572,15 @@ export class CreditService {
             start.getMonth() === end.getMonth() &&
             start.getUTCDate() === end.getUTCDate()
         );
+    }
+
+    async getById(id: string) {
+        const credit = await this.creditRepository.findOne({ where: { id: id }, relations: ['debtCollector', 'client'] });
+        if (!credit) {
+            throw new NotFoundException(`No se encontró el crédito con el id: ${id}`);
+        };
+
+        return new CreditListDto(credit);
     }
 
 }

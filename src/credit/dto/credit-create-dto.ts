@@ -8,6 +8,10 @@ export class CreditCreateDto{
     @IsNumber()
     readonly debtCollectorId: number;
 
+    
+    @IsString()
+    readonly date: string;
+
     @IsString()
     readonly firstPayment: string;
 
@@ -27,8 +31,11 @@ export class CreditCreateDto{
     readonly payment: number;
 
     @IsString()
-    readonly information: string
+    readonly information: string;
 
     @IsString()
-    readonly typeCurrency: string
+    readonly typeCurrency: string;
+
+    @IsNumber()
+    readonly commission: number;
 }

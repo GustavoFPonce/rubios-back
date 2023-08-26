@@ -36,7 +36,7 @@ export class CreditController {
         @Param('id') id: number,
         @Body() credit: any
     ) {
-        //console.log("llegue a modificar créditos: ", credit);
+        console.log("llegue a modificar créditos: ", credit);
         var response = await this.creditService.update(id, credit);
         return response;
     }
@@ -141,6 +141,14 @@ export class CreditController {
 
     }
 
+
+    @Get(':id')
+    async getById(
+        @Param('id') id: string
+    ){
+        console.log("id: ", id);
+        return await this.creditService.getById(id);
+    }
 
 
 }
