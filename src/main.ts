@@ -19,7 +19,6 @@ async function bootstrap() {
   console.log("join: ", join(__dirname, '..', 'public'));
   app.use(express.static(join(__dirname, '..', 'public')));
 
-  //console.log("clave secreta: ", process.env.JWT_ACCESS_SECRET);
   app.use(cookieParser());
 
   app.useGlobalPipes(
@@ -28,24 +27,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  //habilitar cors
-  //app.enableCors();
-  // app.enableCors({
-  //   origin: ['http://antofanari-001-site6.gtempurl.com', 'http://localhost:3000', 'http://antofanari-001-site3.gtempurl.com/']
-  // });
 
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://antofanari-001-site3.gtempurl.com');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    next();
+  app.enableCors({
+    origin: ['http://antofanari-001-site3.gtempurl.com']
   });
 
-  //habilitar cors para un origen especifico
-  // app.enableCors({
-  //   origin: 'http://localhost:3000',
-  // });
-  //app.useGlobalFilters(new AllExceptionsFilter(httpRef, logger));
+
   await app.listen(port);
 }
 bootstrap();
