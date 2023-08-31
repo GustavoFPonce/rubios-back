@@ -62,7 +62,6 @@ export class UserService {
   async findDebtCollectors() {
     const role = (await this.roleService.findOneByName(Role.debtCollector));
     const debtCollectors = await this.userRepository.find({
-      where: { role: role.id },
       order: {
         id: 'DESC', // Orden descendente por el campo numeroRegistro
       },

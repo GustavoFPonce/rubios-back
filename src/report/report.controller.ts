@@ -12,6 +12,8 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any
     ){
+        console.log("start controller: ", start);
+        console.log("end controller: ", end);
         return await this.reportService.getChargesAccountedAndCollected(start, end);
     }
 

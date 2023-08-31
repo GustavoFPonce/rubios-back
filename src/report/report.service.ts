@@ -33,8 +33,8 @@ export class ReportService {
       .select([
         'debtCollector.id as debtCollectorId',
         'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
-        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyPesos) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
-        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyDollar) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyPesos) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyDollar) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
         'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL  AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
         'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
       ])
@@ -55,11 +55,13 @@ export class ReportService {
     var paymentsDetail: PaymentDetail[] = [];
     const debtCollector = await this.userRepository.findOne(id);
     if (start != 'null' && end != 'null') {
+      console.log("estoy en null");
       const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
       const startDate = dates.startDate;
       const endDate = dates.endDate;
       paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate);
     } else {
+      console.log("noo estoy en null");
       paymentsDetail = await this.getPaymentsDetailByDebtCollector(id);
     }
     const paymentsDetailsDto = paymentsDetail.map((x) => {
