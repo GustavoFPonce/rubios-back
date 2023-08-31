@@ -31,7 +31,7 @@ async function bootstrap() {
   //habilitar cors
   //app.enableCors();
   app.enableCors({
-    origin: ['http://antofanari-001-site6.gtempurl.com', 'http://localhost:3000', 'http://antofanari-001-site3.gtempurl.com']
+    origin: ['http://antofanari-001-site6.gtempurl.com', 'http://localhost:3000', 'http://antofanari-001-site3.gtempurl.com/']
   });
 
   //habilitar cors para un origen especifico
