@@ -276,6 +276,7 @@ export class CreditService {
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
         const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');
+        console.log("dateCurrent back: ", dateCurrent);
         const dateCurrentLocalObject = getDateObject(dateCurrent);
         const dateObject = getDateObject(dateQuery);
         console.log("fecha de consulta fromtend: ", dateObject);
