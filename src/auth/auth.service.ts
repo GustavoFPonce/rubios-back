@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -23,22 +24,29 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) { }
 
+  private readonly logger = new Logger()
+
   async login(userDto: LoginUserDto) {
-    var loggedUser = new LoggedUserDto();
-    const user = await this.validateUser(userDto);
-    //console.log("response validation user: ", responseValidation);
-    // const token = await this.tokenService.generateTokens(user.id);
-    // loggedUser.accessToken = token.accessToken;
-    // loggedUser.refreshToken = token.refreshToken;
-    const token = await this.createTokens(user.id);
-    loggedUser.accessToken = token.accessToken;
-    loggedUser.refreshToken = token.refreshToken;
-    loggedUser.userName = user.name;
-    loggedUser.role = user.role.name;
+    try {
+      var loggedUser = new LoggedUserDto();
+      const user = await this.validateUser(userDto);
+      //console.log("response validation user: ", responseValidation);
+      // const token = await this.tokenService.generateTokens(user.id);
+      // loggedUser.accessToken = token.accessToken;
+      // loggedUser.refreshToken = token.refreshToken;
+      const token = await this.createTokens(user.id);
+      loggedUser.accessToken = token.accessToken;
+      loggedUser.refreshToken = token.refreshToken;
+      loggedUser.userName = user.name;
+      loggedUser.role = user.role.name;
 
-    console.log("token generado: ", token);
+      console.log("token generado: ", token);
 
-    return loggedUser;
+      return loggedUser;
+    }
+    catch (error) {
+      this.logger.error(error);
+    }
     // return null;
   }
 
