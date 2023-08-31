@@ -278,6 +278,7 @@ export class CreditService {
         const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');
         const dateCurrentLocalObject = getDateObject(dateCurrent);
         const dateObject = getDateObject(dateQuery);
+        console.log("fecha de consulta: ", dateObject);
         const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
         const date = dateObject;
         const startDate = this.getStartDateEndDate(date, date).startDate;

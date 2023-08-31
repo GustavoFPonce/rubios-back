@@ -1,0 +1,84 @@
+{"context":"NestFactory","level":"info","message":"Starting Nest application...","timestamp":"2023-08-31T21:55:03.332Z"}
+{"context":"InstanceLoader","level":"info","message":"AppModule dependencies initialized","timestamp":"2023-08-31T21:55:03.485Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:03.486Z"}
+{"context":"InstanceLoader","level":"info","message":"PassportModule dependencies initialized","timestamp":"2023-08-31T21:55:03.487Z"}
+{"context":"InstanceLoader","level":"info","message":"JwtModule dependencies initialized","timestamp":"2023-08-31T21:55:03.487Z"}
+{"context":"InstanceLoader","level":"info","message":"JwtModule dependencies initialized","timestamp":"2023-08-31T21:55:03.488Z"}
+{"context":"InstanceLoader","level":"info","message":"ConfigHostModule dependencies initialized","timestamp":"2023-08-31T21:55:03.489Z"}
+{"context":"InstanceLoader","level":"info","message":"ConfigModule dependencies initialized","timestamp":"2023-08-31T21:55:03.490Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmCoreModule dependencies initialized","timestamp":"2023-08-31T21:55:04.389Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.390Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.391Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.392Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.392Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.393Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.394Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.394Z"}
+{"context":"InstanceLoader","level":"info","message":"TypeOrmModule dependencies initialized","timestamp":"2023-08-31T21:55:04.395Z"}
+{"context":"InstanceLoader","level":"info","message":"RoleModule dependencies initialized","timestamp":"2023-08-31T21:55:04.396Z"}
+{"context":"InstanceLoader","level":"info","message":"ProductModule dependencies initialized","timestamp":"2023-08-31T21:55:04.398Z"}
+{"context":"InstanceLoader","level":"info","message":"TokenModule dependencies initialized","timestamp":"2023-08-31T21:55:04.398Z"}
+{"context":"InstanceLoader","level":"info","message":"CreditModule dependencies initialized","timestamp":"2023-08-31T21:55:04.399Z"}
+{"context":"InstanceLoader","level":"info","message":"ClientModule dependencies initialized","timestamp":"2023-08-31T21:55:04.400Z"}
+{"context":"InstanceLoader","level":"info","message":"ReportModule dependencies initialized","timestamp":"2023-08-31T21:55:04.400Z"}
+{"context":"InstanceLoader","level":"info","message":"UserModule dependencies initialized","timestamp":"2023-08-31T21:55:04.401Z"}
+{"context":"InstanceLoader","level":"info","message":"CategoryModule dependencies initialized","timestamp":"2023-08-31T21:55:04.401Z"}
+{"context":"InstanceLoader","level":"info","message":"AuthModule dependencies initialized","timestamp":"2023-08-31T21:55:04.401Z"}
+{"context":"RoutesResolver","level":"info","message":"UserController {/user}:","timestamp":"2023-08-31T21:55:04.443Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/by-role, GET} route","timestamp":"2023-08-31T21:55:04.445Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/debt-collectors, GET} route","timestamp":"2023-08-31T21:55:04.446Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user, GET} route","timestamp":"2023-08-31T21:55:04.446Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/by-name, GET} route","timestamp":"2023-08-31T21:55:04.447Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/:id, PUT} route","timestamp":"2023-08-31T21:55:04.448Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/user/:id, DELETE} route","timestamp":"2023-08-31T21:55:04.448Z"}
+{"context":"RoutesResolver","level":"info","message":"ProductController {/product}:","timestamp":"2023-08-31T21:55:04.448Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product, GET} route","timestamp":"2023-08-31T21:55:04.449Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/category/:category, GET} route","timestamp":"2023-08-31T21:55:04.449Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/search, GET} route","timestamp":"2023-08-31T21:55:04.450Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/:id, GET} route","timestamp":"2023-08-31T21:55:04.451Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product, POST} route","timestamp":"2023-08-31T21:55:04.451Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/:id, PUT} route","timestamp":"2023-08-31T21:55:04.452Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/:id, DELETE} route","timestamp":"2023-08-31T21:55:04.452Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/:id/inventory, GET} route","timestamp":"2023-08-31T21:55:04.453Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/:id/inventory, POST} route","timestamp":"2023-08-31T21:55:04.453Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/product/:id/inventory-by-date, GET} route","timestamp":"2023-08-31T21:55:04.453Z"}
+{"context":"RoutesResolver","level":"info","message":"AuthController {/auth}:","timestamp":"2023-08-31T21:55:04.454Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/login, POST} route","timestamp":"2023-08-31T21:55:04.454Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/logout, POST} route","timestamp":"2023-08-31T21:55:04.455Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/registration, POST} route","timestamp":"2023-08-31T21:55:04.455Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/auth/update, POST} route","timestamp":"2023-08-31T21:55:04.455Z"}
+{"context":"RoutesResolver","level":"info","message":"CreditController {/credit}:","timestamp":"2023-08-31T21:55:04.455Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit, POST} route","timestamp":"2023-08-31T21:55:04.456Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/by-status, GET} route","timestamp":"2023-08-31T21:55:04.457Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/by-debt-collector, GET} route","timestamp":"2023-08-31T21:55:04.458Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/:id, PUT} route","timestamp":"2023-08-31T21:55:04.458Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit, GET} route","timestamp":"2023-08-31T21:55:04.459Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/by-client-name, GET} route","timestamp":"2023-08-31T21:55:04.459Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/:id/payments-detail, GET} route","timestamp":"2023-08-31T21:55:04.459Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/:id, DELETE} route","timestamp":"2023-08-31T21:55:04.460Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/day, GET} route","timestamp":"2023-08-31T21:55:04.460Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/collections-by-date, GET} route","timestamp":"2023-08-31T21:55:04.460Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/:id/register-payment, PUT} route","timestamp":"2023-08-31T21:55:04.461Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/search-collections, GET} route","timestamp":"2023-08-31T21:55:04.461Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/search, GET} route","timestamp":"2023-08-31T21:55:04.461Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/credit/:id, GET} route","timestamp":"2023-08-31T21:55:04.462Z"}
+{"context":"RoutesResolver","level":"info","message":"ClientController {/client}:","timestamp":"2023-08-31T21:55:04.462Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/client, GET} route","timestamp":"2023-08-31T21:55:04.463Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/client/by-name, GET} route","timestamp":"2023-08-31T21:55:04.463Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/client/:id, DELETE} route","timestamp":"2023-08-31T21:55:04.463Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/client, POST} route","timestamp":"2023-08-31T21:55:04.464Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/client/:id, PUT} route","timestamp":"2023-08-31T21:55:04.464Z"}
+{"context":"RoutesResolver","level":"info","message":"CategoryController {/category}:","timestamp":"2023-08-31T21:55:04.464Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/category, GET} route","timestamp":"2023-08-31T21:55:04.464Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/category/by-name, GET} route","timestamp":"2023-08-31T21:55:04.465Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/category/:id, DELETE} route","timestamp":"2023-08-31T21:55:04.465Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/category, POST} route","timestamp":"2023-08-31T21:55:04.465Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/category/:id, PUT} route","timestamp":"2023-08-31T21:55:04.466Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/category/:id/products, GET} route","timestamp":"2023-08-31T21:55:04.466Z"}
+{"context":"RoutesResolver","level":"info","message":"ReportController {/report}:","timestamp":"2023-08-31T21:55:04.466Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/report/charges-accounted-collected, GET} route","timestamp":"2023-08-31T21:55:04.466Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/report/collections-commissions-detail, GET} route","timestamp":"2023-08-31T21:55:04.467Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/report/register-surrender-payments, PATCH} route","timestamp":"2023-08-31T21:55:04.467Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/report/register-commissions-payments, PATCH} route","timestamp":"2023-08-31T21:55:04.467Z"}
+{"context":"RouterExplorer","level":"info","message":"Mapped {/report/commissions-total, GET} route","timestamp":"2023-08-31T21:55:04.468Z"}
+{"context":"NestApplication","level":"info","message":"Nest application successfully started","timestamp":"2023-08-31T21:55:04.470Z"}
