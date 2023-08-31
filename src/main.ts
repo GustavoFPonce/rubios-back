@@ -30,8 +30,15 @@ async function bootstrap() {
   );
   //habilitar cors
   //app.enableCors();
-  app.enableCors({
-    origin: ['http://antofanari-001-site6.gtempurl.com', 'http://localhost:3000', 'http://antofanari-001-site3.gtempurl.com/']
+  // app.enableCors({
+  //   origin: ['http://antofanari-001-site6.gtempurl.com', 'http://localhost:3000', 'http://antofanari-001-site3.gtempurl.com/']
+  // });
+
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://antofanari-001-site3.gtempurl.com');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
   });
 
   //habilitar cors para un origen especifico
