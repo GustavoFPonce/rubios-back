@@ -275,9 +275,11 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');
-        console.log("dateCurrent back: ", dateCurrent);
-        const dateCurrentLocalObject = getDateObject(dateCurrent);
+        const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');        
+        const [month, day, year] = dateCurrent.split('-');
+        const dateCurrentLocalObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        console.log("dateCurrent back: ", dateCurrentLocalObject);
+        //const dateCurrentLocalObject = getDateObject(dateCurrent);
         const dateObject = getDateObject(dateQuery);
         console.log("fecha de consulta fromtend: ", dateObject);
         console.log("fecha de consulta backend: ", dateCurrentLocalObject);
