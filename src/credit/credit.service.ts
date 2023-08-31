@@ -275,12 +275,9 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        console.log("fecha hoy: ", new Date().toLocaleDateString());
         const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');
         const dateCurrentLocalObject = getDateObject(dateCurrent);
         const dateObject = getDateObject(dateQuery);
-        console.log("dateCurrente object: ", dateCurrentLocalObject);
-        console.log("dateObject: ", dateObject);
         const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
         const date = dateObject;
         const startDate = this.getStartDateEndDate(date, date).startDate;
@@ -318,18 +315,14 @@ export class CreditService {
     }
 
     async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date, day: string) {
+        console.log("userId: ", userId);
         var collections = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where(this.getConditionsFilterByDay(startDate, endDate, day))
-            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status = :status', {
-                startDate,
-                endDate,
-                status: StatusCredit.canceled
-            })
-            .andWhere('credit.debtCollector_Id = :userId', { userId })
+            .andWhere('credit.debtCollector.id = :userId', { userId })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
 
