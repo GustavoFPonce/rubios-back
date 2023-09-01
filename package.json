@@ -37,6 +37,7 @@
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "dotenv": "^16.3.1",
+    "moment": "^2.29.4",
     "mysql": "^2.18.1",
     "nest-winston": "^1.9.4",
     "nestjs-stripe": "^1.0.0",

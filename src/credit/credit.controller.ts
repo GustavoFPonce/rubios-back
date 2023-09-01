@@ -86,7 +86,7 @@ export class CreditController {
         @Req() req: any,
         @Query('date') date: string,
     ) {
-        console.log("date111: ", date);
+
         const userId = req.user.userId;
         return await this.creditService.getCollectionsByDate(userId, date);
     }

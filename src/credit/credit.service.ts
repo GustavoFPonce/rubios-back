@@ -276,28 +276,19 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        // const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');   
-        // console.log("date current: ", dateCurrent);     
-        // const [month, day, year] = dateCurrent.split('-');
-        // const dateCurrentLocalObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        const date = parse(dateQuery, "EEE, dd MMM yyyy HH:mm:ss 'GMT'", new Date());
-        const fechaClienteUTC = zonedTimeToUtc(date, 'America/Argentina/Buenos_Aires');
-        console.log("date: ", fechaClienteUTC);
-        const dateCurrentLocalObject = Date.now();
-        const fechacovertidaback = zonedTimeToUtc(dateCurrentLocalObject, 'America/Argentina/Buenos_Aires');
-        console.log("dateCurrent back: ", fechacovertidaback);
-        console.log("fecha convertida front: ", fechaClienteUTC);
-        // const dateObject = getDateObject(dateQuery);
-        // const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
-        // const date = dateObject;
-        // const startDate = this.getStartDateEndDate(date, date).startDate;
-        // const endDate = this.getStartDateEndDate(date, date).endDate;
-        // const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        // if (user.role.name == "admin") {
-        //     return await this.getCollectionsByDayAdmin(startDate, endDate, dayType);
-        // } else {
-        //     return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate, dayType);
-        // }
+
+        const dateCurrentLocalObject = new Date();
+        var argentinaTime = new Date();
+        argentinaTime.setHours(argentinaTime.getHours() - 3);
+        const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
+        const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
+        const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        if (user.role.name == "admin") {
+            return await this.getCollectionsByDayAdmin(startDate, endDate, dayType);
+        } else {
+            return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate, dayType);
+        }
 
     }
 
