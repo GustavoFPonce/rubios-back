@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConsoleLogger, Injectable, NotFoundException } from '@nestjs/common';
 import { Between, Brackets, Repository } from 'typeorm';
 import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays, parse } from 'date-fns';
 import { es } from 'date-fns/locale'
@@ -278,8 +278,10 @@ export class CreditService {
     async getCollectionsByDate(userId: number, dateQuery: string) {
 
         const dateCurrentLocalObject = new Date();
+        console.log("dateCurrentLocalObject: ", dateCurrentLocalObject);
         var argentinaTime = new Date();
         argentinaTime.setHours(argentinaTime.getHours() - 3);
+        console.log("arg: ", argentinaTime);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
