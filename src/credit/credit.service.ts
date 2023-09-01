@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Between, Brackets, Repository } from 'typeorm';
-import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays } from 'date-fns';
+import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays, parse } from 'date-fns';
 import { es } from 'date-fns/locale'
 import { Credit } from './entities/credit.entity';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
@@ -15,6 +15,7 @@ import { filter } from 'rxjs';
 import { CollectionDto } from './dto/collection-dto';
 import { PaymentDetailDto } from './dto/payment-detail-dto';
 import { getDateObject } from 'src/common/get-date-object';
+import { utcToZonedTime } from 'date-fns-tz';
 
 @Injectable()
 export class CreditService {
@@ -275,24 +276,30 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');        
-        const [month, day, year] = dateCurrent.split('-');
-        const dateCurrentLocalObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        // const dateCurrent = new Date().toLocaleDateString().replace('/', '-').replace('/', '-');   
+        // console.log("date current: ", dateCurrent);     
+        // const [month, day, year] = dateCurrent.split('-');
+        // const dateCurrentLocalObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const date = parse(dateQuery, "EEE, dd MMM yyyy HH:mm:ss 'GMT'", new Date());
+        const fechaClienteUTC = utcToZonedTime(date, 'UTC');
+        console.log("date: ", fechaClienteUTC);
+        const formatoResultado = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+        const fechaConvertida = format(fechaClienteUTC, formatoResultado);
+        const dateObject = new Date(dateQuery);
+        const dateCurrentLocalObject = new Date();
         console.log("dateCurrent back: ", dateCurrentLocalObject);
-        //const dateCurrentLocalObject = getDateObject(dateCurrent);
-        const dateObject = getDateObject(dateQuery);
-        console.log("fecha de consulta fromtend: ", dateObject);
-        console.log("fecha de consulta backend: ", dateCurrentLocalObject);
-        const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
-        const date = dateObject;
-        const startDate = this.getStartDateEndDate(date, date).startDate;
-        const endDate = this.getStartDateEndDate(date, date).endDate;
-        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        if (user.role.name == "admin") {
-            return await this.getCollectionsByDayAdmin(startDate, endDate, dayType);
-        } else {
-            return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate, dayType);
-        }
+        console.log("fecha convertida front: ", fechaConvertida);
+        // const dateObject = getDateObject(dateQuery);
+        // const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
+        // const date = dateObject;
+        // const startDate = this.getStartDateEndDate(date, date).startDate;
+        // const endDate = this.getStartDateEndDate(date, date).endDate;
+        // const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        // if (user.role.name == "admin") {
+        //     return await this.getCollectionsByDayAdmin(startDate, endDate, dayType);
+        // } else {
+        //     return await this.getCollectionsByDayDebtCollector(userId, startDate, endDate, dayType);
+        // }
 
     }
 
