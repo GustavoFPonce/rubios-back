@@ -15,7 +15,7 @@ import { filter } from 'rxjs';
 import { CollectionDto } from './dto/collection-dto';
 import { PaymentDetailDto } from './dto/payment-detail-dto';
 import { getDateObject } from 'src/common/get-date-object';
-import { utcToZonedTime } from 'date-fns-tz';
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 
 @Injectable()
 export class CreditService {
@@ -281,14 +281,11 @@ export class CreditService {
         // const [month, day, year] = dateCurrent.split('-');
         // const dateCurrentLocalObject = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         const date = parse(dateQuery, "EEE, dd MMM yyyy HH:mm:ss 'GMT'", new Date());
-        const fechaClienteUTC = utcToZonedTime(date, 'UTC');
+        const fechaClienteUTC = zonedTimeToUtc(date, 'America/Argentina/Buenos_Aires');
         console.log("date: ", fechaClienteUTC);
-        const formatoResultado = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-        const fechaConvertida = format(fechaClienteUTC, formatoResultado);
-        const dateObject = new Date(dateQuery);
         const dateCurrentLocalObject = new Date();
         console.log("dateCurrent back: ", dateCurrentLocalObject);
-        console.log("fecha convertida front: ", fechaConvertida);
+        console.log("fecha convertida front: ", fechaClienteUTC);
         // const dateObject = getDateObject(dateQuery);
         // const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
         // const date = dateObject;
