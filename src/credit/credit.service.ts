@@ -283,7 +283,7 @@ export class CreditService {
         const date = parse(dateQuery, "EEE, dd MMM yyyy HH:mm:ss 'GMT'", new Date());
         const fechaClienteUTC = zonedTimeToUtc(date, 'America/Argentina/Buenos_Aires');
         console.log("date: ", fechaClienteUTC);
-        const dateCurrentLocalObject = new Date();
+        const dateCurrentLocalObject = Date.now();
         const fechacovertidaback = zonedTimeToUtc(dateCurrentLocalObject, 'America/Argentina/Buenos_Aires');
         console.log("dateCurrent back: ", fechacovertidaback);
         console.log("fecha convertida front: ", fechaClienteUTC);
