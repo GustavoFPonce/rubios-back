@@ -276,11 +276,13 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-
+        console.log("dateQuery: ", dateQuery);
         const dateCurrentLocalObject = new Date();
         console.log("dateCurrentLocalObject: ", dateCurrentLocalObject);
         var argentinaTime = new Date(dateQuery);   
         console.log("arg: ", argentinaTime);
+
+
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
         argentinaTime.setHours(argentinaTime.getHours() - 3);
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
