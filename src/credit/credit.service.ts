@@ -279,10 +279,10 @@ export class CreditService {
 
         const dateCurrentLocalObject = new Date();
         console.log("dateCurrentLocalObject: ", dateCurrentLocalObject);
-        var argentinaTime = new Date();
-        argentinaTime.setHours(argentinaTime.getHours() - 3);
+        var argentinaTime = new Date();   
         console.log("arg: ", argentinaTime);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
+        argentinaTime.setHours(argentinaTime.getHours() - 3);
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
