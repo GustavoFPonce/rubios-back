@@ -284,7 +284,8 @@ export class CreditService {
         const fechaClienteUTC = zonedTimeToUtc(date, 'America/Argentina/Buenos_Aires');
         console.log("date: ", fechaClienteUTC);
         const dateCurrentLocalObject = new Date();
-        console.log("dateCurrent back: ", dateCurrentLocalObject);
+        const fechacovertidaback = zonedTimeToUtc(dateCurrentLocalObject, 'America/Argentina/Buenos_Aires');
+        console.log("dateCurrent back: ", fechacovertidaback);
         console.log("fecha convertida front: ", fechaClienteUTC);
         // const dateObject = getDateObject(dateQuery);
         // const dayType = (this.areDatesEqual(dateObject, dateCurrentLocalObject)) ? 'current' : 'not-current';
