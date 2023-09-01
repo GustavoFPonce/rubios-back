@@ -279,7 +279,7 @@ export class CreditService {
 
         const dateCurrentLocalObject = new Date();
         console.log("dateCurrentLocalObject: ", dateCurrentLocalObject);
-        var argentinaTime = new Date();   
+        var argentinaTime = new Date(dateQuery);   
         console.log("arg: ", argentinaTime);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
         argentinaTime.setHours(argentinaTime.getHours() - 3);
