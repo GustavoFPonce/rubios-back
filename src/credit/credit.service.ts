@@ -34,7 +34,6 @@ export class CreditService {
     async create(creditCreateDto: CreditCreateDto, userId: number) {
         var response = { success: false }
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
-        console.log("nuevo credito: ", creditCreateDto);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
         var createCredit = new Credit();
@@ -53,12 +52,10 @@ export class CreditService {
         createCredit.information = creditCreateDto.information;
         createCredit.typeCurrency = creditCreateDto.typeCurrency;
         createCredit.commission = creditCreateDto.commission;
-        console.log("credit creado: ", createCredit);
+        createCredit.interest = creditCreateDto.principal * creditCreateDto.interestRate / 100;
         const credit = await this.creditRepository.create(createCredit);
         const creditSaved = await this.creditRepository.save(credit);
-        console.log("credit guardado: ", creditSaved);
         this.addPaymentDetail(creditSaved);
-        console.log("response: ", creditSaved);
         if (creditSaved) response.success = true;
         return response;
 
@@ -84,7 +81,8 @@ export class CreditService {
         switch (frequency) {
             case 'Semanal':
                 return addDays(firstPayment, 7 * periodNumber);
-
+            case 'Quincenal':
+                return addDays(firstPayment, 15 * periodNumber);
             case 'Mensual':
                 return addMonths(firstPayment, 1 * periodNumber);
             default:
@@ -113,13 +111,20 @@ export class CreditService {
 
 
     async getAll(id: number) {
+        var referenceDate = new Date();
+        var argentinaTime = new Date(referenceDate.setHours(referenceDate.getHours() - 3));
+        const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
+        const rangeDates = this.getStartDateEndDate(startDate, argentinaTime);
         const user = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
         // console.log("usuario encontrado: ", user);
         var credits = [];
         if (user.role.name == 'admin') {
             credits = await this.creditRepository.find(
                 {
-                    where: { status: StatusCredit.active }, relations: ['debtCollector', 'client'],
+                    where: {
+                        status: StatusCredit.active,
+                        date: Between(rangeDates.startDate, rangeDates.endDate)
+                    }, relations: ['debtCollector', 'client'],
                     order: {
                         date: 'DESC',
                         id: 'DESC'
@@ -127,14 +132,17 @@ export class CreditService {
                 });
         } else {
             credits = await this.creditRepository.find({
-                where: { status: StatusCredit.active, debtCollector: user.id },
+                where: {
+                    status: StatusCredit.active,
+                    debtCollector: user.id,
+                    date: Between(rangeDates.startDate, rangeDates.endDate)
+                },
                 relations: ['debtCollector', 'client'],
                 order: {
                     id: 'DESC',
                 }
             });
         }
-        // console.log("creditos activos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
 
         // console.log("creditos activos: ", creditsDto);
@@ -276,15 +284,10 @@ export class CreditService {
     }
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        console.log("dateQuery: ", dateQuery);
         const dateCurrentLocalObject = new Date();
-        console.log("dateCurrentLocalObject: ", dateCurrentLocalObject);
-        var argentinaTime = new Date(dateQuery);   
-        console.log("arg: ", argentinaTime);
-
-
+        var argentinaTime = new Date(dateQuery);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
-        argentinaTime.setHours(argentinaTime.getHours() - 3);
+        argentinaTime = new Date(argentinaTime.setHours(argentinaTime.getHours() - 3));
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
@@ -303,15 +306,14 @@ export class CreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where(this.getConditionsFilterByDay(startDate, endDate, day))
-            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status = :status', {
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
                 startDate,
                 endDate,
-                status: StatusCredit.canceled
             })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
 
-        console.log("cobranzas obtenidas: ", collections);
+        //console.log("cobranzas obtenidas: ", collections);
 
         const collectionsDto = collections.map(collection => {
             return new CollectionDto(collection);
@@ -331,7 +333,7 @@ export class CreditService {
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
 
-        console.log("cobranzas obtenidas: ", collections);
+        //console.log("cobranzas obtenidas: ", collections);
 
         const collectionsDto = collections.map(collection => {
             return new CollectionDto(collection);
@@ -372,7 +374,7 @@ export class CreditService {
         return format(date, 'EEEE', { locale: es });
     }
 
-    async registerPayment(id: number) {
+    async registerPayment(id: number, paymentAmount: number) {
         var response = { success: false, collection: {} };
         var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
@@ -380,13 +382,10 @@ export class CreditService {
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where('paymentsDetail.id = :id', { id })
             .getOne();
-
-        // findOne({ where: { id: id }, relations: ['credit'] });
         payment.paymentDate = new Date();
-        payment.balance = payment.balance - payment.payment;
-        console.log("saldo: ", payment.balance);
+        payment.actualPayment = paymentAmount;
+        payment.balance = payment.balance - paymentAmount;
         const saved = await this.paymentDetailRepository.save(payment);
-        console.log("pago guardado: ", saved);
         if (saved) {
             response.success = true;
             response.collection = new CollectionDto(saved);
@@ -397,14 +396,12 @@ export class CreditService {
 
 
     private async uptadeBalanceNextPayment(balance: number, creditId: number) {
-        console.log("credit id: ", creditId);
         const date = null;
         var nextPayment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.credit', 'credit')
             .where('credit.id = :creditId', { creditId })
             .andWhere('paymentsDetail.paymentDate IS NULL')
             .getOne();
-        console.log("siguiente pago: ", nextPayment);
         if (nextPayment) {
             nextPayment.balance = balance;
             const saved = await this.paymentDetailRepository.save(nextPayment);
@@ -502,14 +499,13 @@ export class CreditService {
     }
 
     private getConditionsFilterCollections(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
-        console.log("estado de pago: ", statusPayment);
+        console.log("estado de credito: ", statusCredit);
         const commonConditions = qb2 => {
             if (currency != 'all') qb2.andWhere('credit.typeCurrency = :currency', { currency });
             if (statusPayment == 'canceled') qb2.andWhere('paymentsDetail.paymentDate IS NOT NULL');
             if (statusPayment == 'active') qb2.andWhere('paymentsDetail.paymentDate IS NULL');
-            qb2.andWhere('credit.status = :statusCredit', { statusCredit })
+           
         }
-
         var conditions: any;
         if (statusCredit == StatusCredit.active.toString()) {
             conditions = new Brackets((qb) => {
@@ -521,7 +517,8 @@ export class CreditService {
                                 '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
                                 { startDate }
                             );
-                            commonConditions(qb2)
+                            commonConditions(qb2);
+                            qb2.andWhere('credit.status = :statusCredit', { statusCredit })
                             qb2.orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
                                 startDate,
                                 endDate,
@@ -531,7 +528,8 @@ export class CreditService {
                                 '(paymentsDetail.paymentDueDate >= :startDate AND paymentsDetail.paymentDueDate <= :endDate)',
                                 { startDate, endDate }
                             );
-                            commonConditions(qb2)
+                            commonConditions(qb2);
+                            qb2.andWhere('credit.status = :statusCredit', { statusCredit })
                         }
                     )
                 } else {

@@ -29,8 +29,9 @@ export class PaymentDetailReportDto{
 }
  
     function getCommission(paymentDetail:any): string {
-        const total = paymentDetail.payment*paymentDetail.credit.numberPayment;
+        const interest = paymentDetail.credit.interest;
         const commissionRate = paymentDetail.credit.commission;
-        return (total*commissionRate/100).toFixed(2);
+        const paymentsNumber = paymentDetail.credit.numberPayment;
+        return (interest*commissionRate/100/paymentsNumber).toFixed(2);
         
     }

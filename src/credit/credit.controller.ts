@@ -13,7 +13,6 @@ export class CreditController {
     async create(
         @Body() createCreditDto: CreditCreateDto
     ) {
-        console.log("credit recibido: ", createCreditDto);
         const userId = 1;
         return await this.creditService.create(createCreditDto, userId);
     }
@@ -36,7 +35,6 @@ export class CreditController {
         @Param('id') id: number,
         @Body() credit: any
     ) {
-        console.log("llegue a modificar créditos: ", credit);
         var response = await this.creditService.update(id, credit);
         return response;
     }
@@ -46,7 +44,6 @@ export class CreditController {
         @Req() req: any
     ) {
         const id = req.user.userId;
-        console.log("id: ", id);
         return this.creditService.getAll(id);
     }
 
@@ -54,7 +51,6 @@ export class CreditController {
     async getByClientName(
         @Query('name') name: string
     ) {
-        console.log("name: ", name);
         return this.creditService.getByClientName(name);
     }
 
@@ -62,7 +58,6 @@ export class CreditController {
     async getPaymentsDetail(
         @Param('id') id: number
     ) {
-        console.log("pidiendo detalle de los pagos: ", id);
         return this.creditService.getPaymentsDetail(id);
     }
 
@@ -70,7 +65,6 @@ export class CreditController {
     async delete(
         @Param('id') id: number
     ) {
-        console.log("id: ", id);
         return await this.creditService.delete(id);
     }
 
@@ -93,9 +87,11 @@ export class CreditController {
 
     @Put((':id/register-payment'))
     async registerPayment(
-        @Param('id') id: number
+        @Param('id') id: number,
+        @Body('payment') payment: number,
     ) {
-        return this.creditService.registerPayment(id);
+        console.log("paymemt recibido: ", payment);
+        return this.creditService.registerPayment(id, payment);
     }
 
     @Get('search-collections')
@@ -108,11 +104,8 @@ export class CreditController {
         @Query('endDate') endDate: any,
         @Query('statusPayment') statusPayment: string,
     ) {
-        console.log("status: ", status);
-        console.log("moneda: ", currency);
-        console.log("user: ", debtcollector);
-
-
+        console.log("startDate: ", startDate);
+        console.log("endDate: ", endDate);
         const userId = req.user.userId;
         return await this.creditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate, statusPayment);
 
@@ -128,11 +121,6 @@ export class CreditController {
         @Query('startDate') startDate: any,
         @Query('endDate') endDate: any
     ) {
-        console.log("status: ", status);
-        console.log("currency: ", currency);
-        console.log("frequency: ", frequency);
-        console.log("startDate: ", startDate);
-        console.log("endDate: ", endDate);
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
@@ -146,7 +134,6 @@ export class CreditController {
     async getById(
         @Param('id') id: string
     ){
-        console.log("id: ", id);
         return await this.creditService.getById(id);
     }
 

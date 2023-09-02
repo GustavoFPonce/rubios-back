@@ -10,6 +10,9 @@ export class PaymentDetail{
     payment: number;
 
     @Column()
+    actualPayment: number;
+
+    @Column()
     paymentDueDate: Date;
 
     @Column()

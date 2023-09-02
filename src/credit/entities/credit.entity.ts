@@ -32,6 +32,9 @@ export class Credit {
     principal: number;
 
     @Column()
+    interest: number;
+
+    @Column()
     interestRate: number;
 
     @Column()
