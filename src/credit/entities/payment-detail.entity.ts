@@ -27,6 +27,9 @@ export class PaymentDetail{
     @Column()
     recoveryDateCommission: Date
 
+    @Column()
+    paymentType: number;
+
     @ManyToOne(()=> Credit, (credit: Credit) => credit.paymentsDetail)
     @JoinColumn({ name: 'credit_id' }) 
     credit: Credit;

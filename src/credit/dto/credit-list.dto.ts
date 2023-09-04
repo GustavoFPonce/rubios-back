@@ -33,7 +33,7 @@ export class CreditListDto {
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             debtCollectorId: parseInt(credit.debtCollector.id),
             date: format(credit.date, "dd-MM-yyyy"),
-            principal: credit.principal,
+            principal: credit.creditHistory[credit.creditHistory.length-1].principal,
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
             payment: credit.payment,

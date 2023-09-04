@@ -13,6 +13,8 @@ export class CollectionDto {
     actualPayment: number;
     balance: number;
     typeCurrency: string;
+    interest: number;
+    principal: number;
 
 
 
@@ -33,12 +35,13 @@ export class CollectionDto {
             payment: paymentDetail.payment,
             actualPayment: paymentDetail.actualPayment,
             balance: paymentDetail.balance,
-            typeCurrency: paymentDetail.credit.typeCurrency
+            typeCurrency: paymentDetail.credit.typeCurrency,
+            interest: paymentDetail.credit.creditHistory[paymentDetail.credit.creditHistory.length-1].interest,
+            principal: paymentDetail.credit.creditHistory[paymentDetail.credit.creditHistory.length-1].principal
         };
         return collectionDto;
     }
 }
-
 
 class InformationClient {
     phoneNumber: string;

@@ -4,3 +4,8 @@ export enum StatusCredit{
     delinquent = 3,
     bad = 4
 }
+
+export enum PaymentType{
+    paymentInstallments = 1,
+    cancellationInterest = 2
+}

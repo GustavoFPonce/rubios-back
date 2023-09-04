@@ -6,9 +6,10 @@ import { Credit } from './entities/credit.entity';
 import { PaymentDetail } from './entities/payment-detail.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Client } from 'src/client/entities/client.entity';
+import { CreditHistory } from './entities/credit-history.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Credit, PaymentDetail, User, Client])],
+  imports: [TypeOrmModule.forFeature([Credit, PaymentDetail, User, Client, CreditHistory])],
   controllers: [CreditController],
   providers: [CreditService]
 })

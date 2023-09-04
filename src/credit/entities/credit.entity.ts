@@ -2,6 +2,7 @@ import { Column, Double, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, Pri
 import { PaymentDetail } from "./payment-detail.entity";
 import { User } from "src/user/entities/user.entity";
 import { Client } from "src/client/entities/client.entity";
+import { CreditHistory } from "./credit-history.entity";
 
 @Entity()
 export class Credit {
@@ -60,4 +61,7 @@ export class Credit {
 
     @OneToMany(() => PaymentDetail, (detail: PaymentDetail) => detail.credit)
     paymentsDetail: PaymentDetail[]
+
+    @OneToMany(() => CreditHistory, (creditHistory: CreditHistory) => creditHistory.credit)
+    creditHistory: CreditHistory[]
 }

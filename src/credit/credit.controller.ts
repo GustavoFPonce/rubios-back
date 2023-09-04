@@ -94,6 +94,15 @@ export class CreditController {
         return this.creditService.registerPayment(id, payment);
     }
 
+    @Put((':id/register-cancellation-interest-principal'))
+    async registerCancellationInterestPrincipal(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+    ) {
+        console.log("paymemt recibido: ", payment);
+        return this.creditService.registerCancellationInterestPrincipal(id, payment);
+    }
+
     @Get('search-collections')
     async searchCollections(
         @Req() req: any,
