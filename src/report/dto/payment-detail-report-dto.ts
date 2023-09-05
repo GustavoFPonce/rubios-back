@@ -15,8 +15,8 @@ export class PaymentDetailReportDto{
     constructor(paymentDetail: PaymentDetail){
         const commissionDetailDto: PaymentDetailReportDto = {
             id: paymentDetail.id,
-            client: paymentDetail.credit.client.lastName + " " + paymentDetail.credit.client.name,
-            typeCurrency: paymentDetail.credit.typeCurrency,
+            client: paymentDetail.creditHistory.credit.client.lastName + " " + paymentDetail.creditHistory.credit.client.name,
+            typeCurrency: paymentDetail.creditHistory.credit.typeCurrency,
             paymentDueDate: format(paymentDetail.paymentDueDate, 'dd-MM-yyyy'),
             payment: paymentDetail.payment,
             commission: getCommission(paymentDetail),

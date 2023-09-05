@@ -21,13 +21,13 @@ export class CollectionDto {
     constructor(paymentDetail: any) {
         const collectionDto: CollectionDto = {
             id: paymentDetail.id,
-            debtCollector: paymentDetail.credit.debtCollector.lastName + " " + paymentDetail.credit.debtCollector.name,
-            client: paymentDetail.credit.client.lastName + " " + paymentDetail.credit.client.name,
-            clientNumber: paymentDetail.credit.client.clientNumber,
+            debtCollector: paymentDetail.creditHistory.credit.debtCollector.lastName + " " + paymentDetail.creditHistory.credit.debtCollector.name,
+            client: paymentDetail.creditHistory.credit.client.lastName + " " + paymentDetail.creditHistory.credit.client.name,
+            clientNumber: paymentDetail.creditHistory.credit.client.clientNumber,
             informationClient: {
-                phoneNumber: paymentDetail.credit.client.phoneNumber,
-                address: paymentDetail.credit.client.address,
-                paymentInformation: paymentDetail.credit.information,
+                phoneNumber: paymentDetail.creditHistory.credit.client.phoneNumber,
+                address: paymentDetail.creditHistory.credit.client.address,
+                paymentInformation: paymentDetail.creditHistory.credit.information,
                 email: null
             },
             paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
@@ -35,9 +35,9 @@ export class CollectionDto {
             payment: paymentDetail.payment,
             actualPayment: paymentDetail.actualPayment,
             balance: paymentDetail.balance,
-            typeCurrency: paymentDetail.credit.typeCurrency,
-            interest: paymentDetail.credit.creditHistory[paymentDetail.credit.creditHistory.length-1].interest,
-            principal: paymentDetail.credit.creditHistory[paymentDetail.credit.creditHistory.length-1].principal
+            typeCurrency: paymentDetail.creditHistory.credit.typeCurrency,
+            interest: paymentDetail.creditHistory.interest,
+            principal: paymentDetail.creditHistory.principal
         };
         return collectionDto;
     }

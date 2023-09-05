@@ -17,18 +17,18 @@ export class CreditController {
         return await this.creditService.create(createCreditDto, userId);
     }
 
-    @Get('by-status')
-    async byStatus(
-        @Query('status') status) {
-        return this.creditService.byStatus(status);
-    }
+    // @Get('by-status')
+    // async byStatus(
+    //     @Query('status') status) {
+    //     return this.creditService.byStatus(status);
+    // }
 
-    @Get('by-debt-collector')
-    async ByDebtCollector(
-        @Query('id') id
-    ) {
-        return this.creditService.byDebtCollector(id);
-    }
+    // @Get('by-debt-collector')
+    // async ByDebtCollector(
+    //     @Query('id') id
+    // ) {
+    //     return this.creditService.byDebtCollector(id);
+    // }
 
     @Put(':id')
     async update(
@@ -144,6 +144,14 @@ export class CreditController {
         @Param('id') id: string
     ){
         return await this.creditService.getById(id);
+    }
+
+    @Get(':id/credits-history')
+    async getCreditsHistory(
+        @Param('id') id: string
+    ){
+        console.log("id: ", id);
+        return await this.creditService.getCreditsHistory(id);
     }
 
 

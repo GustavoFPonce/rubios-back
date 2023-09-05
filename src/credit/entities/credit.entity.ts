@@ -21,21 +21,6 @@ export class Credit {
     client: Client;
 
     @Column()
-    date: Date
-
-    @Column()
-    firstPayment: Date;
-
-    @Column()
-    payDay: string;
-
-    @Column()
-    principal: number;
-
-    @Column()
-    interest: number;
-
-    @Column()
     interestRate: number;
 
     @Column()
@@ -43,9 +28,6 @@ export class Credit {
 
     @Column()
     numberPayment: number;
-
-    @Column()
-    payment: number;
 
     @Column()
     status: number;
@@ -58,9 +40,6 @@ export class Credit {
 
     @Column()
     commission: number;
-
-    @OneToMany(() => PaymentDetail, (detail: PaymentDetail) => detail.credit)
-    paymentsDetail: PaymentDetail[]
 
     @OneToMany(() => CreditHistory, (creditHistory: CreditHistory) => creditHistory.credit)
     creditHistory: CreditHistory[]

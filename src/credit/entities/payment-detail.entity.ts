@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Credit } from "./credit.entity";
+import { CreditHistory } from "./credit-history.entity";
 
 @Entity({name:'payment_detail'})
 export class PaymentDetail{
@@ -30,7 +31,7 @@ export class PaymentDetail{
     @Column()
     paymentType: number;
 
-    @ManyToOne(()=> Credit, (credit: Credit) => credit.paymentsDetail)
-    @JoinColumn({ name: 'credit_id' }) 
-    credit: Credit;
+    @ManyToOne(()=> CreditHistory, (creditHistory: CreditHistory) => creditHistory.paymentsDetail)
+    @JoinColumn({ name: 'credit_history_id' }) 
+    creditHistory: CreditHistory;
 }

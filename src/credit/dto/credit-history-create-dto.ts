@@ -5,4 +5,7 @@ export interface CreditHistoryCreateDto{
     principal: number;
     interest: number;
     credit: Credit;
+    firstPayment: Date,
+    payDay: string;
+    payment: number
 }
