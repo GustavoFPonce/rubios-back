@@ -1,4 +1,5 @@
 import { Credit } from "../entities/credit.entity";
+import { StatusCreditHistory } from "../enum";
 
 export interface CreditHistoryCreateDto{
     date: Date;
@@ -7,5 +8,6 @@ export interface CreditHistoryCreateDto{
     credit: Credit;
     firstPayment: Date,
     payDay: string;
-    payment: number
+    payment: number;
+    status: StatusCreditHistory;
 }

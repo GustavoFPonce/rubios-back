@@ -5,7 +5,7 @@ import { es } from 'date-fns/locale'
 import { Credit } from './entities/credit.entity';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { CreditCreateDto } from './dto/credit-create-dto';
-import { PaymentType, StatusCredit, StatusPayment } from './enum';
+import { PaymentType, StatusCredit, StatusCreditHistory, StatusPayment } from './enum';
 import { PaymentDetail } from './entities/payment-detail.entity';
 import { CreditSavedDto } from './dto/credit-saved-dto';
 import { User } from 'src/user/entities/user.entity';
@@ -60,8 +60,8 @@ export class CreditService {
             credit: creditSaved,
             firstPayment: parseISO(creditCreateDto.firstPayment),
             payDay: this.getDayString(dateFirstPayment),
-            payment: creditCreateDto.payment
-
+            payment: creditCreateDto.payment,
+            status: StatusCreditHistory.current
         };
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         console.log("creditHistorySaved: ", creditHistorySaved);
@@ -80,24 +80,24 @@ export class CreditService {
 
 
     private async addPaymentDetail(paymentsDetail: PaymentDetailCreateDto[], creditHistorySaved: CreditHistory, credit: Credit) {
-        if(paymentsDetail.length >0){
+        if (paymentsDetail.length > 0) {
             for (let i = 0; i < paymentsDetail.length; i++) {
                 var detail = new PaymentDetail();
                 detail.payment = paymentsDetail[i].payment;
                 detail.paymentDueDate = new Date(paymentsDetail[i].paymentDueDate);
                 detail.paymentDate = (paymentsDetail[i].paymentDate) ? new Date(paymentsDetail[i].paymentDate) : null;
                 detail.creditHistory = creditHistorySaved;
-                detail.balance = (paymentsDetail[i].status == StatusPayment.cancelled)?parseFloat(((creditHistorySaved.payment * credit.numberPayment)-paymentsDetail[i].payment*(i+1)).toFixed(2))
-                :(i==0)?parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)):parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
+                detail.balance = (paymentsDetail[i].status == StatusPayment.cancelled) ? parseFloat(((creditHistorySaved.payment * credit.numberPayment) - paymentsDetail[i].payment * (i + 1)).toFixed(2))
+                    : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
-        }else{
+        } else {
             for (let i = 0; i < credit.numberPayment; i++) {
                 var detail = new PaymentDetail();
                 detail.payment = creditHistorySaved.payment;
-                detail.paymentDueDate = (i == 0)?new Date(creditHistorySaved.firstPayment): this.getNextPaymenteDate(credit.paymentFrequency, i+1, creditHistorySaved.firstPayment);
+                detail.paymentDueDate = (i == 0) ? new Date(creditHistorySaved.firstPayment) : this.getNextPaymenteDate(credit.paymentFrequency, i + 1, creditHistorySaved.firstPayment);
                 detail.paymentDate = null;
                 detail.creditHistory = creditHistorySaved;
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
@@ -109,12 +109,12 @@ export class CreditService {
 
     }
 
-    private async getBalanceLastPaymentDetailCancelled(id: number){
+    private async getBalanceLastPaymentDetailCancelled(id: number) {
         const result = await this.paymentDetailRepository
-        .createQueryBuilder('paymentDetail')
-        .where('paymentDetail.credit_history_id = :id', { id })
-        .orderBy('paymentDetail.paymentDueDate', 'DESC') // Ordenar por fecha de forma descendente
-        .getOne(); // Obtener solo un registro (el último)
+            .createQueryBuilder('paymentDetail')
+            .where('paymentDetail.credit_history_id = :id', { id })
+            .orderBy('paymentDetail.paymentDueDate', 'DESC') // Ordenar por fecha de forma descendente
+            .getOne(); // Obtener solo un registro (el último)
         console.log("result payment balance: ", result);
         return result.balance.toString();
     }
@@ -248,7 +248,7 @@ export class CreditService {
                     status
                 })
             }
-            if (frequency != 'all'){
+            if (frequency != 'all') {
                 qb.andWhere('credit.paymentFrequency = :frequency', {
                     frequency
                 })
@@ -495,7 +495,7 @@ export class CreditService {
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where('paymentsDetail.id = :id', { id })
             .getOne();
-            console.log('payment_ :', payment);
+        console.log('payment_ :', payment);
         payment.paymentDate = new Date();
         payment.actualPayment = paymentAmount;
         payment.balance = payment.balance - paymentAmount;
@@ -563,7 +563,8 @@ export class CreditService {
             credit: paymentDetail.creditHistory.credit,
             firstPayment: newFirstPayment,
             payDay: this.getDayString(newFirstPayment),
-            payment: (principal + interest) / paymentDetail.creditHistory.credit.numberPayment
+            payment: (principal + interest) / paymentDetail.creditHistory.credit.numberPayment,
+            status: StatusCreditHistory.current
         };
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         var payments = [];
@@ -578,6 +579,8 @@ export class CreditService {
         newPaymentDetail.actualPayment = null;
         newPaymentDetail.paymentType = PaymentType.cancellationInterest;
         if (creditHistorySaved) {
+            lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;
+            await this.creditHistoryRepository.save(lastUpdateCreditHistory);
             this.newPaymentDetail(newPaymentDetail);
             this.addPaymentDetail(payments, creditHistorySaved, paymentDetail.creditHistory.credit)
         }

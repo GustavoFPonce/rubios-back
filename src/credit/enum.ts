@@ -14,3 +14,8 @@ export enum StatusPayment{
     'active' = 1,
     'cancelled'= 2
 }
+
+export enum StatusCreditHistory{
+'current' = 1,
+'notCurrent' = 2
+}

@@ -24,6 +24,9 @@ export class CreditHistory {
 
     @Column()
     payment: number;
+
+    @Column()
+    status: number;
   
     @ManyToOne(()=> Credit, (credit: Credit) => credit.creditHistory)
     @JoinColumn({ name: 'credit_id' }) 
