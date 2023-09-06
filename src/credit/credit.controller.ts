@@ -14,21 +14,9 @@ export class CreditController {
         @Body() createCreditDto: CreditCreateDto
     ) {
         const userId = 1;
+        console.log("creditCreate: ", createCreditDto);
         return await this.creditService.create(createCreditDto, userId);
     }
-
-    // @Get('by-status')
-    // async byStatus(
-    //     @Query('status') status) {
-    //     return this.creditService.byStatus(status);
-    // }
-
-    // @Get('by-debt-collector')
-    // async ByDebtCollector(
-    //     @Query('id') id
-    // ) {
-    //     return this.creditService.byDebtCollector(id);
-    // }
 
     @Put(':id')
     async update(
@@ -82,6 +70,7 @@ export class CreditController {
     ) {
 
         const userId = req.user.userId;
+        console.log('date recibido: ', date);
         return await this.creditService.getCollectionsByDate(userId, date);
     }
 

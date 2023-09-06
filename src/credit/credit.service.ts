@@ -5,7 +5,7 @@ import { es } from 'date-fns/locale'
 import { Credit } from './entities/credit.entity';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { CreditCreateDto } from './dto/credit-create-dto';
-import { PaymentType, StatusCredit } from './enum';
+import { PaymentType, StatusCredit, StatusPayment } from './enum';
 import { PaymentDetail } from './entities/payment-detail.entity';
 import { CreditSavedDto } from './dto/credit-saved-dto';
 import { User } from 'src/user/entities/user.entity';
@@ -16,6 +16,7 @@ import { PaymentDetailDto } from './dto/payment-detail-dto';
 import { CreditHistory } from './entities/credit-history.entity';
 import { CreditHistoryCreateDto } from './dto/credit-history-create-dto';
 import { CreditHistoryDto } from './dto/credit-history-dto';
+import { PaymentDetailCreateDto } from './dto/payment-detaill-create-dto';
 
 @Injectable()
 export class CreditService {
@@ -38,6 +39,7 @@ export class CreditService {
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
+        const payments = creditCreateDto.paymentsDetail;
         var createCredit = new Credit();
         createCredit.userId = userId;
         createCredit.client = client;
@@ -64,7 +66,7 @@ export class CreditService {
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
-            await this.addPaymentDetail(creditHistorySaved, creditSaved);
+            await this.addPaymentDetail(payments, creditHistorySaved, creditSaved);
             return response.success = true;
         }
 
@@ -77,18 +79,44 @@ export class CreditService {
     }
 
 
-    private async addPaymentDetail(creditHistorySaved: CreditHistory, credit: Credit) {
-        for (let i = 0; i < credit.numberPayment; i++) {
-            var detail = new PaymentDetail();
-            detail.payment = creditHistorySaved.payment;
-            detail.paymentDueDate = (i == 0) ? creditHistorySaved.firstPayment : this.getNextPaymenteDate(credit.paymentFrequency, i, creditHistorySaved.firstPayment);
-            detail.paymentDate = null;
-            detail.creditHistory = creditHistorySaved;
-            detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
-            detail.paymentType = PaymentType.paymentInstallments;
-            const paymentDetail = this.paymentDetailRepository.create(detail);
-            const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
-        };
+    private async addPaymentDetail(paymentsDetail: PaymentDetailCreateDto[], creditHistorySaved: CreditHistory, credit: Credit) {
+        if(paymentsDetail.length >0){
+            for (let i = 0; i < paymentsDetail.length; i++) {
+                var detail = new PaymentDetail();
+                detail.payment = paymentsDetail[i].payment;
+                detail.paymentDueDate = new Date(paymentsDetail[i].paymentDueDate);
+                detail.paymentDate = (paymentsDetail[i].paymentDate) ? new Date(paymentsDetail[i].paymentDate) : null;
+                detail.creditHistory = creditHistorySaved;
+                detail.balance = (paymentsDetail[i].status == StatusPayment.cancelled)?parseFloat(((creditHistorySaved.payment * credit.numberPayment)-paymentsDetail[i].payment*(i+1)).toFixed(2))
+                :(i==0)?parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)):parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
+                detail.paymentType = PaymentType.paymentInstallments;
+                const paymentDetail = this.paymentDetailRepository.create(detail);
+                const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
+            };
+        }else{
+            for (let i = 0; i < credit.numberPayment; i++) {
+                var detail = new PaymentDetail();
+                detail.payment = creditHistorySaved.payment;
+                detail.paymentDueDate = (i == 0)?new Date(creditHistorySaved.firstPayment): this.getNextPaymenteDate(credit.paymentFrequency, i+1, creditHistorySaved.firstPayment);
+                detail.paymentDate = null;
+                detail.creditHistory = creditHistorySaved;
+                detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
+                detail.paymentType = PaymentType.paymentInstallments;
+                const paymentDetail = this.paymentDetailRepository.create(detail);
+                const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
+            };
+        }
+
+    }
+
+    private async getBalanceLastPaymentDetailCancelled(id: number){
+        const result = await this.paymentDetailRepository
+        .createQueryBuilder('paymentDetail')
+        .where('paymentDetail.credit_history_id = :id', { id })
+        .orderBy('paymentDetail.paymentDueDate', 'DESC') // Ordenar por fecha de forma descendente
+        .getOne(); // Obtener solo un registro (el último)
+        console.log("result payment balance: ", result);
+        return result.balance.toString();
     }
 
     private getNextPaymenteDate(frequency: string, periodNumber: number, firstPayment: Date): Date {
@@ -205,14 +233,29 @@ export class CreditService {
         frequency: string,
         start: Date,
         end: Date) {
-        const conditions: any = [
-            { date: Between(start, end) }
-        ];
+        const conditions = new Brackets((qb) => {
+            qb.where('creditHistory.date BETWEEN :startDate AND :endDate', {
+                startDate: start,
+                endDate: end,
+            })
+            if (currency != 'all') {
+                qb.andWhere('credit.typecurrency = :currency', {
+                    currency
+                })
+            }
+            if (status != 'all') {
+                qb.andWhere('credit.status = :status', {
+                    status
+                })
+            }
+            if (frequency != 'all'){
+                qb.andWhere('credit.paymentFrequency = :frequency', {
+                    frequency
+                })
+            }
+        })
+
         var credits: any;
-        if (currency != 'all') conditions.push({ typeCurrency: currency });
-        if (status != 'all') conditions.push({ status: status });
-        if (currency != 'all') conditions.push({ typeCurrency: currency });
-        if (frequency != 'all') conditions.push({ paymentFrequency: frequency });
         if (user == 'all') {
             credits = await this.searchCreditsByConditions(conditions);
         } else {
@@ -221,38 +264,50 @@ export class CreditService {
         };
         const creditsDto = this.getCreditsListDto(credits);
 
-        //console.log("creditos activos: ", creditsDto);
+        console.log("creditos activos: ", creditsDto);
         return creditsDto;
     }
 
 
-    async searchCreditsByConditionsByUser(conditions: [], user: number) {
+    async searchCreditsByConditionsByUser(conditions: any, user: number) {
         return await this.creditRepository.createQueryBuilder('credit')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
             .where(new Brackets((qb) => {
                 qb.andWhere('credit.debtCollector_Id = :user', { user });
-                conditions.forEach((term: any, index) => {
-                    qb.andWhere(term)
-                });
             }))
-            .orderBy('credit.date', 'DESC')
+            .andWhere(conditions)
+            .andWhere((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(CreditHistory, 'creditHistory')
+                    .where('creditHistory.credit_id = credit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
+            .orderBy('creditHistory.date', 'DESC')
             .getMany();
     }
 
-    async searchCreditsByConditions(conditions: []) {
+    async searchCreditsByConditions(conditions: any) {
         console.log("condiciones: ", conditions);
         return await this.creditRepository.createQueryBuilder('credit')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
-            .where(new Brackets((qb) => {
-                conditions.forEach((term: any, index) => {
-                    qb.andWhere(term)
-                });
-            }))
-            .orderBy('credit.date', 'DESC')
+            .where(conditions)
+            .andWhere((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(CreditHistory, 'creditHistory')
+                    .where('creditHistory.credit_id = credit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
+            .orderBy('creditHistory.date', 'DESC')
             .getMany();
 
     }
@@ -273,7 +328,7 @@ export class CreditService {
                     }
                 });
             }))
-            .orderBy('credit.date', 'DESC')
+            .orderBy('creditHistory.date', 'DESC')
             .getMany();
         //console.log("creditos: ", credits);
         const creditsDto = this.getCreditsListDto(credits);
@@ -289,7 +344,7 @@ export class CreditService {
     }
 
     async getPaymentsDetail(id: number): Promise<PaymentDetailDto[]> {
-        const credit = await this.creditHistoryRepository.findOne({ where: {id }, relations: ['credit', 'paymentsDetail'] });
+        const credit = await this.creditHistoryRepository.findOne({ where: { id }, relations: ['credit', 'paymentsDetail'] });
         console.log("credit: ", credit);
         const paymentsDetail = credit.paymentsDetail.map(x => {
             return new PaymentDetailDto(x);
@@ -318,7 +373,7 @@ export class CreditService {
         const dateCurrentLocalObject = new Date();
         var argentinaTime = new Date(dateQuery);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
-        argentinaTime = new Date(argentinaTime.setHours(argentinaTime.getHours() - 3));
+        // argentinaTime = new Date(argentinaTime.setHours(argentinaTime.getHours() - 3));
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
@@ -335,7 +390,7 @@ export class CreditService {
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
-            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')            
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where((qb) => {
                 const subQuery = qb
                     .subQuery()
@@ -350,7 +405,7 @@ export class CreditService {
                 startDate,
                 endDate,
             })
-            .leftJoinAndSelect('credit.client', 'client')          
+            .leftJoinAndSelect('credit.client', 'client')
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .addOrderBy('creditHistory.id', 'DESC')
             .getMany();
@@ -435,15 +490,17 @@ export class CreditService {
         var response = { success: false, collection: {} };
         var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-            .leftJoinAndSelect('paymentsDetail.creditHistory.credit', 'credit')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where('paymentsDetail.id = :id', { id })
             .getOne();
+            console.log('payment_ :', payment);
         payment.paymentDate = new Date();
         payment.actualPayment = paymentAmount;
         payment.balance = payment.balance - paymentAmount;
         const saved = await this.paymentDetailRepository.save(payment);
+        console.log("saved: ", saved);
         if (saved) {
             response.success = true;
             response.collection = new CollectionDto(saved);
@@ -454,9 +511,10 @@ export class CreditService {
 
     private async uptadeBalanceNextPayment(balance: number, creditId: number) {
         const date = null;
+        console.log("modificacion de saldo");
         var nextPayment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-            .leftJoinAndSelect('paymentsDetail.creditHistory.credit', 'credit')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
             .where('credit.id = :creditId', { creditId })
             .andWhere('paymentsDetail.paymentDate IS NULL')
             .getOne();
@@ -479,11 +537,11 @@ export class CreditService {
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number) {
         const paymentDetail = await this.paymentDetailRepository
-        .createQueryBuilder('paymentsDetail')
-        .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-        .leftJoinAndSelect('creditHistory.credit', 'credit')
-        .where('paymentsDetail.id = :id', {id})
-        .getOne();
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('paymentsDetail.id = :id', { id })
+            .getOne();
 
         console.log("paymentDetail: ", paymentDetail);
         if (!paymentDetail) {
@@ -497,7 +555,7 @@ export class CreditService {
         } else {
             principal = principal - (paymentAmount - lastUpdateCreditHistory.interest);
         };
-        const newFirstPayment = this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 1, lastUpdateCreditHistory.firstPayment);
+        const newFirstPayment = this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
         var newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(),
             principal: principal,
@@ -505,9 +563,10 @@ export class CreditService {
             credit: paymentDetail.creditHistory.credit,
             firstPayment: newFirstPayment,
             payDay: this.getDayString(newFirstPayment),
-            payment: (principal+interest)/paymentDetail.creditHistory.credit.numberPayment
+            payment: (principal + interest) / paymentDetail.creditHistory.credit.numberPayment
         };
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
+        var payments = [];
         var newPaymentDetail = new PaymentDetail();
         newPaymentDetail.payment = paymentAmount;
         newPaymentDetail.paymentDate = new Date();
@@ -518,11 +577,12 @@ export class CreditService {
         newPaymentDetail.recoveryDateCommission = null;
         newPaymentDetail.actualPayment = null;
         newPaymentDetail.paymentType = PaymentType.cancellationInterest;
-        if (creditHistorySaved){ 
+        if (creditHistorySaved) {
             this.newPaymentDetail(newPaymentDetail);
-            this.addPaymentDetail(creditHistorySaved, paymentDetail.creditHistory.credit)
+            this.addPaymentDetail(payments, creditHistorySaved, paymentDetail.creditHistory.credit)
         }
     }
+
 
     private async newPaymentDetail(newPaymentDetail: PaymentDetail) {
         const paymentDetail = this.paymentDetailRepository.create(newPaymentDetail);
@@ -587,24 +647,24 @@ export class CreditService {
 
     async searchCollectionsByConditions(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailRepository
-        .createQueryBuilder('paymentsDetail')
-        .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-        .leftJoinAndSelect('creditHistory.credit', 'credit')
-        .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-        .andWhere((qb) => {
-            const subQuery = qb
-                .subQuery()
-                .select('MAX(creditHistory.id)')
-                .from(CreditHistory, 'creditHistory')
-                .where('creditHistory.credit_id = credit.id')
-                .getQuery();
-            return `creditHistory.id = ${subQuery}`;
-        })
-        .leftJoinAndSelect('credit.client', 'client')
-        .where(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-        .orderBy('paymentsDetail.paymentDueDate', 'ASC')
-        .getMany();
-        
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+            .andWhere((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(CreditHistory, 'creditHistory')
+                    .where('creditHistory.credit_id = credit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
+            .leftJoinAndSelect('credit.client', 'client')
+            .where(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
+            .orderBy('paymentsDetail.paymentDueDate', 'ASC')
+            .getMany();
+
         // return await this.paymentDetailRepository
         //     .createQueryBuilder('paymentsDetail')
         //     .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -628,7 +688,7 @@ export class CreditService {
         //     .orderBy('paymentsDetail.paymentDate', 'ASC')
         //     .getMany();
 
-            return await this.paymentDetailRepository
+        return await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -730,12 +790,14 @@ export class CreditService {
         return new CreditListDto(credit);
     }
 
-    async getCreditsHistory(id: string){
-        const creditsHistory = await this.creditHistoryRepository.find({where:{credit: id}, order:{
-            date: 'DESC',
-            id:'DESC'
-        }});
-        const creditsHistoryDto = creditsHistory.map(credit =>{
+    async getCreditsHistory(id: string) {
+        const creditsHistory = await this.creditHistoryRepository.find({
+            where: { credit: id }, order: {
+                date: 'DESC',
+                id: 'DESC'
+            }
+        });
+        const creditsHistoryDto = creditsHistory.map(credit => {
             return new CreditHistoryDto(credit);
         });
 

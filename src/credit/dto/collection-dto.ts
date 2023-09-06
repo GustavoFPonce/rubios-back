@@ -1,6 +1,7 @@
 import { IsPhoneNumber } from 'class-validator';
 import { format } from 'date-fns';
 import { Client } from '../../client/entities/client.entity';
+import { PaymentType } from '../enum';
 export class CollectionDto {
     id: number;
     debtCollector: string;
@@ -15,6 +16,7 @@ export class CollectionDto {
     typeCurrency: string;
     interest: number;
     principal: number;
+    paymentType: string;
 
 
 
@@ -37,7 +39,8 @@ export class CollectionDto {
             balance: paymentDetail.balance,
             typeCurrency: paymentDetail.creditHistory.credit.typeCurrency,
             interest: paymentDetail.creditHistory.interest,
-            principal: paymentDetail.creditHistory.principal
+            principal: paymentDetail.creditHistory.principal,
+            paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés'
         };
         return collectionDto;
     }
