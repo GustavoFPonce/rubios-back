@@ -87,6 +87,7 @@ export class CreditService {
                 detail.paymentDueDate = new Date(paymentsDetail[i].paymentDueDate);
                 detail.paymentDate = (paymentsDetail[i].paymentDate) ? new Date(paymentsDetail[i].paymentDate) : null;
                 detail.creditHistory = creditHistorySaved;
+                detail.actualPayment = (paymentsDetail[i].paymentDate)?paymentsDetail[i].payment: 0.00;
                 detail.balance = (paymentsDetail[i].status == StatusPayment.cancelled) ? parseFloat(((creditHistorySaved.payment * credit.numberPayment) - paymentsDetail[i].payment * (i + 1)).toFixed(2))
                     : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
@@ -99,6 +100,7 @@ export class CreditService {
                 detail.payment = creditHistorySaved.payment;
                 detail.paymentDueDate = (i == 0) ? new Date(creditHistorySaved.firstPayment) : this.getNextPaymenteDate(credit.paymentFrequency, i + 1, creditHistorySaved.firstPayment);
                 detail.paymentDate = null;
+                detail.actualPayment =  0.00;
                 detail.creditHistory = creditHistorySaved;
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
                 detail.paymentType = PaymentType.paymentInstallments;
@@ -576,7 +578,7 @@ export class CreditService {
         newPaymentDetail.balance = 0.00;
         newPaymentDetail.accountabilityDate = null;
         newPaymentDetail.recoveryDateCommission = null;
-        newPaymentDetail.actualPayment = null;
+        newPaymentDetail.actualPayment = paymentAmount;;
         newPaymentDetail.paymentType = PaymentType.cancellationInterest;
         if (creditHistorySaved) {
             lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;
@@ -653,44 +655,24 @@ export class CreditService {
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
-            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')          
+            .leftJoinAndSelect('credit.client', 'client')
+            .where(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
             .andWhere((qb) => {
                 const subQuery = qb
                     .subQuery()
                     .select('MAX(creditHistory.id)')
                     .from(CreditHistory, 'creditHistory')
-                    .where('creditHistory.credit_id = credit.id')
+                    .where('creditHistory.credit_id = credit.id AND creditHistory.status = 1')
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
-            })
-            .leftJoinAndSelect('credit.client', 'client')
-            .where(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
+            })            
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2')
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
-
-        // return await this.paymentDetailRepository
-        //     .createQueryBuilder('paymentsDetail')
-        //     .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-        //     .leftJoinAndSelect('paymentsDetail.creditHistory.credit', 'credit')
-        //     .leftJoinAndSelect('credit.client', 'client')
-        //     .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-        //     .where(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-        //     .orderBy('paymentsDetail.paymentDate', 'ASC')
-        //     .getMany();
     }
 
     async searchCollectionsByUserByConditions(statusCredit: string, currency: string, user: number, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
-        // return await this.paymentDetailRepository
-        //     .createQueryBuilder('paymentsDetail')
-        //     .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-        //     .leftJoinAndSelect('paymentsDetail.creditHistory.credit', 'credit')
-        //     .leftJoinAndSelect('credit.client', 'client')
-        //     .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-        //     .where('credit.debtCollector_Id = :user', { user })
-        //     .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-        //     .orderBy('paymentsDetail.paymentDate', 'ASC')
-        //     .getMany();
-
         return await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -701,11 +683,12 @@ export class CreditService {
                     .subQuery()
                     .select('MAX(creditHistory.id)')
                     .from(CreditHistory, 'creditHistory')
-                    .where('creditHistory.credit_id = credit.id')
+                    .where('creditHistory.credit_id = credit.id AND creditHistory.status = 1')
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .leftJoinAndSelect('credit.client', 'client')
+            .leftJoinAndSelect('credit.client', 'client')            
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2')
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
             .andWhere('credit.debtCollector.id = :user', { user })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
