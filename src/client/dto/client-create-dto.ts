@@ -13,8 +13,17 @@ export class ClientCreateDto{
 
     @IsString()
     phoneNumber: string;
-
   
     @IsString()
     clientNumber: string;
+
+    @IsNumber()
+    type: number;
+}
+
+
+export enum ClientType{
+    'credit' = 1,
+    'sale' = 2,
+    'credit-sale' = 3
 }

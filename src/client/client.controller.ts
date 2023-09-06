@@ -48,4 +48,12 @@ export class ClientController {
         console.log("editar cliente: ", client);
         return this.clientService.update(id, client);
     }
+
+    @Get('search')
+    async search(
+        @Query('type') type: string
+    ){
+        console.log("tipo recibido: ", type);
+        return await this.clientService.search(type);
+    }
 }

@@ -4,6 +4,7 @@ import { Client } from './entities/client.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { async } from 'rxjs';
 import { ClientCreateDto } from './dto/client-create-dto';
+import { ClientListDto } from './dto/client-list-dto';
 
 @Injectable()
 export class ClientService {
@@ -11,14 +12,14 @@ export class ClientService {
         @InjectRepository(Client)
         private readonly clientRepository: Repository<Client>) { }
 
-        async all() {
-            const clients = await this.clientRepository
-              .createQueryBuilder('client')
-              .orderBy('CAST(client.clientNumber AS SIGNED)', 'ASC') // Orden ascendente
-              .getMany();
-          
-            return clients;
-          }
+    async all() {
+        const clients = await this.clientRepository
+            .createQueryBuilder('client')
+            .orderBy('CAST(client.clientNumber AS SIGNED)', 'ASC') // Orden ascendente
+            .getMany();
+
+        return clients;
+    }
 
     async getByName(name: string) {
         const filters = name.split(' ');
@@ -32,6 +33,18 @@ export class ClientService {
             }))
             .orderBy('client.id', 'DESC')
             .getMany();
+        return clients;
+    }
+
+    async search(type: string){
+        var clients = [];
+        if(type !='all'){
+            clients = await this.clientRepository.find({type: parseInt(type)});
+        }else{
+            clients = await this.clientRepository.find();
+        }
+      
+        console.log("clientes filtrados: ", clients);
         return clients;
     }
 

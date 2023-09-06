@@ -22,6 +22,9 @@ export class Client{
     @Column()
     phoneNumber: string;
 
+    @Column()
+    type: number;
+
     @OneToMany(()=> Credit, (credit)=> credit.client)
     credits: Credit[];
     
