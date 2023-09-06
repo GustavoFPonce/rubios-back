@@ -235,6 +235,7 @@ export class CreditService {
         frequency: string,
         start: Date,
         end: Date) {
+            console.log("user service: ", user);
         const conditions = new Brackets((qb) => {
             qb.where('creditHistory.date BETWEEN :startDate AND :endDate', {
                 startDate: start,
@@ -259,6 +260,7 @@ export class CreditService {
 
         var credits: any;
         if (user == 'all') {
+            console.log("buscando por todos");
             credits = await this.searchCreditsByConditions(conditions);
         } else {
             credits = await this.searchCreditsByConditionsByUser(conditions, parseInt(user));
@@ -276,10 +278,8 @@ export class CreditService {
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .leftJoinAndSelect('credit.client', 'client')
             .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
-            .where(new Brackets((qb) => {
-                qb.andWhere('credit.debtCollector_Id = :user', { user });
-            }))
-            .andWhere(conditions)
+            .where(conditions)
+            .andWhere('credit.debtCollector_Id = :user', { user })
             .andWhere((qb) => {
                 const subQuery = qb
                     .subQuery()
@@ -289,6 +289,7 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
+            .andWhere('credit.debtCollector_Id = :user', { user })
             .orderBy('creditHistory.date', 'DESC')
             .getMany();
     }
@@ -438,10 +439,12 @@ export class CreditService {
             })
             .andWhere('credit.debtCollector.id = :userId', { userId })
             .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            .andWhere('credit.debtCollector.id = :userId', { userId })
             .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
                 startDate,
                 endDate,
-            })
+            })            
+            .andWhere('credit.debtCollector.id = :userId', { userId })
             .leftJoinAndSelect('credit.client', 'client')
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
@@ -538,6 +541,7 @@ export class CreditService {
     }
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number) {
+        var response = { success: false, collection: {} };
         const paymentDetail = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -583,9 +587,13 @@ export class CreditService {
         if (creditHistorySaved) {
             lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;
             await this.creditHistoryRepository.save(lastUpdateCreditHistory);
-            this.newPaymentDetail(newPaymentDetail);
-            this.addPaymentDetail(payments, creditHistorySaved, paymentDetail.creditHistory.credit)
+           this.newPaymentDetail(newPaymentDetail);
+            this.addPaymentDetail(payments, creditHistorySaved, paymentDetail.creditHistory.credit);
+            response.success = true;
+          
         }
+
+        return response;
     }
 
 
@@ -687,8 +695,10 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
+            .andWhere('credit.debtCollector.id = :user', { user })
             .leftJoinAndSelect('credit.client', 'client')            
             .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2')
+            .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
             .andWhere('credit.debtCollector.id = :user', { user })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')

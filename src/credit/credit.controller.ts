@@ -117,12 +117,15 @@ export class CreditController {
         @Query('currency') currency: string,
         @Query('frequency') frequency: string,
         @Query('startDate') startDate: any,
-        @Query('endDate') endDate: any
+        @Query('endDate') endDate: any,
+        @Req() req:any
     ) {
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
+        if(user !='all') user = req.user.userId;
+        console.log("user recibido: ", user);
         return await this.creditService.searchCredits(status, user, currency, frequency, start, end);
 
     }
