@@ -8,9 +8,10 @@ export class PaymentDetailReportDto{
     paymentDueDate: string;
     payment: number;
     commission: string;
-    accountability: boolean;
+    accountability: Date;
     recoveryCommission: boolean;
     paymentDate: Date;
+    paymentType: string;
 
     constructor(paymentDetail: PaymentDetail){
         const commissionDetailDto: PaymentDetailReportDto = {
@@ -20,18 +21,19 @@ export class PaymentDetailReportDto{
             paymentDueDate: format(paymentDetail.paymentDueDate, 'dd-MM-yyyy'),
             payment: paymentDetail.payment,
             commission: getCommission(paymentDetail),
-            accountability: (paymentDetail.accountabilityDate)?true: false,
+            accountability: paymentDetail.accountabilityDate,
             recoveryCommission: (paymentDetail.recoveryDateCommission)?true: false,
-            paymentDate: paymentDetail.paymentDate
+            paymentDate: paymentDetail.paymentDate,
+            paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
         };
         return commissionDetailDto
     }
 }
  
     function getCommission(paymentDetail:any): string {
-        const interest = paymentDetail.credit.interest;
-        const commissionRate = paymentDetail.credit.commission;
-        const paymentsNumber = paymentDetail.credit.numberPayment;
+        const interest = paymentDetail.creditHistory.interest;
+        const commissionRate = paymentDetail.creditHistory.credit.commission;
+        const paymentsNumber = paymentDetail.creditHistory.credit.numberPayment;
         return (interest*commissionRate/100/paymentsNumber).toFixed(2);
         
     }

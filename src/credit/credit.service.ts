@@ -509,20 +509,21 @@ export class CreditService {
         if (saved) {
             response.success = true;
             response.collection = new CollectionDto(saved);
-            this.uptadeBalanceNextPayment(payment.balance, payment.creditHistory.id);
+            this.uptadeBalanceNextPayment(payment.balance, payment.creditHistory.id, payment.creditHistory.credit.id);
         }
         return response;
     }
 
-    private async uptadeBalanceNextPayment(balance: number, creditId: number) {
+    private async uptadeBalanceNextPayment(balance: number, creditHistoryId: number, creditId: number) {
         const date = null;
         console.log("modificacion de saldo");
         var nextPayment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
-            .where('credit.id = :creditId', { creditId })
+            .where('creditHistory.id = :creditHistoryId', { creditHistoryId })
             .andWhere('paymentsDetail.paymentDate IS NULL')
             .getOne();
+        console.log("nextPayment: ", nextPayment);
         if (nextPayment) {
             nextPayment.balance = balance;
             const saved = await this.paymentDetailRepository.save(nextPayment);
@@ -584,6 +585,7 @@ export class CreditService {
         newPaymentDetail.recoveryDateCommission = null;
         newPaymentDetail.actualPayment = paymentAmount;;
         newPaymentDetail.paymentType = PaymentType.cancellationInterest;
+        console.log("new payment: ", newPaymentDetail);
         if (creditHistorySaved) {
             lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;
             await this.creditHistoryRepository.save(lastUpdateCreditHistory);

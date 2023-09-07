@@ -5,9 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Credit } from 'src/credit/entities/credit.entity';
 import { PaymentDetail } from 'src/credit/entities/payment-detail.entity';
 import { User } from 'src/user/entities/user.entity';
+import { CreditHistory } from 'src/credit/entities/credit-history.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Credit, PaymentDetail, User])],
+  imports:[TypeOrmModule.forFeature([Credit, PaymentDetail, User, CreditHistory])],
   controllers: [ReportController],
   providers: [ReportService],
 })

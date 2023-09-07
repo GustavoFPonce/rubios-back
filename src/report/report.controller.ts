@@ -48,4 +48,11 @@ export class ReportController {
     async getCommissionsTotal(){
         return await this.reportService.getCommissionsTotal();
     }
+
+    @Get(':id/commissions-credit-by-deb-collector')
+    async getCommissionsCreditsByDebtCollector(
+        @Param('id') id: number
+    ){
+        return await this.reportService.getCommissionsCreditsByDebtCollector(id);
+    }
 }
