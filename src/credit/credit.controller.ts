@@ -70,7 +70,7 @@ export class CreditController {
     ) {
 
         const userId = req.user.userId;
-        console.log('date recibido: ', date);
+        // console.log('date recibido: ', date);
         return await this.creditService.getCollectionsByDate(userId, date);
     }
 
