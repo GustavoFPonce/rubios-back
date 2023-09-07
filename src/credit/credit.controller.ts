@@ -124,7 +124,7 @@ export class CreditController {
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-        if(user !='all') user = req.user.userId;
+       if(user == 'null') user = req.user.userId;
         console.log("user recibido: ", user);
         return await this.creditService.searchCredits(status, user, currency, frequency, start, end);
 
