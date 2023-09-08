@@ -10,4 +10,6 @@ export interface CreditHistoryCreateDto{
     payDay: string;
     payment: number;
     status: StatusCreditHistory;
+    accounted: boolean;
+    commissionPaymentDetail: Date;
 }

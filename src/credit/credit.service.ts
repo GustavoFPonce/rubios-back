@@ -61,7 +61,10 @@ export class CreditService {
             firstPayment: parseISO(creditCreateDto.firstPayment),
             payDay: this.getDayString(dateFirstPayment),
             payment: creditCreateDto.payment,
-            status: StatusCreditHistory.current
+            status: StatusCreditHistory.current,
+            accounted: false,
+            commissionPaymentDetail: null
+
         };
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         console.log("creditHistorySaved: ", creditHistorySaved);
@@ -571,7 +574,9 @@ export class CreditService {
             firstPayment: newFirstPayment,
             payDay: this.getDayString(newFirstPayment),
             payment: (principal + interest) / paymentDetail.creditHistory.credit.numberPayment,
-            status: StatusCreditHistory.current
+            status: StatusCreditHistory.current,
+            accounted: false,
+            commissionPaymentDetail: null
         };
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         var payments = [];

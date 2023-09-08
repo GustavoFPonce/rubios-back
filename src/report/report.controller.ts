@@ -26,22 +26,22 @@ export class ReportController {
         return await this.reportService.getCollectionsAndCommissionsDetail(id, start, end);
     }
 
-    @Patch('register-surrender-payments')
-    async registerSurrenderPayment(
+    @Patch('register-accounted-payments')
+    async registerAccountedPayments(
         @Query('id') id: string,
         @Query('start') start: any,
         @Query('end') end: any
     ){
         console.log("registrando rendición: ", start, end);
-        return await this.reportService.registerSurrenderPayments(id, start, end);
+        return await this.reportService.registerAccountedPayments(id, start, end);
     }
 
     @Patch('register-commissions-payments')
     async registerCommissionsPayment(
-        @Query('id') id: string
+        @Query('id') id: number
     ){
         console.log("llegue a pagar comisiones: ", id);
-        return await this.reportService.registerCommissionsPayments(id);
+        return await this.reportService.registerCommissionsCredit(id);
     }
 
     @Get('commissions-total')
@@ -55,4 +55,21 @@ export class ReportController {
     ){
         return await this.reportService.getCommissionsCreditsByDebtCollector(id);
     }
+
+    @Get(':id/collections-accounted-history')
+    async getCollectionsAccountedHistory(
+        @Param('id') id: string,
+        @Query('start') start: any,
+        @Query('end') end: any
+    ){
+        return await this.reportService.getCollectionsAccountedHistory(id, start, end);
+    }
+
+    @Get(':id/commissions-credits-history')
+    async getCommissionsCreditsHistory(
+        @Param('id') id: number
+    ){
+        return await this.reportService.getCommissionsCreditsHistory(id);
+    }
+
 }

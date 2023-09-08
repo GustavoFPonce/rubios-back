@@ -8,8 +8,8 @@ export class CommissionTotal {
         const commissionDto: CommissionTotal = {
             debtCollectorId: commission.debtCollectorId,
             debtCollectorName: commission.debtCollectorName,
-            commissionsRecoveryPesos: commission.totalCommissionsRecoveryPesos,
-            commissionsRecoveryDollar: commission.totalCommissionsRecoveryDollar,
+            commissionsRecoveryPesos: commission.totalCommissionsPesos,
+            commissionsRecoveryDollar: commission.totalCommissionsDollar,
         };
         return commissionDto;
     }

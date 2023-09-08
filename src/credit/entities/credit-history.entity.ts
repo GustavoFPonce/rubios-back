@@ -26,6 +26,12 @@ export class CreditHistory {
     payment: number;
 
     @Column()
+    accounted: boolean
+
+    @Column()
+    commissionPaymentDate: Date
+
+    @Column()
     status: number;
   
     @ManyToOne(()=> Credit, (credit: Credit) => credit.creditHistory)
