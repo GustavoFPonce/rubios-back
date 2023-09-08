@@ -22,7 +22,7 @@ export class CommissionCreditDto {
             rateCommission: credit.credit.commission,
             commission: parseFloat((credit.interest * credit.credit.commission / 100).toFixed(2)),
             typeCurrency: credit.credit.typeCurrency,
-            commissionPaymentDate: format(credit.commissionPaymentDate, 'dd-MM-yyyy'),
+            commissionPaymentDate: (credit.commissionPaymentDate)?format(credit.commissionPaymentDate, 'dd-MM-yyyy'):('-'),
         };
         return commissionCreditDto;
     }
