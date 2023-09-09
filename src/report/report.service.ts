@@ -80,6 +80,7 @@ export class ReportService {
 
   private async getPaymentsDetailByDebtCollector(id: string) {
     const status = '1';
+    const paymentType = 2;
     const paymentsDetail = await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -88,9 +89,10 @@ export class ReportService {
       .where('debtCollector.id = :id', { id })
       .andWhere(
         new Brackets((qb) => {
-          qb.where('paymentDetail.paymentDate IS NOT NULL AND creditHistory.status =:status', { status })
-            .andWhere(
-              'paymentDetail.recoveryDateCommission IS NULL AND creditHistory.status =:status', { status })
+          qb.where('paymentDetail.paymentDate IS NOT NULL AND creditHistory.status =:status AND paymentDetail.accountabilityDate IS NULL', { status })
+          .orWhere('paymentDetail.paymentDate IS NOT NULL AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
+            paymentType
+          })
         })
       )
       .getMany();
@@ -221,13 +223,16 @@ export class ReportService {
 
   private async getCreditsByDebtCollector(id: number) {
     const status = '2';
-    return await this.creditHistoryRepository.createQueryBuilder('creditHistory')
+    const results = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
       .leftJoinAndSelect('credit.client', 'client')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-      .where('debtCollector.id = :id AND credit.status = :status  AND creditHistory.commissionPaymentDate IS NULL', { id, status })
+      .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL', { id, status })
       .getMany();
+
+      console.log("results: ", results)
+      return results;
   }
 
   async getCommissionsTotal() {
@@ -287,7 +292,7 @@ export class ReportService {
       .andWhere('paymentsDetail.accountabilityDate IS NOT NULL')
       .orderBy('paymentsDetail.accountabilityDate', 'ASC')
       .getMany();
-    // console.log('paymentDetailAccounted: ', paymentDetailAccounted);
+    console.log('paymentDetailAccounted: ', paymentDetailAccounted);
     const debtCollector = await this.userRepository.findOne(id);
     const paymentsDetailsDto = paymentDetailAccounted.map((x) => {
       return new PaymentDetailReportDto(x);
