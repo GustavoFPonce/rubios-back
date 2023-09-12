@@ -37,14 +37,24 @@ export class ClientService {
     }
 
     async search(type: string){
-        var clients = [];
+        var clients = [];        
+        const types = type.split(' ');
+        //console.log("types: ", types);
         if(type !='all'){
             clients = await this.clientRepository.find({type: parseInt(type)});
         }else{
-            clients = await this.clientRepository.find();
+            clients = await this.clientRepository.createQueryBuilder('client')
+            .where(new Brackets((qb) => {
+                types.forEach((term, index) => {
+                    qb.orWhere('client.type =:type', { ['term' + index]: `${term}` })
+                });
+            }))
+            .orderBy('client.id', 'DESC')
+            .getMany();
+        return clients;
         }
       
-        console.log("clientes filtrados: ", clients);
+        //console.log("clientes filtrados: ", clients);
         return clients;
     }
 

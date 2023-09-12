@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./product.entity";
+import { OperationStock } from "../enum";
 
 @Entity()
 export class Inventory{
@@ -9,6 +10,9 @@ export class Inventory{
 
     @Column()
     date: Date;
+
+    @Column()
+    concept: OperationStock;
 
     @Column()
     amount: number;

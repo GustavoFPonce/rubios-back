@@ -14,6 +14,7 @@ import { InventoryCreateDto } from './dto/inventory-create-dto';
 import { Inventory } from './enities/inventory';
 import { InventoryListDto } from './dto/inventory-list-dto';
 import { getDateStartEnd } from 'src/common/get-date-start-end';
+import { OperationStock } from './enum';
 
 @Injectable()
 export class ProductService {
@@ -103,6 +104,7 @@ export class ProductService {
     newInventory.costPesos = inventoryCreate.costPesos;
     newInventory.costDollar = inventoryCreate.costDollar;
     newInventory.product = product;
+    newInventory.concept = OperationStock.purchase;
     const inventory = this.inventoryRepository.create(newInventory);
     const inventoryResponse = await this.inventoryRepository.save(inventory);
     if (inventoryResponse) response.success = true;
@@ -203,5 +205,18 @@ export class ProductService {
       return new InventoryListDto(x);
     })
 
+  };
+
+  async affectStockBySale(id: string, quantity: number) {
+    const product = await this.productRepository.findOne(id);
+    var newInventory = new Inventory();
+    newInventory.product = product;
+    newInventory.date = new Date();
+    newInventory.amount = quantity;
+    newInventory.costPesos = 0;
+    newInventory.costDollar = 0;
+    newInventory.concept = (quantity>0)?OperationStock.cancelSale: OperationStock.sale;
+    const inventoryCreate = this.inventoryRepository.create(newInventory);
+    await this.inventoryRepository.save(inventoryCreate);
   }
 }

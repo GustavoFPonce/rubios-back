@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { Inventory } from "../enities/inventory";
+import { OperationStock } from "../enum";
 
 export class InventoryListDto {
     id: string;
@@ -7,6 +8,7 @@ export class InventoryListDto {
     amount: number;
     costPesos: number;
     costDollar: number;
+    concept: number;
 
     constructor(inventory: Inventory) {
         const inventoryDto: InventoryListDto = {
@@ -14,7 +16,8 @@ export class InventoryListDto {
             date: format(inventory.date, 'dd-MM-yyyy'),
             amount: inventory.amount,
             costPesos: inventory.costPesos,
-            costDollar: inventory.costDollar
+            costDollar: inventory.costDollar,
+            concept: inventory.concept
         };
         return inventoryDto;
     }

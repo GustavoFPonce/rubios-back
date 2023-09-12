@@ -2,6 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColum
 
 import { Category } from 'src/category/entities/category.entity';
 import { Inventory } from './inventory';
+import { SaleDetail } from 'src/sale/entities/sale-detail.entity';
 
 @Entity()
 export class Product {
@@ -30,4 +31,7 @@ export class Product {
 
   @OneToMany(()=> Inventory, (inventory: Inventory)=> inventory.product)
   inventories: Inventory[]
+
+  @OneToMany(()=>SaleDetail, (detail: SaleDetail)=> detail.product)
+  saleDetails: SaleDetail[]
 }

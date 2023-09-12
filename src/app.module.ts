@@ -13,6 +13,7 @@ import { ClientModule } from './client/client.module';
 import { join } from 'path';
 import { CategoryModule } from './category/category.module';
 import { ReportModule } from './report/report.module';
+import { SaleModule } from './sale/sale.module';
 
 @Module({
   imports: [
@@ -21,11 +22,11 @@ import { ReportModule } from './report/report.module';
       type: 'mysql',      
       host: 'MYSQL5048.site4now.net',
       port: 3306,
-      username: 'a7f37d_rubios',
-      //username: 'a7f37d_test',
+      //username: 'a7f37d_rubios',
+      username: 'a7f37d_test',
       password: 'Abcd1234',
-      database: 'db_a7f37d_rubios',
-      //database: 'db_a7f37d_test',
+      //database: 'db_a7f37d_rubios',
+      database: 'db_a7f37d_test',
       autoLoadEntities: true,
       synchronize: false,
       entities: [join(__dirname, '**', '*.entity.{ts,js}')],
@@ -39,6 +40,7 @@ import { ReportModule } from './report/report.module';
     ClientModule,
     CategoryModule,
     ReportModule,
+    SaleModule,
   ],
 })
 export class AppModule {}

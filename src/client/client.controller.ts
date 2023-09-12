@@ -15,6 +15,7 @@ export class ClientController {
         // console.log("clientes: ", clients );
         return clients;
     }
+    
 
     @Get('by-name')
     async getByName(
@@ -45,7 +46,7 @@ export class ClientController {
         @Param('id') id: number,
         @Body() client: ClientCreateDto
     ) {
-        console.log("editar cliente: ", client);
+        //console.log("editar cliente: ", client);
         return this.clientService.update(id, client);
     }
 
@@ -53,7 +54,7 @@ export class ClientController {
     async search(
         @Query('type') type: string
     ){
-        console.log("tipo recibido: ", type);
+       // console.log("tipo recibido: ", type);
         return await this.clientService.search(type);
     }
 }
