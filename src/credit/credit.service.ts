@@ -855,13 +855,13 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            //.andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .andWhere('credit.client.id = :client', { client })
-            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.client.id = :client', {
-                startDate,
-                endDate,
-                client
-            })
+            // .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.client.id = :client', {
+            //     startDate,
+            //     endDate,
+            //     client
+            // })
             .addOrderBy('creditHistory.date', 'DESC')
             .leftJoinAndSelect('credit.client', 'client')
             .getMany();
@@ -882,14 +882,14 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            //.andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .andWhere('credit.debtCollector.id = :userId AND credit.client.id = :client', { userId, client })
-            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.client.id = :client AND credit.debtCollector.id = :userId', {
-                startDate,
-                endDate,
-                client,
-                userId
-            })
+            // .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.client.id = :client AND credit.debtCollector.id = :userId', {
+            //     startDate,
+            //     endDate,
+            //     client,
+            //     userId
+            // })
             .leftJoinAndSelect('credit.client', 'client')
             .addOrderBy('creditHistory.date', 'DESC')
             .getMany();

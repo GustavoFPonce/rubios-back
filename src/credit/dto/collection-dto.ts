@@ -25,11 +25,11 @@ export class CollectionDto {
         const collectionDto: CollectionDto = {
             id: paymentDetail.id,
             debtCollector: paymentDetail.creditHistory.credit.debtCollector.lastName + " " + paymentDetail.creditHistory.credit.debtCollector.name,
-            client: paymentDetail.creditHistory.credit.client.lastName + " " + paymentDetail.creditHistory.credit.client.name,
-            clientNumber: paymentDetail.creditHistory.credit.client.clientNumber,
+            client: paymentDetail.creditHistory.credit.client?.lastName + " " + paymentDetail.creditHistory.credit.client?.name,
+            clientNumber: paymentDetail.creditHistory.credit.client?.clientNumber,
             informationClient: {
-                phoneNumber: paymentDetail.creditHistory.credit.client.phoneNumber,
-                address: paymentDetail.creditHistory.credit.client.address,
+                phoneNumber: paymentDetail.creditHistory.credit.client?.phoneNumber,
+                address: paymentDetail.creditHistory.credit.client?.address,
                 paymentInformation: paymentDetail.creditHistory.credit.information,
                 email: null
             },
