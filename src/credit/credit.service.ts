@@ -209,28 +209,6 @@ export class CreditService {
         return creditsDto;
     }
 
-
-    // async byStatus(status: StatusCredit) {
-    //     console.log("status: ", status);
-    //     // return this.creditRepository.find({
-    //     //     where: { status }, order: {
-    //     //         date: 'DESC',
-    //     //     }, relations: ['paymentsDetail']
-    //     // })
-    // }
-
-    // async byDebtCollector(id: number) {
-    //     // const credits = await this.creditRepository.find({
-    //     //     where: { debtCollector: { id: id } },
-    //     //     relations: ['user'],
-    //     //     order: {
-    //     //         date: 'DESC',
-    //     //     }
-    //     // });
-    //     // console.log("creditos por cobrador: ", credits);
-    //     // return credits;
-    // }
-
     async searchCredits(
         status: string,
         user: string,
@@ -355,28 +333,28 @@ export class CreditService {
             .getMany();
     }
 
-    async getByClientName(name: string) {
-        const filters = name.split(' ');
-        console.log("filters: ", filters);
-        const credits = await this.creditRepository.createQueryBuilder('credit')
-            .leftJoinAndSelect('credit.client', 'client')
-            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-            .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
-            .where(new Brackets((qb) => {
-                filters.forEach((term, index) => {
-                    if (term != 'de') {
-                        qb.orWhere('client.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
-                            .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
-                    }
-                });
-            }))
-            .orderBy('creditHistory.date', 'DESC')
-            .getMany();
-        //console.log("creditos: ", credits);
-        const creditsDto = this.getCreditsListDto(credits);
-        // console.log("creditos: ", creditsDto);
-        return creditsDto;
-    }
+    // async getByClientName(name: string) {
+    //     const filters = name.split(' ');
+    //     console.log("filters: ", filters);
+    //     const credits = await this.creditRepository.createQueryBuilder('credit')
+    //         .leftJoinAndSelect('credit.client', 'client')
+    //         .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+    //         .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+    //         .where(new Brackets((qb) => {
+    //             filters.forEach((term, index) => {
+    //                 if (term != 'de') {
+    //                     qb.orWhere('client.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
+    //                         .orWhere('client.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
+    //                 }
+    //             });
+    //         }))
+    //         .orderBy('creditHistory.date', 'DESC')
+    //         .getMany();
+    //     //console.log("creditos: ", credits);
+    //     const creditsDto = this.getCreditsListDto(credits);
+    //     // console.log("creditos: ", creditsDto);
+    //     return creditsDto;
+    // }
 
     private getCreditsListDto(credits: Credit[]): CreditListDto[] {
         return credits.map(credit => {
@@ -411,12 +389,12 @@ export class CreditService {
         }
     }
 
+//get collections by day
+
     async getCollectionsByDate(userId: number, dateQuery: string) {
-        console.log("dateQuery: ", dateQuery);
         const dateCurrentLocalObject = new Date();
         var argentinaTime = new Date(dateQuery);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
-        console.log("dayType: ", dayType);
         // argentinaTime = new Date(argentinaTime.setHours(argentinaTime.getHours() - 3));
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
@@ -429,8 +407,8 @@ export class CreditService {
 
     }
 
-    private getQueryGetCollections() {
-        return this.paymentDetailRepository
+    async getCollectionsByDayAdmin(startDate: Date, endDate: Date, day: string) {
+        var collections = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -444,10 +422,6 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-    }
-
-    private getQueryGetCollectionsByAdmin(startDate: Date, endDate: Date, day: string) {
-        return this.getQueryGetCollections()
             .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
                 startDate,
@@ -456,19 +430,32 @@ export class CreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .addOrderBy('creditHistory.id', 'DESC')
-    }
+            .getMany();
 
-    async getCollectionsByDayAdmin(startDate: Date, endDate: Date, day: string) {
-        var collections = await this.getQueryGetCollectionsByAdmin(startDate, endDate, day).getMany();
-       // console.log("cobranzas obtenidas: ", collections);
+        console.log("cobranzas obtenidas: ", collections);
+
         const collectionsDto = collections.map(payment => {
             return new CollectionDto(payment);
         })
         return collectionsDto
     }
 
-    private getQueryGetCollectionsByDebtCollector(startDate: Date, endDate: Date, day: string, userId: number) {
-        return this.getQueryGetCollections()
+    async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date, day: string) {
+        console.log("userId: ", userId);
+        var collections = await this.paymentDetailRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+            .where((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(CreditHistory, 'creditHistory')
+                    .where('creditHistory.credit_id = credit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
             .andWhere('credit.debtCollector.id = :userId', { userId })
             .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .andWhere('credit.debtCollector.id = :userId', { userId })
@@ -479,13 +466,9 @@ export class CreditService {
             .andWhere('credit.debtCollector.id = :userId', { userId })
             .leftJoinAndSelect('credit.client', 'client')
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
-    }
+            .getMany();
 
-    async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date, day: string) {
-        console.log("userId: ", userId);
-        var collections = await this.getQueryGetCollectionsByDebtCollector(startDate, endDate, day, userId).getMany();
-
-        //console.log("cobranzas obtenidas: ", collections);
+        console.log("cobranzas obtenidas: ", collections);
 
         const collectionsDto = collections.map(collection => {
             return new CollectionDto(collection);
@@ -495,7 +478,7 @@ export class CreditService {
 
     private getConditionsFilterByDay(startDate: Date, endDate: Date, day: string) {
         if (day == 'current') {
-           // console.log("estoy en current");
+            console.log("estoy en current");
             return new Brackets((qb) => {
                 qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
                     startDate,
@@ -521,11 +504,13 @@ export class CreditService {
         }
     }
 
+    ///
 
     private getDayString(date: Date) {
         return format(date, 'EEEE', { locale: es });
     }
 
+    //register payments
 
     async registerPayment(id: number, paymentAmount: number) {
         var response = { success: false, collection: {} };
@@ -643,6 +628,8 @@ export class CreditService {
     }
 
 
+ // get collections by filters
+
     async searchCollections(
         userId: string,
         statusCredit: string,
@@ -686,18 +673,6 @@ export class CreditService {
         return collections;
     }
 
-    private getStartDateEndDate(start: Date, end: Date) {
-        const startDate = new Date(start);
-        const endDate = new Date(end);
-        startDate.setHours(0, 0, 0, 0);
-        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
-        endDate.setHours(23, 59, 59, 999);
-        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
-        return {
-            startDate, endDate
-        }
-    }
-
     async searchCollectionsByConditions(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
@@ -735,12 +710,10 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .andWhere('credit.debtCollector.id = :user', { user })
             .leftJoinAndSelect('credit.client', 'client')
-            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2')
             .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-            .andWhere('credit.debtCollector.id = :user', { user })
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user', {status:2, type:'2', user})
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
@@ -842,19 +815,16 @@ export class CreditService {
     }
 
     async getCollectionsByClient(client: number, userId: number, date: string) {
-        console.log("dateQuery2: ", date);
         const dateCurrentLocalObject = new Date();
         var argentinaTime = new Date(date);
         const dayType = (this.areDatesEqual(argentinaTime, dateCurrentLocalObject)) ? 'current' : 'not-current';
-        console.log("dayType2: ", dayType);
-        //argentinaTime = new Date(argentinaTime.setHours(argentinaTime.getHours() - 3));
+        // argentinaTime = new Date(argentinaTime.setHours(argentinaTime.getHours() - 3));
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
         if (client) {
             var collections = [];
             if (user.role.name == 'admin') {
-                console.log("estoy en user amdin");
                 collections = await this.getCollectionsByClientAdminRole(client, startDate, endDate, dayType);
             } else {
                 collections = await this.getCollectionsByClientDebtCollectorRole(client, startDate, endDate, dayType, userId)
@@ -862,22 +832,78 @@ export class CreditService {
             const collectionsDto = collections.map(collection => {
                 return new CollectionDto(collection);
             })
-            return collectionsDto;
+            return collectionsDto
         } else {
-            //return this.getAll(userId);
+            return this.getCollectionsByDate(userId, date);
         }
 
     }
 
-    private async getCollectionsByClientAdminRole(client: number, starDate: Date, endDate: Date, day: string) {
-        return await this.getQueryGetCollectionsByAdmin(starDate, endDate, day)
-            //.where('credit.client.id = :client', { client })
+    private async getCollectionsByClientAdminRole(client: number, startDate: Date, endDate: Date, day: string) {
+        return await this.paymentDetailRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+            .where((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(CreditHistory, 'creditHistory')
+                    .where('creditHistory.credit_id = credit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
+            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            .andWhere('credit.client.id = :client', { client })
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.client.id = :client', {
+                startDate,
+                endDate,
+                client
+            })
+            .addOrderBy('creditHistory.date', 'DESC')
+            .leftJoinAndSelect('credit.client', 'client')
             .getMany();
     }
 
-    private async getCollectionsByClientDebtCollectorRole(client: number, starDate: Date, endDate: Date, day: string, userId: number) {
-        return await this.getQueryGetCollectionsByDebtCollector(starDate, endDate, day, userId)
-            .where('credit.client.id = :client', { client })
+    private async getCollectionsByClientDebtCollectorRole(client: number, startDate: Date, endDate: Date, day: string, userId: number) {
+        return await this.paymentDetailRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+            .where((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(CreditHistory, 'creditHistory')
+                    .where('creditHistory.credit_id = credit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
+            .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
+            .andWhere('credit.debtCollector.id = :userId AND credit.client.id = :client', { userId, client })
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.client.id = :client AND credit.debtCollector.id = :userId', {
+                startDate,
+                endDate,
+                client,
+                userId
+            })
+            .leftJoinAndSelect('credit.client', 'client')
+            .addOrderBy('creditHistory.date', 'DESC')
             .getMany();
+    }
+   
+
+    private getStartDateEndDate(start: Date, end: Date) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setMinutes(startDate.getMinutes() - startDate.getTimezoneOffset());
+        endDate.setHours(23, 59, 59, 999);
+        endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
+        return {
+            startDate, endDate
+        }
     }
 }
