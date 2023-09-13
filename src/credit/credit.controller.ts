@@ -35,11 +35,24 @@ export class CreditController {
         return this.creditService.getAll(id);
     }
 
-    @Get('by-client-name')
-    async getByClientName(
-        @Query('name') name: string
+    @Get('by-client')
+    async getByClient(
+        @Query('client') client: number,
+        @Req() req: any
     ) {
-        return this.creditService.getByClientName(name);
+        const userId = req.user.userId;
+        return this.creditService.getByClient(client, userId);
+    }
+
+    @Get('collections-by-client')
+    async getCollectionsByClient(
+        @Query('client') client: number,
+        @Query('date') date: string,
+        @Req() req: any
+    ) {
+        console.log("collections by client");
+        const userId = req.user.userId;
+        return this.creditService.getCollectionsByClient(client, userId, date);
     }
 
     @Get(':id/payments-detail')
