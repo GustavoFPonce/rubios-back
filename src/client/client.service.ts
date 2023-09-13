@@ -68,7 +68,7 @@ export class ClientService {
 
     async add(client: ClientCreateDto) {
         var response = { success: false, error: '' };
-        const existClientNumber = await this.clientRepository.findOne({ clientNumber: client.clientNumber });
+        const existClientNumber = await this.clientRepository.findOne({ clientNumber: client.clientNumber, type: client.type });
         if (!existClientNumber) {
             const newClient = await this.clientRepository.create(client);
             const saveClient = await this.clientRepository.save(newClient);
