@@ -201,6 +201,7 @@ export class CreditService {
             .addOrderBy('creditHistory.id', 'DESC')
             .getMany();
 
+        console.log("credits: ", credits);
         const creditsDto = credits.map(credit => {
             const creditList = new CreditListDto(credit);
             return creditList;
@@ -389,7 +390,7 @@ export class CreditService {
         }
     }
 
-//get collections by day
+    //get collections by day
 
     async getCollectionsByDate(userId: number, dateQuery: string) {
         const dateCurrentLocalObject = new Date();
@@ -628,7 +629,7 @@ export class CreditService {
     }
 
 
- // get collections by filters
+    // get collections by filters
 
     async searchCollections(
         userId: string,
@@ -713,7 +714,7 @@ export class CreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user', {status:2, type:'2', user})
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user', { status: 2, type: '2', user })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
@@ -893,7 +894,7 @@ export class CreditService {
             .addOrderBy('creditHistory.date', 'DESC')
             .getMany();
     }
-   
+
 
     private getStartDateEndDate(start: Date, end: Date) {
         const startDate = new Date(start);

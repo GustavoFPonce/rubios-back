@@ -25,11 +25,12 @@ export class CreditListDto {
 
 
     constructor(credit: Credit) {
+        //console.log("credit**: ", credit);
         const creditDto: CreditListDto = {
             id: credit.id,
-            client: credit.client.lastName + " " + credit.client.name,
-            clientId: credit.client.id,
-            clientNumber: credit.client.clientNumber,
+            client: credit.client?.lastName + " " + credit.client?.name,
+            clientId: credit.client?.id,
+            clientNumber: credit.client?.clientNumber,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             debtCollectorId: parseInt(credit.debtCollector.id),
             date: format(credit.creditHistory[credit.creditHistory.length-1].date, "dd-MM-yyyy"),
