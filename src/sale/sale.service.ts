@@ -15,6 +15,10 @@ import { SaleDto } from './dto/sale-dto';
 import { SaleListDto } from './dto/sale-list-dto';
 import { getDateStartEnd } from 'src/common/get-date-start-end';
 import { getDateLocal } from 'src/common/get-date-local';
+import { SaleCreditCreateDto } from 'src/sale-credit/dto/sale-credit-create-dto';
+import { SaleCreditService } from 'src/sale-credit/sale-credit.service';
+import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
+import { SaleCreditDetailDto } from './dto/sale-credit-detail-dto';
 
 @Injectable()
 export class SaleService {
@@ -24,11 +28,12 @@ export class SaleService {
         @InjectRepository(Client) private readonly clientRepository: Repository<Client>,
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(SaleDetail) private readonly saleDetailRepository: Repository<SaleDetail>,
-        private readonly productService: ProductService
+        private readonly productService: ProductService,
+        private readonly saleCreditService: SaleCreditService
     ) { }
 
 
-    async create(sale: SaleCreateDto, userId: number) {
+    async create(sale: SaleCreateDto, userId: number, credit: SaleCreditCreateDto | null) {
         var response = { success: false, error: '', message: '' };
         const client = await this.clientRepository.findOne(sale.clientId);
         var newSale = new Sale();
@@ -40,8 +45,10 @@ export class SaleService {
         newSale.status = SaleStatus.valid;
         newSale.userId = userId;
         const saleCreate = this.saleRepository.create(newSale);
+        console.log("venta a guardar: ", saleCreate);
         const saleSaved = await this.saleRepository.save(saleCreate);
         await this.addSaleDetail(sale.saleDetails, saleSaved);
+        if (saleSaved && credit) await this.saleCreditService.create(credit, userId, saleSaved)
     }
 
     async addSaleDetail(saleDetails: SaleDetailCreateDto[], sale: Sale) {
@@ -59,13 +66,41 @@ export class SaleService {
     }
 
 
-    async getById(id: number) {
-        const sale = await this.getSale(id);
+    async getByIdDetailAnnull(id: number) {
+        const sale = await this.saleRepository.createQueryBuilder('sale')
+            .leftJoinAndSelect('sale.saleCredit', 'saleCredit')
+            .leftJoinAndSelect('sale.client', 'client')
+            .leftJoinAndSelect('saleCredit.debtCollector', 'debtCollector')
+            .leftJoinAndSelect('saleCredit.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('sale.saleDetails', 'saleDetails')
+            .leftJoinAndSelect('saleDetails.product', 'product')
+            .where('sale.id = :id', { id })
+            .andWhere((qb) => {
+                const subQuery = qb
+                    .subQuery()
+                    .select('MAX(creditHistory.id)')
+                    .from(SaleCreditHistory, 'creditHistory')
+                    .where('creditHistory.sale_credit_id = saleCredit.id')
+                    .getQuery();
+                return `creditHistory.id = ${subQuery}`;
+            })
+            .getOne();
+
         const saleDetailDto = sale.saleDetails.map(x => {
             return new SaleDetailDto(x);
         });
-        const saleDto = new SaleDto(sale, saleDetailDto);
-        //console.log("sale obtenida: ", saleDto);
+        const saleDto = new SaleCreditDetailDto(sale, saleDetailDto);
+        console.log("sale obtenida: ", saleDto);
+        return saleDto;
+    }
+
+    async getById(id: number) {
+        const sale = await this.getSale(id);
+        const saleDetailsDto = sale.saleDetails.map((x)=>{
+            return new SaleDetailDto(x);
+        });
+
+        const saleDto = new SaleDto(sale, saleDetailsDto);
         return saleDto;
     }
 
@@ -80,10 +115,12 @@ export class SaleService {
         if (!sale) throw new NotFoundException(`No se encontró la venta con el id: ${id}`);
 
         sale.status = SaleStatus.cancelled;
-        const saleModify = await this.saleRepository.save(sale);
+        const saleModify = true
+        await this.saleRepository.save(sale);
         console.log('saleModify: ', saleModify);
         if (saleModify) {
             await this.returnStockBySaleDetail(sale.saleDetails);
+            const responseAnnulCredit = await this.saleCreditService.annulSaleCredit(sale.id);
             response = { success: true, error: '' }
         } else {
             response = { success: false, error: 'No see pudo modificar el stock por la cancelación de la venta' }

@@ -7,9 +7,10 @@ import { Client } from 'src/client/entities/client.entity';
 import { Product } from 'src/product/enities/product.entity';
 import { Sale } from './entities/sale.entity';
 import { ProductModule } from 'src/product/product.module';
+import { SaleCreditModule } from 'src/sale-credit/sale-credit.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Sale, SaleDetail, Client, Product]), ProductModule],
+  imports:[TypeOrmModule.forFeature([Sale, SaleDetail, Client, Product]), ProductModule, SaleCreditModule],
   controllers: [SaleController],
   providers: [SaleService]
 })

@@ -207,7 +207,7 @@ export class ReportService {
   async registerCommissionsCredit(id: number) {
     try {
       const credits = await this.getCreditsByDebtCollector(id)
-      console.log("credits: ", credits);
+      //console.log("credits: ", credits);
       await Promise.all(credits.map(async (credit) => {
         if (credit.accounted) {
           credit.commissionPaymentDate = new Date();

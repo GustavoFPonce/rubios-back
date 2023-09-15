@@ -35,6 +35,7 @@ export class CreditService {
 
 
     async create(creditCreateDto: CreditCreateDto, userId: number) {
+        console.log("creditCreate: ", creditCreateDto);
         var response = { success: false }
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
@@ -66,8 +67,9 @@ export class CreditService {
             commissionPaymentDetail: null
 
         };
+        console.log("credithistoryCreate: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
-        console.log("creditHistorySaved: ", creditHistorySaved);
+        //console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
             await this.addPaymentDetail(payments, creditHistorySaved, creditSaved);
             return response.success = true;
@@ -101,7 +103,7 @@ export class CreditService {
             for (let i = 0; i < credit.numberPayment; i++) {
                 var detail = new PaymentDetail();
                 detail.payment = creditHistorySaved.payment;
-                detail.paymentDueDate = (i == 0) ? new Date(creditHistorySaved.firstPayment) : this.getNextPaymenteDate(credit.paymentFrequency, i + 1, creditHistorySaved.firstPayment);
+                detail.paymentDueDate = (i == 0) ? new Date(creditHistorySaved.firstPayment) : this.getNextPaymenteDate(credit.paymentFrequency, i, creditHistorySaved.firstPayment);
                 detail.paymentDate = null;
                 detail.actualPayment = 0.00;
                 detail.creditHistory = creditHistorySaved;
@@ -120,7 +122,7 @@ export class CreditService {
             .where('paymentDetail.credit_history_id = :id', { id })
             .orderBy('paymentDetail.paymentDueDate', 'DESC') // Ordenar por fecha de forma descendente
             .getOne(); // Obtener solo un registro (el último)
-        console.log("result payment balance: ", result);
+        //console.log("result payment balance: ", result);
         return result.balance.toString();
     }
 
@@ -201,7 +203,7 @@ export class CreditService {
             .addOrderBy('creditHistory.id', 'DESC')
             .getMany();
 
-        console.log("credits: ", credits);
+        //console.log("credits: ", credits);
         const creditsDto = credits.map(credit => {
             const creditList = new CreditListDto(credit);
             return creditList;
@@ -246,7 +248,7 @@ export class CreditService {
             credits = await this.searchCreditsByConditions(conditions);
         } else {
             credits = await this.searchCreditsByConditionsByUser(conditions, parseInt(user));
-            console.log("credits: ", credits);
+           // console.log("credits: ", credits);
         };
         const creditsDto = this.getCreditsListDto(credits);
 
@@ -375,7 +377,7 @@ export class CreditService {
 
     async delete(id: number) {
         var response = { success: false }
-        const responseDelete = await this.creditRepository.delete(id);
+        const responseDelete = await this.creditHistoryRepository.delete(id);
         console.log("response: ", responseDelete);
         if (responseDelete.affected > 0) response.success = true;
         return response;
@@ -433,7 +435,7 @@ export class CreditService {
             .addOrderBy('creditHistory.id', 'DESC')
             .getMany();
 
-        console.log("cobranzas obtenidas: ", collections);
+        //console.log("cobranzas obtenidas: ", collections);
 
         const collectionsDto = collections.map(payment => {
             return new CollectionDto(payment);
@@ -469,7 +471,7 @@ export class CreditService {
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
 
-        console.log("cobranzas obtenidas: ", collections);
+        //console.log("cobranzas obtenidas: ", collections);
 
         const collectionsDto = collections.map(collection => {
             return new CollectionDto(collection);
@@ -564,6 +566,8 @@ export class CreditService {
     }
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number) {
+        console.log("id: ", id);
+        console.log("paymentAmount: ", paymentAmount);
         var response = { success: false, collection: {} };
         const paymentDetail = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
@@ -576,13 +580,14 @@ export class CreditService {
         if (!paymentDetail) {
             throw new NotFoundException(`No se encontro el pago con el id: ${id}`);
         };
-        const lastUpdateCreditHistory = paymentDetail.creditHistory;
-        var principal = lastUpdateCreditHistory.principal;
+        const lastUpdateCreditHistory: any = paymentDetail.creditHistory;
+        console.log("ultimo credit history: ", lastUpdateCreditHistory);
+        var principal = parseFloat(lastUpdateCreditHistory.principal);
         var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
-        if (paymentAmount <= lastUpdateCreditHistory.interest) {
+        if (paymentAmount <= parseFloat(lastUpdateCreditHistory.interest)) {
             principal = principal + (interest - paymentAmount)
         } else {
-            principal = principal - (paymentAmount - lastUpdateCreditHistory.interest);
+            principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
         };
         const newFirstPayment = this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
         var newCreditHistory: CreditHistoryCreateDto = {
@@ -597,6 +602,7 @@ export class CreditService {
             accounted: false,
             commissionPaymentDetail: null
         };
+        console.log("newCreditHistory: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         var payments = [];
         var newPaymentDetail = new PaymentDetail();

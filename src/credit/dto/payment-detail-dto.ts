@@ -7,6 +7,7 @@ export class PaymentDetailDto {
     paymentDueDate: string;
     paymentDate: string | null;
     balance: number;
+    paymentType: string;
 
     constructor(paymentDetail: any) {
         const paymentDetailDto: PaymentDetailDto = {
@@ -15,7 +16,8 @@ export class PaymentDetailDto {
             actualPayment: paymentDetail.actualPayment,
             paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
             paymentDate: (paymentDetail.paymentDate) ? format(paymentDetail.paymentDate, "dd-MM-yyyy") : null,
-            balance: paymentDetail.balance
+            balance: paymentDetail.balance,
+            paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
         };
         return paymentDetailDto;
     }

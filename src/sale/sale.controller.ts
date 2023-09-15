@@ -2,6 +2,8 @@ import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards }
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { SaleService } from './sale.service';
 import { SaleCreateDto } from './dto/sale-create-dto';
+import { CreditCreateDto } from 'src/credit/dto/credit-create-dto';
+import { SaleCreditCreateDto } from 'src/sale-credit/dto/sale-credit-create-dto';
 
 @Controller('sale')
 @UseGuards(JwtAuthGuard)
@@ -13,12 +15,14 @@ export class SaleController {
 
     @Post()
     async create(
-        @Body() sale: SaleCreateDto,
+        @Body('sale') sale: SaleCreateDto,
+        @Body('credit') credit: any,
         @Req() req: any
     ) {
         const userId = req.user.userId;
-        console.log("sale a guaradar: ", sale);
-        return await this.saleService.create(sale, userId);
+       //console.log("sale a guaradar: ", sale);
+        //console.log("credit a guaradar: ", credit);
+        return await this.saleService.create(sale, userId, credit);
     }
 
     @Patch(':id/cancel')
@@ -58,6 +62,13 @@ export class SaleController {
         return await this.saleService.search(startDate, endDate, status, paymentType);
     }
 
+
+    @Get(':id/detail-annull')
+    async getByIdDetailAnnull(
+        @Param('id') id: number
+    ) {
+        return await this.saleService.getByIdDetailAnnull(id);
+    }
 
     @Get(':id')
     async getById(

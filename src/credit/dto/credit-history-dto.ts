@@ -8,6 +8,7 @@ export class CreditHistoryDto{
     payDay: string;
     principal: number;
     interest: number;
+    status: string;
 
     constructor(creditHistory: CreditHistory){
         const creditHistoryDto: CreditHistoryDto = {
@@ -16,7 +17,8 @@ export class CreditHistoryDto{
             firstPayment: format(creditHistory.firstPayment, "dd-MM-yyyy"),
             payDay: creditHistory.payDay,
             principal: creditHistory.principal,
-            interest: creditHistory.interest
+            interest: creditHistory.interest,
+            status: (creditHistory.status == 2)? 'No vigente': 'Vigente'
         };
         return creditHistoryDto;
     }

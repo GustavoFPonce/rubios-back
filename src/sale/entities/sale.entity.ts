@@ -1,7 +1,8 @@
 import { Client } from "src/client/entities/client.entity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { SaleDetail } from "./sale-detail.entity";
 import { SaleStatus } from "../enum";
+import { SaleCredit } from "src/sale-credit/entities/sale-credit.entity";
 
 @Entity()
 export class Sale {
@@ -33,4 +34,6 @@ export class Sale {
     @OneToMany(() => SaleDetail, (detail: SaleDetail) => detail.sale)
     saleDetails: SaleDetail[]
 
+    @OneToOne(() => SaleCredit, (saleCredit: SaleCredit) => saleCredit.sale)
+    saleCredit: SaleCredit;
 }
