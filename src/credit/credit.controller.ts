@@ -101,9 +101,10 @@ export class CreditController {
     async registerCancellationInterestPrincipal(
         @Param('id') id: number,
         @Body('payment') payment: number,
+        @Body('firstPayment') firstPayment: number,
     ) {
         console.log("paymemt recibido: ", payment);
-        return this.creditService.registerCancellationInterestPrincipal(id, payment);
+        return this.creditService.registerCancellationInterestPrincipal(id, payment, firstPayment);
     }
 
     @Get('search-collections')

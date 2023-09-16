@@ -565,7 +565,7 @@ export class CreditService {
         }
     }
 
-    async registerCancellationInterestPrincipal(id: number, paymentAmount: number) {
+    async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any) {
         console.log("id: ", id);
         console.log("paymentAmount: ", paymentAmount);
         var response = { success: false, collection: {} };
@@ -589,7 +589,9 @@ export class CreditService {
         } else {
             principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
         };
-        const newFirstPayment = this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
+        const newFirstPayment = new Date(firstPayment);
+        console.log("newFirstPayment: ", newFirstPayment);
+        // this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
         var newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(),
             principal: principal,

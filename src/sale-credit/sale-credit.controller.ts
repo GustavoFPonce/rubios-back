@@ -111,6 +111,26 @@ export class SaleCreditController {
 
     }
 
+    @Put((':id/register-payment'))
+    async registerPayment(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+    ) {
+        console.log("paymemt recibido: ", payment);
+        return this.saleCreditService.registerPayment(id, payment);
+    }
+
+    @Put((':id/register-cancellation-interest-principal'))
+    async registerCancellationInterestPrincipal(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+        @Body('firstPayment') firstPayment: number,
+
+    ) {
+        console.log("paymemt recibido: ", payment);
+        return this.saleCreditService.registerCancellationInterestPrincipal(id, payment, firstPayment);
+    }
+
     
 
     @Get(':id')

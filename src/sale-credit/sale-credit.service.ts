@@ -744,6 +744,126 @@ export class SaleCreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .addOrderBy('creditHistory.date', 'DESC')
             .getMany();
+    };
+
+    async registerPayment(id: number, paymentAmount: number) {
+        var response = { success: false, collection: {} };
+        var payment = await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .leftJoinAndSelect('credit.client', 'client')
+            .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+            .where('paymentsDetail.id = :id', { id })
+            .getOne();
+        console.log('payment_ :', payment);
+        payment.paymentDate = new Date();
+        payment.actualPayment = paymentAmount;
+        payment.balance = payment.balance - paymentAmount;
+        const saved = await this.paymentDetailSaleCreditRepository.save(payment);
+        console.log("saved: ", saved);
+        if (saved) {
+            response.success = true;
+            response.collection = new CollectionDto(saved);
+            this.uptadeBalanceNextPayment(payment.balance, payment.creditHistory.id, payment.creditHistory.credit.id);
+        }
+        return response;
+    }
+
+    private async uptadeBalanceNextPayment(balance: number, creditHistoryId: number, creditId: number) {
+        const date = null;
+        console.log("modificacion de saldo");
+        var nextPayment = await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('creditHistory.id = :creditHistoryId', { creditHistoryId })
+            .andWhere('paymentsDetail.paymentDate IS NULL')
+            .getOne();
+        console.log("nextPayment: ", nextPayment);
+        if (nextPayment) {
+            nextPayment.balance = balance;
+            const saved = await this.paymentDetailSaleCreditRepository.save(nextPayment);
+        } else {
+            this.cancelCredit(creditId);
+        }
+
+    }
+
+    private async cancelCredit(id: number) {
+        var credit = await this.saleCreditRepository.findOne(id);
+        if (credit) {
+            credit.status = StatusCredit.canceled;
+            await this.saleCreditRepository.save(credit);
+        }
+    }
+
+    async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any) {
+        console.log("id: ", id);
+        console.log("paymentAmount: ", paymentAmount);
+        var response = { success: false, collection: {} };
+        const paymentDetail = await this.paymentDetailSaleCreditRepository
+            .createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('paymentsDetail.id = :id', { id })
+            .getOne();
+
+        console.log("paymentDetail: ", paymentDetail);
+        if (!paymentDetail) {
+            throw new NotFoundException(`No se encontro el pago con el id: ${id}`);
+        };
+        const lastUpdateCreditHistory: any = paymentDetail.creditHistory;
+        console.log("ultimo credit history: ", lastUpdateCreditHistory);
+        var principal = parseFloat(lastUpdateCreditHistory.principal);
+        var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
+        if (paymentAmount <= parseFloat(lastUpdateCreditHistory.interest)) {
+            principal = principal + (interest - paymentAmount)
+        } else {
+            principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
+        };
+        const newFirstPayment = new Date(firstPayment);
+        console.log("nueva fecha de primer pago: ", newFirstPayment);
+        //this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
+        var newCreditHistory: CreditHistoryCreateDto = {
+            date: new Date(),
+            principal: principal,
+            interest: interest,
+            credit: paymentDetail.creditHistory.credit,
+            firstPayment: newFirstPayment,
+            payDay: this.getDayString(newFirstPayment),
+            payment: (principal + interest) / paymentDetail.creditHistory.credit.numberPayment,
+            status: StatusCreditHistory.current,
+            accounted: false,
+            commissionPaymentDetail: null
+        };
+        console.log("newCreditHistory: ", newCreditHistory);
+        const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
+        var payments = [];
+        var newPaymentDetail = new PaymentDetailSaleCredit();
+        newPaymentDetail.payment = paymentAmount;
+        newPaymentDetail.paymentDate = new Date();
+        newPaymentDetail.paymentDueDate = new Date();
+        newPaymentDetail.creditHistory = paymentDetail.creditHistory;
+        newPaymentDetail.balance = 0.00;
+        newPaymentDetail.accountabilityDate = null;
+        newPaymentDetail.recoveryDateCommission = null;
+        newPaymentDetail.actualPayment = paymentAmount;;
+        newPaymentDetail.paymentType = PaymentType.cancellationInterest;
+        console.log("new payment: ", newPaymentDetail);
+        if (creditHistorySaved) {
+            lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;
+            await this.saleCreditHistoryRepository.save(lastUpdateCreditHistory);
+            this.newPaymentDetail(newPaymentDetail);
+            this.addPaymentDetail(payments, creditHistorySaved, paymentDetail.creditHistory.credit);
+            response.success = true;
+
+        }
+
+        return response;
+    }
+
+    private async newPaymentDetail(newPaymentDetail: PaymentDetailSaleCredit) {
+        const paymentDetail = this.paymentDetailSaleCreditRepository.create(newPaymentDetail);
+        return await this.paymentDetailSaleCreditRepository.save(paymentDetail);
     }
 
 }
