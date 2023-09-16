@@ -36,24 +36,24 @@ export class ClientService {
         return clients;
     }
 
-    async search(type: string){
-        var clients = [];        
+    async search(type: string) {
+        var clients = [];
         const types = type.split(' ');
         //console.log("types: ", types);
-        if(type !='all'){
-            clients = await this.clientRepository.find({type: parseInt(type)});
-        }else{
+        if (type != 'all') {
+            clients = await this.clientRepository.find({ type: parseInt(type) });
+        } else {
             clients = await this.clientRepository.createQueryBuilder('client')
-            .where(new Brackets((qb) => {
-                types.forEach((term, index) => {
-                    qb.orWhere('client.type =:type', { ['term' + index]: `${term}` })
-                });
-            }))
-            .orderBy('client.id', 'DESC')
-            .getMany();
-        return clients;
+                .where(new Brackets((qb) => {
+                    types.forEach((term, index) => {
+                        qb.orWhere('client.type =:type', { ['term' + index]: `${term}` })
+                    });
+                }))
+                .orderBy('client.id', 'DESC')
+                .getMany();
+            return clients;
         }
-      
+
         //console.log("clientes filtrados: ", clients);
         return clients;
     }
@@ -116,6 +116,14 @@ export class ClientService {
         const responseClient = await this.clientRepository.save(savedClient);
         console.log("cliente modificado: ", responseClient);
         if (responseClient) return true;
+    }
+
+    async getByClientId(id: number, type: string) {
+        if (id) {
+            return await this.clientRepository.find({ where: { id: id, type: type } })
+        } else {
+            return this.search(type);
+        }
     }
 }
 
