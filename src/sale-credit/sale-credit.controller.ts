@@ -63,14 +63,6 @@ export class SaleCreditController {
 
     }
 
-    @Get(':id')
-    async getById(
-        @Param('id') id: string
-    ){
-        //console.log("idCredit: ", id);
-        return await this.saleCreditService.getById(id);
-    }
-
     @Put(':id')
     async update(
         @Param('id') id: number,
@@ -78,6 +70,55 @@ export class SaleCreditController {
     ) {
         var response = await this.saleCreditService.update(id, credit);
         return response;
+    }
+
+    @Get('collections-by-client')
+    async getCollectionsByClient(
+        @Query('client') client: number,
+        @Query('date') date: string,
+        @Req() req: any
+    ) {
+        console.log("collections by client");
+        const userId = req.user.userId;
+        return this.saleCreditService.getCollectionsByClient(client, userId, date);
+    }
+
+    @Get('collections-by-date')
+    async getCollectionsByDate(
+        @Req() req: any,
+        @Query('date') date: string,
+    ) {
+
+        const userId = req.user.userId;
+        // console.log('date recibido: ', date);
+        return await this.saleCreditService.getCollectionsByDate(userId, date);
+    }
+
+    @Get('search-collections')
+    async searchCollections(
+        @Req() req: any,
+        @Query('status') status: string,
+        @Query('currency') currency: string,
+        @Query('user') debtcollector: string,
+        @Query('startDate') startDate: any,
+        @Query('endDate') endDate: any,
+        @Query('statusPayment') statusPayment: string,
+    ) {
+        console.log("startDate: ", startDate);
+        console.log("endDate: ", endDate);
+        const userId = req.user.userId;
+        return await this.saleCreditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate, statusPayment);
+
+    }
+
+    
+
+    @Get(':id')
+    async getById(
+        @Param('id') id: string
+    ){
+        //console.log("idCredit: ", id);
+        return await this.saleCreditService.getById(id);
     }
 
 }
