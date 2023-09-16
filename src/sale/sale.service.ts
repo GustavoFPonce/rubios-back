@@ -67,14 +67,19 @@ export class SaleService {
 
 
     async getByIdDetailAnnull(id: number) {
-        const sale = await this.saleRepository.createQueryBuilder('sale')
-            .leftJoinAndSelect('sale.saleCredit', 'saleCredit')
+        console.log("venta: ", id);
+        const querySale = this.saleRepository.createQueryBuilder('sale')
             .leftJoinAndSelect('sale.client', 'client')
-            .leftJoinAndSelect('saleCredit.debtCollector', 'debtCollector')
-            .leftJoinAndSelect('saleCredit.creditHistory', 'creditHistory')
             .leftJoinAndSelect('sale.saleDetails', 'saleDetails')
             .leftJoinAndSelect('saleDetails.product', 'product')
-            .where('sale.id = :id', { id })
+            .where('sale.id = :id', { id });
+        const sale = await querySale.getOne();
+
+        if (sale.paymentType === 'Crédito') {
+            querySale            
+            .leftJoinAndSelect('sale.saleCredit', 'saleCredit')            
+            .leftJoinAndSelect('saleCredit.debtCollector', 'debtCollector')
+            .leftJoinAndSelect('saleCredit.creditHistory', 'creditHistory')
             .andWhere((qb) => {
                 const subQuery = qb
                     .subQuery()
@@ -83,20 +88,22 @@ export class SaleService {
                     .where('creditHistory.sale_credit_id = saleCredit.id')
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
-            })
-            .getOne();
+            });;
+        }
 
-        const saleDetailDto = sale.saleDetails.map(x => {
+        const resultGetSale = await querySale.getOne();
+
+        console.log("sale: ", resultGetSale);
+        const saleDetailDto = resultGetSale.saleDetails.map(x => {
             return new SaleDetailDto(x);
         });
-        const saleDto = new SaleCreditDetailDto(sale, saleDetailDto);
-        console.log("sale obtenida: ", saleDto);
+        const saleDto = new SaleCreditDetailDto(resultGetSale, saleDetailDto);
         return saleDto;
     }
 
     async getById(id: number) {
         const sale = await this.getSale(id);
-        const saleDetailsDto = sale.saleDetails.map((x)=>{
+        const saleDetailsDto = sale.saleDetails.map((x) => {
             return new SaleDetailDto(x);
         });
 

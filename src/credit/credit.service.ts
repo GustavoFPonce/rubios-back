@@ -219,7 +219,7 @@ export class CreditService {
         frequency: string,
         start: Date,
         end: Date) {
-        console.log("user service: ", user);
+        //console.log("user service: ", user);
         const conditions = new Brackets((qb) => {
             qb.where('creditHistory.date BETWEEN :startDate AND :endDate', {
                 startDate: start,
@@ -244,7 +244,7 @@ export class CreditService {
 
         var credits: any;
         if (user == 'all') {
-            console.log("buscando por todos");
+           // console.log("buscando por todos");
             credits = await this.searchCreditsByConditions(conditions);
         } else {
             credits = await this.searchCreditsByConditionsByUser(conditions, parseInt(user));
@@ -252,7 +252,7 @@ export class CreditService {
         };
         const creditsDto = this.getCreditsListDto(credits);
 
-        console.log("creditos activos: ", creditsDto);
+        //console.log("creditos activos: ", creditsDto);
         return creditsDto;
     }
 
@@ -279,7 +279,7 @@ export class CreditService {
     }
 
     async searchCreditsByConditions(conditions: any) {
-        console.log("condiciones: ", conditions);
+        //console.log("condiciones: ", conditions);
         return await this.creditRepository.createQueryBuilder('credit')
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .leftJoinAndSelect('credit.client', 'client')
@@ -377,7 +377,7 @@ export class CreditService {
 
     async delete(id: number) {
         var response = { success: false }
-        const responseDelete = await this.creditHistoryRepository.delete(id);
+        const responseDelete = await this.creditRepository.delete(id);
         console.log("response: ", responseDelete);
         if (responseDelete.affected > 0) response.success = true;
         return response;
@@ -817,7 +817,7 @@ export class CreditService {
             return new CreditHistoryDto(credit);
         });
 
-        console.log("creditsHistoryDto: ", creditsHistoryDto);
+       // console.log("creditsHistoryDto: ", creditsHistoryDto);
         return creditsHistoryDto;
     }
 

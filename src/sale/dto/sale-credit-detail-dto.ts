@@ -28,13 +28,13 @@ export class SaleCreditDetailDto {
             paymentType: sale.paymentType,
             saleDetails: saleDetails,
             date: sale.date,
-            firstPayment: sale.saleCredit.creditHistory[sale.saleCredit.creditHistory.length-1].firstPayment,
-            debtCollectorId: sale.saleCredit.debtCollector.id,
-            paymentFrequency: sale.saleCredit.paymentFrequency,
-            numberPayment: sale.saleCredit.numberPayment,
-            commission: sale.saleCredit.commission,
-            interestRate: sale.saleCredit.interestRate,
-            payment: sale.saleCredit.creditHistory[sale.saleCredit.creditHistory.length-1].payment
+            firstPayment: (sale.saleCredit)?(sale.saleCredit.creditHistory[sale.saleCredit.creditHistory.length-1].firstPayment):sale.date,
+            debtCollectorId: (sale.saleCredit)?sale.saleCredit.debtCollector.id: null,
+            paymentFrequency: (sale.saleCredit)?sale.saleCredit.paymentFrequency:'Un pago',
+            numberPayment: (sale.saleCredit)?sale.saleCredit.numberPayment:1,
+            commission: (sale.saleCredit)?sale.saleCredit.commission: null,
+            interestRate: (sale.saleCredit)?sale.saleCredit.interestRate: null,
+            payment: (sale.saleCredit)?sale.saleCredit.creditHistory[sale.saleCredit.creditHistory.length-1].payment: sale.total,
         };
         return saleDto;
     }

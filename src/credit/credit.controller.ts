@@ -66,6 +66,7 @@ export class CreditController {
     async delete(
         @Param('id') id: number
     ) {
+        console.log("id delete: ", id);
         return await this.creditService.delete(id);
     }
 
@@ -138,7 +139,7 @@ export class CreditController {
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
        if(user == 'null') user = req.user.userId;
-        console.log("user recibido: ", user);
+        //console.log("user recibido: ", user);
         return await this.creditService.searchCredits(status, user, currency, frequency, start, end);
 
     }
