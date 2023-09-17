@@ -13,6 +13,9 @@ import { CommissionTotal } from './dto/commission-total-dto';
 import { CreditHistory } from 'src/credit/entities/credit-history.entity';
 import { CommissionCreditDto } from 'src/credit/dto/commission-credit-detail-dto';
 import { CommissionListDebtCollector } from './dto/commission-list-debtCollector-dto';
+import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
+import { PaymentDetailSaleCredit } from 'src/sale-credit/entities/payment-detail-sale-credit.entity';
+import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
 
 @Injectable()
 export class ReportService {
@@ -20,10 +23,13 @@ export class ReportService {
     @InjectRepository(Credit) private creditRepository: Repository<Credit>,
     @InjectRepository(CreditHistory) private creditHistoryRepository: Repository<CreditHistory>,
     @InjectRepository(PaymentDetail) private paymentDetailRepository: Repository<PaymentDetail>,
-    @InjectRepository(User) private userRepository: Repository<User>
+    @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(SaleCreditHistory) private saleCreditHistoryRepository: Repository<SaleCreditHistory>,
+    @InjectRepository(PaymentDetailSaleCredit) private paymentDetailSaleCreditRepository: Repository<PaymentDetailSaleCredit>,
+    @InjectRepository(SaleCredit) private saleCreditRepository: Repository<SaleCredit>,
   ) { }
 
-  async getChargesAccountedAndCollected(start: any, end: any): Promise<any[]> {
+  async getChargesAccountedAndCollected(start: any, end: any, type: string): Promise<any[]> {
     const dates = getDateStartEnd(start, end)
     const startDate = dates.startDate;
     console.log("star date: ", startDate);
@@ -32,7 +38,20 @@ export class ReportService {
     const currencyPesos = 'peso';
     const currencyDollar = 'dolar';
     const status = '1';
-    const result = await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
+    const result = (type == '1') ?
+      await this.getChargesAccountedAndCollectedPersonalCredits(currencyPesos, currencyDollar, startDate, endDate, status) :
+      await this.getChargesAccountedAndCollectedSaleCredits(currencyPesos, currencyDollar, startDate, endDate, status);
+
+    const chargesAccountedAndCollectedDto = result.map(x => {
+      return new TotalChargeAccountedCollected(x);
+    })
+
+    return chargesAccountedAndCollectedDto;
+    //return null
+  }
+
+  private async getChargesAccountedAndCollectedPersonalCredits(currencyPesos: string, currencyDollar: string, startDate: Date, endDate: Date, status: string) {
+    return await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
@@ -47,17 +66,28 @@ export class ReportService {
       .setParameters({ currencyPesos, currencyDollar, startDateValue: startDate, endDateValue: endDate, status })
       .groupBy('debtCollector.id, debtCollector.lastName')
       .getRawMany();
+  }
 
-    const chargesAccountedAndCollectedDto = result.map(x => {
-      return new TotalChargeAccountedCollected(x);
-    })
-
-    return chargesAccountedAndCollectedDto;
-    //return null
+  private async getChargesAccountedAndCollectedSaleCredits(currencyPesos: string, currencyDollar: string, startDate: Date, endDate: Date, status: string) {
+    return await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentDetail')
+      .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .select([
+        'debtCollector.id as debtCollectorId',
+        'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyPesos AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyDollar AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
+        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL AND paymentDetail.paymentDate < :endDateValue  AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL AND paymentDetail.paymentDate < :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
+      ])
+      .setParameters({ currencyPesos, currencyDollar, startDateValue: startDate, endDateValue: endDate, status })
+      .groupBy('debtCollector.id, debtCollector.lastName')
+      .getRawMany();
   }
 
 
-  async getCollectionsAndCommissionsDetail(id: string, start: any, end: any) {
+  async getCollectionsAndCommissionsDetail(id: string, start: any, end: any, type: string) {
     var paymentsDetail: PaymentDetail[] = [];
     const debtCollector = await this.userRepository.findOne(id);
     if (start != 'null' && end != 'null') {
@@ -65,10 +95,10 @@ export class ReportService {
       const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
       const startDate = dates.startDate;
       const endDate = dates.endDate;
-      paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate);
+      paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
     } else {
       console.log("noo estoy en null");
-      paymentsDetail = await this.getPaymentsDetailByDebtCollector(id);
+      paymentsDetail = await this.getPaymentsDetailByDebtCollector(id, type);
     }
     const paymentsDetailsDto = paymentsDetail.map((x) => {
       return new PaymentDetailReportDto(x);
@@ -78,10 +108,17 @@ export class ReportService {
   }
 
 
-  private async getPaymentsDetailByDebtCollector(id: string) {
+  private async getPaymentsDetailByDebtCollector(id: string, type: string) {
     const status = '1';
     const paymentType = 2;
-    const paymentsDetail = await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
+    const paymentsDetail = (type == '1') ?
+      await this.getPaymentsDetailByDebtCollectorPersonalCredits(id, paymentType, status) :
+      await this.getPaymentsDetailByDebtCollectorSaleCredits(id, paymentType, status);
+    return paymentsDetail;
+  }
+
+  private async getPaymentsDetailByDebtCollectorPersonalCredits(id: string, paymentType: number, status: string) {
+    return await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoin('credit.debtCollector', 'debtCollector')
@@ -90,23 +127,51 @@ export class ReportService {
       .andWhere(
         new Brackets((qb) => {
           qb.where('paymentDetail.paymentDate IS NOT NULL AND creditHistory.status =:status AND paymentDetail.accountabilityDate IS NULL', { status })
-          .orWhere('paymentDetail.paymentDate IS NOT NULL AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
-            paymentType
-          })
+            .orWhere('paymentDetail.paymentDate IS NOT NULL AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
+              paymentType
+            })
         })
       )
       .getMany();
-    return paymentsDetail;
+  }
+
+  private async getPaymentsDetailByDebtCollectorSaleCredits(id: string, paymentType: number, status: string) {
+    return await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentDetail')
+      .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .leftJoin('credit.debtCollector', 'debtCollector')
+      .leftJoinAndSelect('credit.client', 'client')
+      .where('debtCollector.id = :id', { id })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('paymentDetail.paymentDate IS NOT NULL AND creditHistory.status =:status AND paymentDetail.accountabilityDate IS NULL', { status })
+            .orWhere('paymentDetail.paymentDate IS NOT NULL AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
+              paymentType
+            })
+        })
+      )
+      .getMany();
   }
 
 
-  private async getPaymentsDetailByDebtCollectorByDates(id: string, startDate: any, endDate: any) {
+  private async getPaymentsDetailByDebtCollectorByDates(id: string, startDate: any, endDate: any, type: string) {
     console.log("init getPaymentsDetailByDebtCollectorByDates")
     console.log("startDate", startDate)
     console.log("endDate", endDate)
     const status = '1';
     const paymentType = 1
-    const paymentQuery = this.paymentDetailRepository.createQueryBuilder('paymentDetail')
+    const paymentQuery = (type == '1') ?
+      await this.getPaymentsDetailByDebtCollectorByDatesPersonalCredits(id, startDate, endDate, status) :
+      await this.getPaymentsDetailByDebtCollectorByDatesSaleCredits(id, startDate, endDate, status)
+    const paymentsDetail = await paymentQuery.getMany();
+
+    //console.log("pagos a registrar: ", paymentsDetail);
+
+    return paymentsDetail;
+  }
+
+  private async getPaymentsDetailByDebtCollectorByDatesPersonalCredits(id: string, startDate: any, endDate: any, status: string) {
+    return this.paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoin('credit.debtCollector', 'debtCollector')
@@ -132,28 +197,53 @@ export class ReportService {
             })
         })
       );
-    const paymentsDetail = await paymentQuery.getMany();
-
-    //console.log("pagos a registrar: ", paymentsDetail);
-
-    return paymentsDetail;
   }
 
-  async registerAccountedPayments(id: string, start: any, end: any) {
+  private async getPaymentsDetailByDebtCollectorByDatesSaleCredits(id: string, startDate: any, endDate: any, status: string) {
+    return this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentDetail')
+      .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .leftJoin('credit.debtCollector', 'debtCollector')
+      .leftJoinAndSelect('credit.client', 'client')
+      .where('debtCollector.id = :id', { id })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.orWhere('paymentDetail.paymentDueDate BETWEEN :startDate AND :endDate AND paymentDetail.paymentDate IS NULL AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status = :status', {
+            startDate,
+            endDate,
+            status
+          })
+            .orWhere(
+              'paymentDetail.paymentDueDate < :startDate AND paymentDetail.paymentDate IS NULL AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status = :status',
+              { startDate, status }
+            )
+            .orWhere('paymentDetail.paymentDate BETWEEN :startDate AND :endDate AND paymentDetail.accountabilityDate IS NULL', {
+              startDate,
+              endDate,
+            })
+            .orWhere('paymentDetail.paymentDate < :endDate AND paymentDetail.accountabilityDate IS NULL', {
+              endDate
+            })
+        })
+      );
+  }
+
+
+  async registerAccountedPayments(id: string, start: any, end: any, type: string) {
     const startObject = getDateObject(start);
     const endObject = getDateObject(end);
     const dates = getDateStartEnd(startObject, endObject);
     const startDate = dates.startDate;
     const endDate = dates.endDate;
     try {
-      const paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate);
+      const paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
       await Promise.all(paymentsDetail.map(async (payment) => {
         if (payment.paymentDate) {
           payment.accountabilityDate = new Date();
-          await this.paymentDetailRepository.save(payment);
-          const resultQuery = await this.doesCreditHistoryHaveAllPaymentDetailsWithAccountabilityDate(payment.creditHistory.id);
+          (type == '1') ? await this.paymentDetailRepository.save(payment) : await this.paymentDetailSaleCreditRepository.save(payment);
+          const resultQuery = await this.doesCreditHistoryHaveAllPaymentDetailsWithAccountabilityDate(payment.creditHistory.id, type);
           console.log("resultQuery: ", resultQuery);
-          if (resultQuery) await this.registerStatusAccountedCreditHistory(payment.creditHistory.id)
+          if (resultQuery) await this.registerStatusAccountedCreditHistory(payment.creditHistory.id, type)
         }
       })
       );
@@ -164,25 +254,35 @@ export class ReportService {
 
   }
 
-  private async doesCreditHistoryHaveAllPaymentDetailsWithAccountabilityDate(creditHistoryId: number) {
-    const paymentDetails = await this.paymentDetailRepository
-      .createQueryBuilder('paymentDetail')
-      .where('paymentDetail.creditHistory = :creditHistoryId', {
-        creditHistoryId,
-      })
-      .andWhere('paymentDetail.accountabilityDate IS NULL')
-      .getCount();
+  private async doesCreditHistoryHaveAllPaymentDetailsWithAccountabilityDate(creditHistoryId: number, type: string) {
+    const paymentDetails = (type == '1') ?
+      await this.paymentDetailRepository
+        .createQueryBuilder('paymentDetail')
+        .where('paymentDetail.creditHistory = :creditHistoryId', {
+          creditHistoryId,
+        })
+        .andWhere('paymentDetail.accountabilityDate IS NULL')
+        .getCount() :
+      await this.paymentDetailSaleCreditRepository
+        .createQueryBuilder('paymentDetail')
+        .where('paymentDetail.creditHistory = :creditHistoryId', {
+          creditHistoryId,
+        })
+        .andWhere('paymentDetail.accountabilityDate IS NULL')
+        .getCount()
 
     return paymentDetails === 0;
   }
 
-  private async registerStatusAccountedCreditHistory(id: number) {
-    const creditHistory = await this.creditHistoryRepository.findOne(id);
+  private async registerStatusAccountedCreditHistory(id: number, type: string) {
+    const creditHistory = (type == '1') ? await this.creditHistoryRepository.findOne(id) : await this.saleCreditHistoryRepository.findOne(id)
     if (!creditHistory) {
       throw new NotFoundException(`No se encontró el historial de crédito con el id: ${id}`);
     }
     creditHistory.accounted = true;
-    await this.creditHistoryRepository.save(creditHistory);
+    (type == '1') ?
+      await this.creditHistoryRepository.save(creditHistory) :
+      await this.saleCreditHistoryRepository.save(creditHistory)
   }
 
 
@@ -231,8 +331,8 @@ export class ReportService {
       .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL', { id, status })
       .getMany();
 
-      console.log("results: ", results)
-      return results;
+    console.log("results: ", results)
+    return results;
   }
 
   async getCommissionsTotal() {
@@ -278,11 +378,24 @@ export class ReportService {
   }
 
 
-  async getCollectionsAccountedHistory(id: string, start: any, end: any) {
+  async getCollectionsAccountedHistory(id: string, start: any, end: any, type: string) {
     console.log("id debtCollector: ", id);
     const startDate = getDateStartEnd(start, end).startDate;
     const endDate = getDateStartEnd(start, end).endDate;
-    const paymentDetailAccounted = await this.paymentDetailRepository
+    const paymentDetailAccounted = (type == '1') ?
+      await this.getCollectionsAccountedHistoryPersonalCredits(id, startDate, endDate) :
+      await this.getCollectionsAccountedHistorySaleCredits(id, startDate, endDate);
+    console.log('paymentDetailAccounted: ', paymentDetailAccounted);
+    const debtCollector = await this.userRepository.findOne(id);
+    const paymentsDetailsDto = paymentDetailAccounted.map((x) => {
+      return new PaymentDetailReportDto(x);
+    });
+    const details = new ReportCollectionsAndCommissionsDto(debtCollector, paymentsDetailsDto);
+    return details;
+  }
+
+  async getCollectionsAccountedHistoryPersonalCredits(id: string, start: any, end: any) {
+    return await this.paymentDetailRepository
       .createQueryBuilder('paymentsDetail')
       .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -292,16 +405,19 @@ export class ReportService {
       .andWhere('paymentsDetail.accountabilityDate IS NOT NULL')
       .orderBy('paymentsDetail.accountabilityDate', 'ASC')
       .getMany();
-    console.log('paymentDetailAccounted: ', paymentDetailAccounted);
-    const debtCollector = await this.userRepository.findOne(id);
-    const paymentsDetailsDto = paymentDetailAccounted.map((x) => {
-      return new PaymentDetailReportDto(x);
-    });
-    const details = new ReportCollectionsAndCommissionsDto(debtCollector, paymentsDetailsDto);
+  }
 
-
-
-    return details;
+  async getCollectionsAccountedHistorySaleCredits(id: string, start: any, end: any) {
+    return await this.paymentDetailSaleCreditRepository
+      .createQueryBuilder('paymentsDetail')
+      .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .leftJoinAndSelect('credit.client', 'client')
+      .where('debtCollector.id = :id', { id })
+      .andWhere('paymentsDetail.accountabilityDate IS NOT NULL')
+      .orderBy('paymentsDetail.accountabilityDate', 'ASC')
+      .getMany();
   }
 
   async getCommissionsCreditsHistory(id: number) {
@@ -311,13 +427,13 @@ export class ReportService {
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
       .where('debtCollector.id = :id AND creditHistory.commissionPaymentDate IS NOT NULL', { id })
       .getMany();
-      const debtCollector = await this.userRepository.findOne(id);
-      const creditsDetailDto = creditsCommissions.map(x => {
-        return new CommissionCreditDto(x)
-      });
-  
-      const commissionListDebtCollector = new CommissionListDebtCollector(debtCollector, creditsDetailDto);
-      return commissionListDebtCollector;
+    const debtCollector = await this.userRepository.findOne(id);
+    const creditsDetailDto = creditsCommissions.map(x => {
+      return new CommissionCreditDto(x)
+    });
+
+    const commissionListDebtCollector = new CommissionListDebtCollector(debtCollector, creditsDetailDto);
+    return commissionListDebtCollector;
   }
 
 }

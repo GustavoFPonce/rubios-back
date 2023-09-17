@@ -6,9 +6,12 @@ import { Credit } from 'src/credit/entities/credit.entity';
 import { PaymentDetail } from 'src/credit/entities/payment-detail.entity';
 import { User } from 'src/user/entities/user.entity';
 import { CreditHistory } from 'src/credit/entities/credit-history.entity';
+import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
+import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
+import { PaymentDetailSaleCredit } from 'src/sale-credit/entities/payment-detail-sale-credit.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Credit, PaymentDetail, User, CreditHistory])],
+  imports:[TypeOrmModule.forFeature([Credit, PaymentDetail, User, CreditHistory, SaleCredit, SaleCreditHistory, PaymentDetailSaleCredit])],
   controllers: [ReportController],
   providers: [ReportService],
 })

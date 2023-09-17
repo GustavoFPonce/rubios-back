@@ -10,30 +10,34 @@ export class ReportController {
     @Get('charges-accounted-collected')
     async getChargesAccountedAndCollected(
         @Query('start') start: any,
-        @Query('end') end: any
+        @Query('end') end: any,
+        @Query('type') type: string
     ){
         console.log("start controller: ", start);
         console.log("end controller: ", end);
-        return await this.reportService.getChargesAccountedAndCollected(start, end);
+        console.log("type controller: ", type);
+        return await this.reportService.getChargesAccountedAndCollected(start, end, type);
     }
 
     @Get('collections-commissions-detail')
     async getCollectionsAndCommissionsDetail(
         @Query('id') id: string,
         @Query('start') start: any,
-        @Query('end') end: any
+        @Query('end') end: any,
+        @Query('type') type: string
     ){
-        return await this.reportService.getCollectionsAndCommissionsDetail(id, start, end);
+        return await this.reportService.getCollectionsAndCommissionsDetail(id, start, end, type);
     }
 
     @Patch('register-accounted-payments')
     async registerAccountedPayments(
         @Query('id') id: string,
         @Query('start') start: any,
-        @Query('end') end: any
+        @Query('end') end: any,
+        @Query('type') type: string
     ){
         console.log("registrando rendición: ", start, end);
-        return await this.reportService.registerAccountedPayments(id, start, end);
+        return await this.reportService.registerAccountedPayments(id, start, end, type);
     }
 
     @Patch('register-commissions-payments')
@@ -60,9 +64,10 @@ export class ReportController {
     async getCollectionsAccountedHistory(
         @Param('id') id: string,
         @Query('start') start: any,
-        @Query('end') end: any
+        @Query('end') end: any,
+        @Query('type') type: string
     ){
-        return await this.reportService.getCollectionsAccountedHistory(id, start, end);
+        return await this.reportService.getCollectionsAccountedHistory(id, start, end, type);
     }
 
     @Get(':id/commissions-credits-history')
