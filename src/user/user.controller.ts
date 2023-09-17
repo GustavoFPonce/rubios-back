@@ -27,9 +27,9 @@ export class UserController {
 
     @Get('by-name')
     async getByName(
-        @Query('name') name: string
+        @Query('name') name: number
     ) {
-        console.log("name: ", name);
+        //console.log("name: ", name);
         return this.userService.getByName(name);
     }
 
@@ -38,8 +38,8 @@ export class UserController {
         @Param('id') id: string,
         @Body() user: any
     ) {
-        console.log("id: ", id);
-        console.log("user: ", user);
+        // console.log("id: ", id);
+        // console.log("user: ", user);
         return this.userService.update(id, user);
     }
 

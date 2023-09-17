@@ -30,30 +30,48 @@ export class UserService {
     const usersDto = users.map((user: User) => {
       return new UserDto(user)
     });
-    // console.log("usuariosDto: ", usersDto);
+    console.log("usuariosDto: ", usersDto);
     return usersDto;
   }
 
-  async getByName(name: string) {
-    const filters = name.split(" ");
-    const users = await this.userRepository.createQueryBuilder('user')
-      .leftJoinAndSelect('user.role', 'role')
-      .where(new Brackets((qb) => {
-        filters.forEach((term, index) => {
-          qb.orWhere('user.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
-            .orWhere('user.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
-        });
-      }))
-      .orderBy('user.id', 'DESC')
-      .getMany();
-
-    const usersDto = users.map((user) => {
-      return new UserDto(user);
-    })
-
-    console.log("usuarios filtrados por nombre ", usersDto);
-    return usersDto;
+  async getByName(id: number) {
+    if (id) {
+      console.log("id if: ", id);
+      const users = await this.userRepository.find({
+        where: { id }, relations: ['role'], order: {
+          id: 'DESC', // Orden descendente por el campo numeroRegistro
+        }
+      });
+      const usersDto = users.map((user) => {
+        return new UserDto(user);
+      })
+      return usersDto;
+    } else {
+      console.log("id else: ", id);
+      return await this.getAll();
+    }
   }
+
+  // async getByName(name: string) {
+  //   const filters = name.split(" ");
+  //   const users = await this.userRepository.createQueryBuilder('user')
+  //     .leftJoinAndSelect('user.role', 'role')
+  //     .where(new Brackets((qb) => {
+  //       filters.forEach((term, index) => {
+  //         qb.orWhere('user.name LIKE :term' + index, { ['term' + index]: `%${term}%` })
+  //           .orWhere('user.lastName LIKE :term' + index, { ['term' + index]: `%${term}%` });
+  //       });
+  //     }))
+  //     .orderBy('user.id', 'DESC')
+  //     .getMany();
+
+  //   const usersDto = users.map((user) => {
+  //     return new UserDto(user);
+  //   })
+
+  //   console.log("usuarios filtrados por nombre ", usersDto);
+  //   return usersDto;
+  // }
 
   async findByRole(role: number) {
     // return this.userRepository.find({role})
@@ -132,12 +150,12 @@ export class UserService {
   }
 
   async remove(id: string) {
-    var response = {success: false};
+    var response = { success: false };
     const user = await this.findOne(id);
 
     const responseRemove = await this.userRepository.remove(user);
     console.log("response: ", response);
-    if(responseRemove) response.success = true;
+    if (responseRemove) response.success = true;
     return response;
   }
 
