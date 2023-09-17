@@ -18,7 +18,7 @@ export class CategoryController {
 
     @Get('by-name')
     async getByName(
-        @Query('name') name: string
+        @Query('name') name: number
     ) {
         console.log("name catgeoría: ", name);
         return await this.categoryService.getByName(name);

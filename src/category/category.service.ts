@@ -18,10 +18,14 @@ export class CategoryService {
         return this.categoryRepository.find();
     }
 
-    async getByName(name: string) {
-        const categories = await this.categoryRepository.find({ where: [{ name: Like(`%${name}%`) }] });
-        console.log("categorias: ", categories);
-        return categories;
+    async getByName(id: number) {
+        if(id){
+            const categories = await this.categoryRepository.find({ where:{id} });
+            return categories;
+        }else{
+            return await this.getAll();
+        }
+    
 
     }
 
