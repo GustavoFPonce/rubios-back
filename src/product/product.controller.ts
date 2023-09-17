@@ -45,11 +45,13 @@ export class ProductController {
     }
   }
 
-  @Get(':id')
-  async findOne(
-    @Param('id') id: string
-  ) {
-    return this.productService.findOne(id);
+  
+
+  @Get('product-name')
+  async getProductName(
+    @Query('product') id: number
+  ){
+    return await this.productService.getProductName(id);
   }
 
   @Post()
@@ -97,6 +99,14 @@ export class ProductController {
     console.log("start: ", start);
     console.log("end: ", end);
     return await this.productService.getInventoryByDate(id, start, end);
+  }
+
+  
+  @Get(':id')
+  async findOne(
+    @Param('id') id: string
+  ) {
+    return this.productService.findOne(id);
   }
 
 }

@@ -14,7 +14,7 @@ export class CreditController {
         @Body() createCreditDto: CreditCreateDto
     ) {
         const userId = 1;
-        console.log("creditCreate: ", createCreditDto);
+        //console.log("creditCreate: ", createCreditDto);
         return await this.creditService.create(createCreditDto, userId);
     }
 

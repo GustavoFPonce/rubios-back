@@ -35,7 +35,7 @@ export class CreditService {
 
 
     async create(creditCreateDto: CreditCreateDto, userId: number) {
-        console.log("creditCreate: ", creditCreateDto);
+        //console.log("creditCreate: ", creditCreateDto);
         var response = { success: false }
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
@@ -67,7 +67,7 @@ export class CreditService {
             commissionPaymentDetail: null
 
         };
-        console.log("credithistoryCreate: ", newCreditHistory);
+       // console.log("credithistoryCreate: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         //console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
@@ -128,6 +128,8 @@ export class CreditService {
 
     private getNextPaymenteDate(frequency: string, periodNumber: number, firstPayment: Date): Date {
         switch (frequency) {
+            case 'Un pago':
+                return firstPayment;
             case 'Semanal':
                 return addDays(firstPayment, 7 * periodNumber);
             case 'Quincenal':
@@ -161,9 +163,12 @@ export class CreditService {
 
     async getAll(id: number) {
         var referenceDate = new Date();
+        console.log("fecha de referencia: ", referenceDate);
         var argentinaTime = new Date(referenceDate.setHours(referenceDate.getHours() - 3));
+        console.log("fecha argentina: ", argentinaTime);
         const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
         const rangeDates = this.getStartDateEndDate(startDate, argentinaTime);
+        console.log("fechas rangos: ", rangeDates);
         const user = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
         // console.log("usuario encontrado: ", user);
         const conditions = new Brackets((qb) => {
@@ -203,11 +208,12 @@ export class CreditService {
             .addOrderBy('creditHistory.id', 'DESC')
             .getMany();
 
-        //console.log("credits: ", credits);
+     
         const creditsDto = credits.map(credit => {
             const creditList = new CreditListDto(credit);
             return creditList;
         })
+        console.log("credits: ", creditsDto);
 
         return creditsDto;
     }

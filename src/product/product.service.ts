@@ -219,4 +219,17 @@ export class ProductService {
     const inventoryCreate = this.inventoryRepository.create(newInventory);
     await this.inventoryRepository.save(inventoryCreate);
   }
+
+  async getProductName(id: number){
+    if(id){
+      const products = await this.productRepository.find({where:{id: id}, relations: ['category', 'inventories']});
+      const productsDto = products.map((product) => {
+        return new ProductDto(product);
+      })
+      //console.log("productsDto: ", productsDto);
+      return productsDto;
+    }else{
+      return await this.findAll();
+    }
+  }
 }
