@@ -88,18 +88,8 @@ export class ReportService {
 
 
   async getCollectionsAndCommissionsDetail(id: string, start: any, end: any, type: string) {
-    var paymentsDetail: PaymentDetail[] = [];
     const debtCollector = await this.userRepository.findOne(id);
-    if (start != 'null' && end != 'null') {
-      console.log("estoy en null");
-      const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
-      const startDate = dates.startDate;
-      const endDate = dates.endDate;
-      paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
-    } else {
-      console.log("noo estoy en null");
-      paymentsDetail = await this.getPaymentsDetailByDebtCollector(id, type);
-    }
+    var paymentsDetail: PaymentDetail[] = await this.getPaymentsDetail(id, start, end, type);
     const paymentsDetailsDto = paymentsDetail.map((x) => {
       return new PaymentDetailReportDto(x);
     });
@@ -107,14 +97,30 @@ export class ReportService {
     return details;
   }
 
+  private async getPaymentsDetail(id: string, start: any, end: any, type: string) {
+    if ((start != 'null' && start != null) && (end != 'null' && end != null)) {
+      console.log("no estoy en null");
+      const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
+      const startDate = dates.startDate;
+      const endDate = dates.endDate;
+      return await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
+    } else {
+      console.log("estoy en null");
+      return await this.getPaymentsDetailByDebtCollector(id, type);
+    }
+  }
+
 
   private async getPaymentsDetailByDebtCollector(id: string, type: string) {
-    const status = '1';
-    const paymentType = 2;
-    const paymentsDetail = (type == '1') ?
-      await this.getPaymentsDetailByDebtCollectorPersonalCredits(id, paymentType, status) :
-      await this.getPaymentsDetailByDebtCollectorSaleCredits(id, paymentType, status);
-    return paymentsDetail;
+    try {
+      const status = '1';
+      const paymentType = 2;
+      const paymentsDetail = (type == '1') ?
+        await this.getPaymentsDetailByDebtCollectorPersonalCredits(id, paymentType, status) :
+        await this.getPaymentsDetailByDebtCollectorSaleCredits(id, paymentType, status);
+      return paymentsDetail;
+    } catch (err) { console.log("error: ", err) }
+
   }
 
   private async getPaymentsDetailByDebtCollectorPersonalCredits(id: string, paymentType: number, status: string) {
@@ -136,6 +142,7 @@ export class ReportService {
   }
 
   private async getPaymentsDetailByDebtCollectorSaleCredits(id: string, paymentType: number, status: string) {
+    console.log("getPaymentsDetailByDebtCollectorSaleCredits");
     return await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -230,13 +237,10 @@ export class ReportService {
 
 
   async registerAccountedPayments(id: string, start: any, end: any, type: string) {
-    const startObject = getDateObject(start);
-    const endObject = getDateObject(end);
-    const dates = getDateStartEnd(startObject, endObject);
-    const startDate = dates.startDate;
-    const endDate = dates.endDate;
+
     try {
-      const paymentsDetail = await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
+      const paymentsDetail = await this.getPaymentsDetail(id, start, end, type);
+      console.log("payments obtenidos para rendir: ", paymentsDetail);
       await Promise.all(paymentsDetail.map(async (payment) => {
         if (payment.paymentDate) {
           payment.accountabilityDate = new Date();
@@ -304,14 +308,16 @@ export class ReportService {
   //   }
   // }
 
-  async registerCommissionsCredit(id: number) {
+  async registerCommissionsCredit(id: number, type: string) {
     try {
-      const credits = await this.getCreditsByDebtCollector(id)
+      const credits = (type == '1') ? await this.getCreditsByDebtCollectorPersonalCredits(id) :
+        await this.getCreditsByDebtCollectorSaleCredits(id)
       //console.log("credits: ", credits);
       await Promise.all(credits.map(async (credit) => {
         if (credit.accounted) {
           credit.commissionPaymentDate = new Date();
-          await this.creditHistoryRepository.save(credit);
+          (type == '1') ? await this.creditHistoryRepository.save(credit) :
+            await this.saleCreditHistoryRepository.save(credit);
         }
       }))
       return { success: true, error: '' };
@@ -321,7 +327,7 @@ export class ReportService {
   }
 
 
-  private async getCreditsByDebtCollector(id: number) {
+  private async getCreditsByDebtCollectorPersonalCredits(id: number) {
     const status = '2';
     const results = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -335,13 +341,39 @@ export class ReportService {
     return results;
   }
 
-  async getCommissionsTotal() {
+  private async getCreditsByDebtCollectorSaleCredits(id: number) {
+    const status = '2';
+    const results = await this.saleCreditHistoryRepository.createQueryBuilder('creditHistory')
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
+      .leftJoinAndSelect('credit.client', 'client')
+      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL', { id, status })
+      .getMany();
+
+    console.log("results: ", results)
+    return results;
+  }
+
+  async getCommissionsTotal(type: string) {
     const currencyPesos = 'peso';
     const currencyDollar = 'dolar';
     const status = 2;
     const accounted = true;
     const historyStatus = '1';
-    const totalCommission = await this.creditRepository
+    const totalCommission = (type == '1') ? await this.getCommissionsTotalPersonalCredits(currencyPesos, currencyDollar, accounted) :
+      await this.getCommissionsTotalSaleCredits(currencyPesos, currencyDollar, accounted);
+    console.log("total: ", totalCommission);
+    const commissionsTotalDto = totalCommission.map(x => {
+      return new CommissionTotal(x);
+    });
+    console.log("total commission: ", commissionsTotalDto);
+    return commissionsTotalDto;
+
+  }
+
+  async getCommissionsTotalPersonalCredits(currencyPesos: string, currencyDollar: string, accounted: boolean) {
+    return await this.creditRepository
       .createQueryBuilder('credit')
       .innerJoinAndSelect('credit.creditHistory', 'creditHistory')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
@@ -354,20 +386,30 @@ export class ReportService {
       .setParameters({ currencyPesos, currencyDollar, status: 2, historyStatus: 1, accounted })
       .groupBy('debtCollector.id, debtCollector.lastName')
       .getRawMany();
-    console.log("total: ", totalCommission);
-    const commissionsTotalDto = totalCommission.map(x => {
-      return new CommissionTotal(x);
-    });
-    console.log("total commission: ", commissionsTotalDto);
-    return commissionsTotalDto;
+  }
 
+  async getCommissionsTotalSaleCredits(currencyPesos: string, currencyDollar: string, accounted: boolean) {
+    return await this.saleCreditRepository
+      .createQueryBuilder('credit')
+      .innerJoinAndSelect('credit.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .select([
+        'debtCollector.id as debtCollectorId',
+        'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
+        'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyPesos) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsPesos',
+        'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyDollar) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsDollar'
+      ])
+      .setParameters({ currencyPesos, currencyDollar, status: 2, historyStatus: 1, accounted })
+      .groupBy('debtCollector.id, debtCollector.lastName')
+      .getRawMany();
   }
 
 
-  async getCommissionsCreditsByDebtCollector(id: number) {
+  async getCommissionsCreditsByDebtCollector(id: number, type: string) {
 
     const debtCollector = await this.userRepository.findOne(id);
-    const result = await this.getCreditsByDebtCollector(id);
+    const result = (type == '1') ? await this.getCreditsByDebtCollectorPersonalCredits(id) :
+      await this.getCreditsByDebtCollectorSaleCredits(id);
     //console.log("result: ", result);
     const creditsDetailDto = result.map(x => {
       return new CommissionCreditDto(x)

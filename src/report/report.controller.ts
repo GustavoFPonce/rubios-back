@@ -13,9 +13,7 @@ export class ReportController {
         @Query('end') end: any,
         @Query('type') type: string
     ){
-        console.log("start controller: ", start);
-        console.log("end controller: ", end);
-        console.log("type controller: ", type);
+       
         return await this.reportService.getChargesAccountedAndCollected(start, end, type);
     }
 
@@ -26,6 +24,9 @@ export class ReportController {
         @Query('end') end: any,
         @Query('type') type: string
     ){
+        console.log("start controller: ", start);
+        console.log("end controller: ", end);
+        console.log("type controller: ", type);
         return await this.reportService.getCollectionsAndCommissionsDetail(id, start, end, type);
     }
 
@@ -36,28 +37,32 @@ export class ReportController {
         @Query('end') end: any,
         @Query('type') type: string
     ){
-        console.log("registrando rendición: ", start, end);
+       // console.log("registrando rendición: ", start, end);
         return await this.reportService.registerAccountedPayments(id, start, end, type);
     }
 
     @Patch('register-commissions-payments')
     async registerCommissionsPayment(
-        @Query('id') id: number
+        @Query('id') id: number,
+        @Query('type') type: string
     ){
         console.log("llegue a pagar comisiones: ", id);
-        return await this.reportService.registerCommissionsCredit(id);
+        return await this.reportService.registerCommissionsCredit(id, type);
     }
 
     @Get('commissions-total')
-    async getCommissionsTotal(){
-        return await this.reportService.getCommissionsTotal();
+    async getCommissionsTotal(
+        @Query('type') type: string
+    ){
+        return await this.reportService.getCommissionsTotal(type);
     }
 
     @Get(':id/commissions-credit-by-deb-collector')
     async getCommissionsCreditsByDebtCollector(
-        @Param('id') id: number
+        @Param('id') id: number,
+        @Query('type') type: string
     ){
-        return await this.reportService.getCommissionsCreditsByDebtCollector(id);
+        return await this.reportService.getCommissionsCreditsByDebtCollector(id, type);
     }
 
     @Get(':id/collections-accounted-history')
