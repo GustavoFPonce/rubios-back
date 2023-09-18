@@ -601,7 +601,7 @@ export class CreditService {
         var newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(),
             principal: principal,
-            interest: interest,
+            interest: principal * paymentDetail.creditHistory.credit.interestRate/100,
             credit: paymentDetail.creditHistory.credit,
             firstPayment: newFirstPayment,
             payDay: this.getDayString(newFirstPayment),
