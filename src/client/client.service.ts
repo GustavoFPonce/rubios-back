@@ -125,6 +125,15 @@ export class ClientService {
             return this.search(type);
         }
     }
+
+    async getById(id: number) {
+        const client = await this.clientRepository.findOne(id)
+        if (!client) {
+            throw new NotFoundException(`There is no client under id ${id}`);
+        }
+
+        return client;
+    }
 }
 
 

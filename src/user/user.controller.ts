@@ -50,4 +50,12 @@ export class UserController {
         console.log("id: ", id);
         return this.userService.remove(id);
     }
+
+    @Get(':id')
+    async getById(
+        @Param('id') id: number
+    ){
+       console.log("id: ", id);
+        return await this.userService.getById(id);
+    }
 }

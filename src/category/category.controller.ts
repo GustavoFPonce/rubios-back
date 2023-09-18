@@ -55,4 +55,12 @@ export class CategoryController {
         console.log("id recibido: ", id);
         return await this.categoryService.getProducts(id);
     }
+
+    @Get(':id')
+    async getById(
+        @Param('id') id: number
+    ){
+       console.log("id: ", id);
+        return await this.categoryService.getById(id);
+    }
 }

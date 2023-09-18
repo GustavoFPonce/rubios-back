@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { Brackets, Like, Repository } from 'typeorm';
@@ -60,12 +60,18 @@ export class CategoryService {
         return response;
     }
 
-    async getById(id: number) {
-        return this.categoryRepository.findOne(id);
-    }
-
     async getProducts(id: number) {
         return this.productService.getByCategory(id);
 
     }
+
+    
+  async getById(id: number) {
+    const category = await this.categoryRepository.findOne(id)
+    if (!category) {
+        throw new NotFoundException(`There is no category under id ${id}`);
+    }
+
+    return category;
+}
 }

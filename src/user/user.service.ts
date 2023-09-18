@@ -159,4 +159,13 @@ export class UserService {
     return response;
   }
 
+  async getById(id: number) {
+    const user = await this.userRepository.findOne({where:{id}, relations: ['role']})
+    if (!user) {
+        throw new NotFoundException(`There is no user under id ${id}`);
+    }
+
+    return user;
+}
+
 }

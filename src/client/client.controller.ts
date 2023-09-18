@@ -67,4 +67,12 @@ export class ClientController {
        console.log("id: ", id);
         return await this.clientService.getByClientId(id, type);
     }
+
+    @Get(':id')
+    async getById(
+        @Param('id') id: number
+    ){
+       console.log("id: ", id);
+        return await this.clientService.getById(id);
+    }
 }
