@@ -16,6 +16,7 @@ import { CommissionListDebtCollector } from './dto/commission-list-debtCollector
 import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
 import { PaymentDetailSaleCredit } from 'src/sale-credit/entities/payment-detail-sale-credit.entity';
 import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
+import { StatusCredit } from 'src/credit/enum';
 
 @Injectable()
 export class ReportService {
@@ -476,6 +477,14 @@ export class ReportService {
 
     const commissionListDebtCollector = new CommissionListDebtCollector(debtCollector, creditsDetailDto);
     return commissionListDebtCollector;
+  };
+
+  async getLoanPrincipal() {
+    var resultsCredits = [];
+    const resultPersonalCredist = await this.creditHistoryRepository.find({ where: { status: !StatusCredit.canceled } });
+    resultPersonalCredist.forEach(credit => {
+      resultsCredits.push(credit);
+    });
   }
 
 }

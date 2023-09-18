@@ -67,7 +67,7 @@ export class CreditService {
             commissionPaymentDetail: null
 
         };
-       // console.log("credithistoryCreate: ", newCreditHistory);
+        // console.log("credithistoryCreate: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         //console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
@@ -208,7 +208,7 @@ export class CreditService {
             .addOrderBy('creditHistory.id', 'DESC')
             .getMany();
 
-     
+
         const creditsDto = credits.map(credit => {
             const creditList = new CreditListDto(credit);
             return creditList;
@@ -250,11 +250,11 @@ export class CreditService {
 
         var credits: any;
         if (user == 'all') {
-           // console.log("buscando por todos");
+            // console.log("buscando por todos");
             credits = await this.searchCreditsByConditions(conditions);
         } else {
             credits = await this.searchCreditsByConditionsByUser(conditions, parseInt(user));
-           // console.log("credits: ", credits);
+            // console.log("credits: ", credits);
         };
         const creditsDto = this.getCreditsListDto(credits);
 
@@ -572,6 +572,7 @@ export class CreditService {
     }
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any) {
+        let deletePaymentDetail = false;
         console.log("id: ", id);
         console.log("paymentAmount: ", paymentAmount);
         var response = { success: false, collection: {} };
@@ -593,7 +594,8 @@ export class CreditService {
             principal = principal + (parseFloat(lastUpdateCreditHistory.interest) - paymentAmount)
         } else {
             principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
-        };        
+            if (paymentDetail.creditHistory.credit.paymentFrequency == 'Un pago') deletePaymentDetail = true;
+        };
         var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         const newFirstPayment = new Date(firstPayment);
         console.log("newFirstPayment: ", newFirstPayment);
@@ -632,7 +634,7 @@ export class CreditService {
             response.success = true;
 
         }
-
+        if (deletePaymentDetail) await this.paymentDetailRepository.delete(paymentDetail.id);
         return response;
     }
 
@@ -825,7 +827,7 @@ export class CreditService {
             return new CreditHistoryDto(credit);
         });
 
-       // console.log("creditsHistoryDto: ", creditsHistoryDto);
+        // console.log("creditsHistoryDto: ", creditsHistoryDto);
         return creditsHistoryDto;
     }
 

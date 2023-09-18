@@ -82,4 +82,9 @@ export class ReportController {
         return await this.reportService.getCommissionsCreditsHistory(id);
     }
 
+    @Get('loan-principal')
+    async getLoanPrincipal(){
+        return await this.reportService.getLoanPrincipal();
+    }
+
 }
