@@ -21,7 +21,7 @@ export class SaleController {
     ) {
         const userId = req.user.userId;
        //console.log("sale a guaradar: ", sale);
-        //console.log("credit a guaradar: ", credit);
+        console.log("credit a guaradar: ", credit);
         return await this.saleService.create(sale, userId, credit);
     }
 

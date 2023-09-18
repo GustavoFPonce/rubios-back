@@ -42,7 +42,7 @@ export class SaleCreditService {
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
-        const payments = [];
+        const payments = creditCreateDto.paymentsDetail;;
         var createCredit = new SaleCredit();
         createCredit.userId = userId;
         createCredit.client = client;
@@ -57,7 +57,7 @@ export class SaleCreditService {
         createCredit.sale = sale;
         const credit = this.saleCreditRepository.create(createCredit);
         const creditSaved = await this.saleCreditRepository.save(credit);
-        //console.log("date: ", creditCreateDto.date);
+        console.log("date: ", creditCreateDto.date);
         const newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(creditCreateDto.date),
             principal: creditCreateDto.principal,
@@ -423,9 +423,10 @@ export class SaleCreditService {
                 return `creditHistory.id = ${subQuery}`;
             })
             .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
-            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status != :status', {
                 startDate,
                 endDate,
+                status: StatusCredit.annulled
             })
             .leftJoinAndSelect('credit.client', 'client')
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
@@ -459,9 +460,10 @@ export class SaleCreditService {
             .andWhere('credit.debtCollector.id = :userId', { userId })
             .andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .andWhere('credit.debtCollector.id = :userId', { userId })
-            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
+            .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status != :status', {
                 startDate,
                 endDate,
+                status: StatusCredit.annulled
             })
             .andWhere('credit.debtCollector.id = :userId', { userId })
             .leftJoinAndSelect('credit.client', 'client')
@@ -480,17 +482,19 @@ export class SaleCreditService {
         if (day == 'current') {
             console.log("estoy en current");
             return new Brackets((qb) => {
-                qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
+                qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate AND credit.status != :status', {
                     startDate,
                     endDate,
+                    status: StatusCredit.annulled
                 })
                     .orWhere(
-                        '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL)',
-                        { startDate }
+                        '(paymentsDetail.paymentDueDate <= :startDate AND paymentsDetail.paymentDate IS NULL AND credit.status != :status)',
+                        { startDate, status: StatusCredit.annulled }
                     )
-                    .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate', {
+                    .orWhere('paymentsDetail.paymentDate BETWEEN :startDate AND :endDate AND credit.status != :status', {
                         startDate,
                         endDate,
+                        status: StatusCredit.annulled
                     })
             })
         } else {

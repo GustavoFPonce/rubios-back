@@ -1,4 +1,5 @@
 import { IsArray, IsDate, IsDateString, IsNumber, IsString } from 'class-validator';
+import { PaymentDetailCreateDto } from 'src/credit/dto/payment-detaill-create-dto';
 
 
 export class SaleCreditCreateDto{
@@ -32,5 +33,8 @@ export class SaleCreditCreateDto{
 
     @IsNumber()
     readonly commission: number;
+
+    @IsArray()
+    paymentsDetail: PaymentDetailCreateDto[]
 
 }
