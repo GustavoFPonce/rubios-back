@@ -17,7 +17,7 @@ export class PaymentDetailDto {
             paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
             paymentDate: (paymentDetail.paymentDate) ? format(paymentDetail.paymentDate, "dd-MM-yyyy") : null,
             balance: paymentDetail.balance,
-            paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
+            paymentType: (paymentDetail.paymentType == 1)?'cuota':(paymentDetail.creditHistory.interest< paymentDetail.payment)?'capital-interés':'interés',
         };
         return paymentDetailDto;
     }
