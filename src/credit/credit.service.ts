@@ -589,19 +589,19 @@ export class CreditService {
         const lastUpdateCreditHistory: any = paymentDetail.creditHistory;
         console.log("ultimo credit history: ", lastUpdateCreditHistory);
         var principal = parseFloat(lastUpdateCreditHistory.principal);
-        var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         if (paymentAmount <= parseFloat(lastUpdateCreditHistory.interest)) {
-            principal = principal + (interest - paymentAmount)
+            principal = principal + (parseFloat(lastUpdateCreditHistory.interest) - paymentAmount)
         } else {
             principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
-        };
+        };        
+        var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         const newFirstPayment = new Date(firstPayment);
         console.log("newFirstPayment: ", newFirstPayment);
         // this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
         var newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(),
             principal: principal,
-            interest: principal * paymentDetail.creditHistory.credit.interestRate/100,
+            interest: interest,
             credit: paymentDetail.creditHistory.credit,
             firstPayment: newFirstPayment,
             payDay: this.getDayString(newFirstPayment),
