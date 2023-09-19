@@ -801,6 +801,7 @@ export class SaleCreditService {
     }
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any) {
+        let deletePaymentDetail = false;
         console.log("id: ", id);
         console.log("paymentAmount: ", paymentAmount);
         var response = { success: false, collection: {} };
@@ -818,12 +819,14 @@ export class SaleCreditService {
         const lastUpdateCreditHistory: any = paymentDetail.creditHistory;
         console.log("ultimo credit history: ", lastUpdateCreditHistory);
         var principal = parseFloat(lastUpdateCreditHistory.principal);
-        var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         if (paymentAmount <= parseFloat(lastUpdateCreditHistory.interest)) {
-            principal = principal + (interest - paymentAmount)
+            principal = principal + (parseFloat(lastUpdateCreditHistory.interest) - paymentAmount)
         } else {
             principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
+            if (paymentDetail.creditHistory.credit.paymentFrequency == 'Un pago') deletePaymentDetail = true;
         };
+        
+        var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         const newFirstPayment = new Date(firstPayment);
         console.log("nueva fecha de primer pago: ", newFirstPayment);
         //this.getNextPaymenteDate(paymentDetail.creditHistory.credit.paymentFrequency, 2, paymentDetail.paymentDueDate);
@@ -861,7 +864,7 @@ export class SaleCreditService {
             response.success = true;
 
         }
-
+        if (deletePaymentDetail) await this.paymentDetailSaleCreditRepository.delete(paymentDetail.id);
         return response;
     }
 

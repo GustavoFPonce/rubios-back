@@ -9,7 +9,7 @@ export class PaymentDetailDto {
     balance: number;
     paymentType: string;
 
-    constructor(paymentDetail: any, interest: number) {
+    constructor(paymentDetail: any, interest: any) {
         const paymentDetailDto: PaymentDetailDto = {
             id: paymentDetail.id,
             payment: paymentDetail.payment,
@@ -17,7 +17,7 @@ export class PaymentDetailDto {
             paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
             paymentDate: (paymentDetail.paymentDate) ? format(paymentDetail.paymentDate, "dd-MM-yyyy") : null,
             balance: paymentDetail.balance,
-            paymentType: (paymentDetail.paymentType == 1)?'cuota':(interest< paymentDetail.payment)?'capital-interés':'interés',
+            paymentType: (paymentDetail.paymentType == 1)?'cuota':(parseFloat(interest)< parseFloat(paymentDetail.payment))?'capital-interés':'interés',
         };
         return paymentDetailDto;
     }

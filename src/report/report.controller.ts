@@ -41,6 +41,13 @@ export class ReportController {
         return await this.reportService.registerAccountedPayments(id, start, end, type);
     }
 
+    
+
+    @Get('loan-principal')
+    async getLoanPrincipal(){
+        return await this.reportService.getPendingBalanceCredits();
+    }
+
     @Patch('register-commissions-payments')
     async registerCommissionsPayment(
         @Query('id') id: number,
@@ -80,11 +87,6 @@ export class ReportController {
         @Param('id') id: number
     ){
         return await this.reportService.getCommissionsCreditsHistory(id);
-    }
-
-    @Get('loan-principal')
-    async getLoanPrincipal(){
-        return await this.reportService.getLoanPrincipal();
     }
 
 }

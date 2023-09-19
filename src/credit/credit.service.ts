@@ -588,7 +588,6 @@ export class CreditService {
             throw new NotFoundException(`No se encontro el pago con el id: ${id}`);
         };
         const lastUpdateCreditHistory: any = paymentDetail.creditHistory;
-        console.log("ultimo credit history: ", lastUpdateCreditHistory);
         var principal = parseFloat(lastUpdateCreditHistory.principal);
         if (paymentAmount <= parseFloat(lastUpdateCreditHistory.interest)) {
             principal = principal + (parseFloat(lastUpdateCreditHistory.interest) - paymentAmount)

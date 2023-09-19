@@ -15,7 +15,7 @@ export class CommissionCreditDto {
     constructor(credit: CreditHistory) {
         const commissionCreditDto: CommissionCreditDto = {
             creditHistoryId: credit.id,
-            client: credit.credit.client.lastName + " " + credit.credit.client.name,
+            client: credit.credit.client?.lastName + " " + credit.credit.client?.name,
             date: format(credit.date, 'dd-MM-yyyy'),
             principal: credit.principal,
             interest: credit.interest,

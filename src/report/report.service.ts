@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { getDateStartEnd } from 'src/common/get-date-start-end';
 import { Credit } from 'src/credit/entities/credit.entity';
 import { PaymentDetail } from 'src/credit/entities/payment-detail.entity';
-import { Between, Brackets, Repository } from 'typeorm';
+import { Between, Brackets, In, Not, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { TotalChargeAccountedCollected } from './dto/charges-accounted-collected-dto';
 import { PaymentDetailReportDto } from './dto/payment-detail-report-dto';
@@ -17,6 +17,7 @@ import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.
 import { PaymentDetailSaleCredit } from 'src/sale-credit/entities/payment-detail-sale-credit.entity';
 import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
 import { StatusCredit } from 'src/credit/enum';
+import { LoanPrincipalDto } from './dto/loan-principal-dto';
 
 @Injectable()
 export class ReportService {
@@ -480,11 +481,41 @@ export class ReportService {
   };
 
   async getLoanPrincipal() {
-    var resultsCredits = [];
-    const resultPersonalCredist = await this.creditHistoryRepository.find({ where: { status: !StatusCredit.canceled } });
+    const notDesiredStatuses = [StatusCredit.canceled, StatusCredit.annulled];
+    var resultsCredits: LoanPrincipalDto[] = [];
+    const resultPersonalCredist = await this.creditRepository.find({ where: { status: Not(In(notDesiredStatuses)) }, relations: ['client', 'creditHistory'] });
     resultPersonalCredist.forEach(credit => {
-      resultsCredits.push(credit);
+      const dto = new LoanPrincipalDto(credit, 'Crédito Personal');
+      resultsCredits.push(dto);
     });
+    const resultSaleCredits = await this.saleCreditRepository.find({ where: { status: Not(In(notDesiredStatuses)) }, relations: ['client', 'creditHistory'] })
+    resultSaleCredits.forEach(credit => {
+      const dto = new LoanPrincipalDto(credit, 'Crédito Venta');
+      resultsCredits.push(dto);
+    });
+
+    console.log("loan principal: ", resultSaleCredits);
+    return resultsCredits;
+  }
+
+  async getPendingBalanceCredits(){
+    const currencyPesos = 'peso';
+    const currencyDollar = 'dolar';
+    const status = '1';
+    const statusCredit = 2;
+    const report = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
+    .leftJoin('creditHistory.paymentsDetail', 'paymentDetail')
+    .leftJoin('creditHistory.credit', 'credit')
+    .select([
+      'CONCAT(creditHistory.id) as creditHistoryId',
+      `SUM(CASE WHEN (paymentDetail.paymentDate IS NOT NULL AND credit.typeCurrency = :currencyPesos AND creditHistory.status = :status AND credit.status != :creditStatus) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsPesos`,
+      `SUM(CASE WHEN (paymentDetail.paymentDate IS NOT NULL AND credit.typeCurrency = :currencyDollar AND creditHistory.status = :status AND credit.status != :creditStatus) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsDollar`,
+    ])
+    .setParameters({ currencyPesos, currencyDollar, status: 1, creditStatus: 2 })
+    .groupBy('creditHistory.id')
+    .getRawMany();
+
+    console.log("report balance: ", report);
   }
 
 }
