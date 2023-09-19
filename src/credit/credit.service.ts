@@ -64,7 +64,8 @@ export class CreditService {
             payment: creditCreateDto.payment,
             status: StatusCreditHistory.current,
             accounted: false,
-            commissionPaymentDetail: null
+            commissionPaymentDetail: null,
+            balance: creditCreateDto.principal + (creditCreateDto.principal * creditCreateDto.interestRate / 100)
 
         };
         // console.log("credithistoryCreate: ", newCreditHistory);
@@ -540,8 +541,17 @@ export class CreditService {
             response.success = true;
             response.collection = new CollectionDto(saved);
             this.uptadeBalanceNextPayment(payment.balance, payment.creditHistory.id, payment.creditHistory.credit.id);
+            await this.updateBalanceCreditHistory(payment.creditHistory.id, paymentAmount);
         }
         return response;
+    }
+
+    private async updateBalanceCreditHistory(id: number, paymentAmount: number) {
+        const creditHistory = await this.creditHistoryRepository.findOne(id);
+        if (creditHistory) {
+            creditHistory.balance = creditHistory.balance - paymentAmount;
+            await this.creditHistoryRepository.save(creditHistory);
+        }
     }
 
     private async uptadeBalanceNextPayment(balance: number, creditHistoryId: number, creditId: number) {
@@ -593,8 +603,8 @@ export class CreditService {
             principal = principal + (parseFloat(lastUpdateCreditHistory.interest) - paymentAmount)
         } else {
             principal = principal - (paymentAmount - parseFloat(lastUpdateCreditHistory.interest));
-            if (paymentDetail.creditHistory.credit.paymentFrequency == 'Un pago') deletePaymentDetail = true;
         };
+        if (paymentDetail.creditHistory.credit.paymentFrequency == 'Un pago') deletePaymentDetail = true;
         var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         const newFirstPayment = new Date(firstPayment);
         console.log("newFirstPayment: ", newFirstPayment);
@@ -609,7 +619,8 @@ export class CreditService {
             payment: (principal + interest) / paymentDetail.creditHistory.credit.numberPayment,
             status: StatusCreditHistory.current,
             accounted: false,
-            commissionPaymentDetail: null
+            commissionPaymentDetail: null,
+            balance: principal + interest
         };
         console.log("newCreditHistory: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);

@@ -12,4 +12,5 @@ export interface CreditHistoryCreateDto{
     status: StatusCreditHistory;
     accounted: boolean;
     commissionPaymentDetail: Date;
+    balance: number
 }

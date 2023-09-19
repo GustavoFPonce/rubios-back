@@ -33,6 +33,9 @@ export class CreditHistory {
 
     @Column()
     status: number;
+
+    @Column()
+    balance: number;
   
     @ManyToOne(()=> Credit, (credit: Credit) => credit.creditHistory)
     @JoinColumn({ name: 'credit_id' }) 

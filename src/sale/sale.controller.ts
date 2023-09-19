@@ -15,7 +15,7 @@ export class SaleController {
 
     @Post()
     async create(
-        @Body('sale') sale: SaleCreateDto,
+        @Body('sale') sale: any,
         @Body('credit') credit: any,
         @Req() req: any
     ) {
