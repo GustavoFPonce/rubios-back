@@ -374,9 +374,16 @@ export class CreditService {
     }
 
     async getPaymentsDetail(id: number): Promise<PaymentDetailDto[]> {
-        const credit = await this.creditHistoryRepository.findOne({ where: { id }, relations: ['credit', 'paymentsDetail'] });
+        const credit = await this.creditHistoryRepository.findOne({ where: { id },
+            relations: ['credit', 'paymentsDetail'] });
         console.log("credit: ", credit);
-        const paymentsDetail = credit.paymentsDetail.map(x => {
+        const paymentsDetail = credit.paymentsDetail.sort((a, b) => {
+            if (a.paymentDueDate.getTime() !== b.paymentDueDate.getTime()) {
+              return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
+            }
+            return b.id - a.id;
+          })      
+        .map(x => {
             return new PaymentDetailDto(x, credit.interest);
         });
         return paymentsDetail;

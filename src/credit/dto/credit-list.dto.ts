@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { Credit } from "../entities/credit.entity";
 import { StatusCredit } from "../enum";
+import { PaymentDetailDto } from "./payment-detail-dto";
 
 export class CreditListDto {
     id: number;
@@ -20,7 +21,7 @@ export class CreditListDto {
     firstPayment: string;
     typeCurrency: string;
     status: string;
-    commission: number
+    commission: number;
 
 
 
@@ -33,15 +34,15 @@ export class CreditListDto {
             clientNumber: credit.client?.clientNumber,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             debtCollectorId: parseInt(credit.debtCollector.id),
-            date: format(credit.creditHistory[credit.creditHistory.length-1].date, "dd-MM-yyyy"),
-            principal: credit.creditHistory[credit.creditHistory.length-1].principal,
+            date: format(credit.creditHistory[credit.creditHistory.length - 1].date, "dd-MM-yyyy"),
+            principal: credit.creditHistory[credit.creditHistory.length - 1].principal,
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
-            payment: credit.creditHistory[credit.creditHistory.length-1].payment,
-            payDay: credit.creditHistory[credit.creditHistory.length-1].payDay,
+            payment: credit.creditHistory[credit.creditHistory.length - 1].payment,
+            payDay: credit.creditHistory[credit.creditHistory.length - 1].payDay,
             information: credit.information,
             interestRate: credit.interestRate,
-            firstPayment: format(credit.creditHistory[credit.creditHistory.length-1].firstPayment, "dd-MM-yyyy"),
+            firstPayment: format(credit.creditHistory[credit.creditHistory.length - 1].firstPayment, "dd-MM-yyyy"),
             typeCurrency: credit.typeCurrency,
             status: `${StatusCredit[credit.status]}`,
             commission: credit.commission
