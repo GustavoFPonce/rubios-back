@@ -165,7 +165,7 @@ export class UserService {
         throw new NotFoundException(`There is no user under id ${id}`);
     }
 
-    return user;
+    return new UserDto(user);
 }
 
 }

@@ -64,6 +64,30 @@ export class ReportController {
         return await this.reportService.getCommissionsTotal(type);
     }
 
+    @Get('total-balance')
+    async getTotalBalance(
+        @Query('currencyType') currencyType: string,        
+        @Query('year') year: string
+    ){
+        return await this.reportService.getTotalBalance(currencyType, year);
+    }
+
+    @Get('total-balance-bad')
+    async getTotalBalanceBadCredits(
+        @Query('currencyType') currencyType: string,        
+        @Query('year') year: string
+    ){
+        return await this.reportService.getTotalBalanceBadCredits(currencyType, year);
+    }
+
+    
+    @Get('total-indicators')
+    async getIndicators(
+        @Query('currencyType') currencyType: string,  
+    ){
+        return await this.reportService.getTotalIndicators(currencyType);
+    }
+
     @Get(':id/commissions-credit-by-deb-collector')
     async getCommissionsCreditsByDebtCollector(
         @Param('id') id: number,
