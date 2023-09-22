@@ -98,6 +98,13 @@ export class CreditController {
         return this.creditService.registerPayment(id, payment);
     }
 
+    @Put((':id/cancel-registered-payment'))
+    async cancelRegisteredPayment(
+        @Param('id') id: number
+    ) {
+        return this.creditService.cancelRegisteredPayment(id);
+    }
+
     @Put((':id/register-cancellation-interest-principal'))
     async registerCancellationInterestPrincipal(
         @Param('id') id: number,

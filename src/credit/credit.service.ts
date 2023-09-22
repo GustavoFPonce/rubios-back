@@ -648,6 +648,24 @@ export class CreditService {
         }
     }
 
+    async cancelRegisteredPayment(id: number) {
+        var response = { success: false, collection: {} };
+        var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit'] });
+        //const isPartialPayment = payment.payment>
+        payment.actualPayment = 0.00;
+        payment.paymentDate = null;
+        const saved = await this.paymentDetailRepository.save(payment);
+        console.log("saved: ", saved);
+        if (saved) {
+            response.success = true;
+            const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, (-payment.payment));
+        }
+        return response;
+    }
+
+
+
+
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any) {
         let deletePaymentDetail = false;
         console.log("id: ", id);
