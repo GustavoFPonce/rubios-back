@@ -40,6 +40,9 @@ export class CreditCreateDto{
     @IsNumber()
     readonly commission: number;
 
+    @IsNumber()
+    readonly balance: number;
+
     @IsArray()
     paymentsDetail: PaymentDetailCreateDto[]
 }

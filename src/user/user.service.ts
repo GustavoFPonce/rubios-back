@@ -30,7 +30,7 @@ export class UserService {
     const usersDto = users.map((user: User) => {
       return new UserDto(user)
     });
-    console.log("usuariosDto: ", usersDto);
+    //console.log("usuariosDto: ", usersDto);
     return usersDto;
   }
 

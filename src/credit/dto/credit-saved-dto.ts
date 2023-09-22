@@ -42,4 +42,9 @@ export class CreditSavedDto {
 
      @IsNumber()
       commission: number;
+
+      @IsNumber()
+      balance: number;
+
+      paymentsDetail: any
 }

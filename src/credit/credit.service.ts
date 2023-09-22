@@ -17,6 +17,7 @@ import { CreditHistory } from './entities/credit-history.entity';
 import { CreditHistoryCreateDto } from './dto/credit-history-create-dto';
 import { CreditHistoryDto } from './dto/credit-history-dto';
 import { PaymentDetailCreateDto } from './dto/payment-detaill-create-dto';
+import { CreditEditDto } from './dto/credit-edit-dto';
 
 @Injectable()
 export class CreditService {
@@ -65,7 +66,7 @@ export class CreditService {
             status: StatusCreditHistory.current,
             accounted: false,
             commissionPaymentDetail: null,
-            balance: creditCreateDto.principal + (creditCreateDto.principal * creditCreateDto.interestRate / 100)
+            balance: creditCreateDto.balance
 
         };
         // console.log("credithistoryCreate: ", newCreditHistory);
@@ -149,27 +150,66 @@ export class CreditService {
         var response = { success: false };
         const debtCollector = await this.userRepository.findOne(credit.debtCollectorId);
         var creditSaved = await this.creditRepository.findOne(credit.id);
+        const creditHistorySaved = await this.creditHistoryRepository.findOne({ where: { credit: id, status: 1 }, relations: ['credit', 'paymentsDetail'] });
+        creditSaved.numberPayment = credit.numberPayment;
+        creditSaved.paymentFrequency = credit.paymentFrequency;
         creditSaved.debtCollector = debtCollector;
         creditSaved.information = credit.information;
         creditSaved.typeCurrency = credit.typeCurrency;
         creditSaved.status = parseInt(`${StatusCredit[credit.status]}`);
         creditSaved.commission = credit.commission;
-        const saved = await this.creditRepository.save(creditSaved);
-        if (saved) response.success = true;
+        const updateCreditSaved = await this.creditRepository.save(creditSaved);
+        //console.log("update credit: ", updateCreditSaved);
+        const updateCreditHistorySaved = await this.updateCreditHistory(creditHistorySaved, credit);
+        //console.log("updateCreditHistorySaved: ", updateCreditHistorySaved);
+        if (credit.paymentsDetail) await this.updatePaymentsDetail(id, credit.paymentsDetail);
+        if (updateCreditSaved) response.success = true;
         return response;
         //return null;
     }
 
+    private async updateCreditHistory(creditHistory: CreditHistory, credit: CreditSavedDto) {
+        console.log("balance: ", credit.balance);
+        creditHistory.date = parseISO(credit.date);
+        creditHistory.principal = credit.principal;
+        creditHistory.interest = credit.principal * credit.interestRate / 100;
+        creditHistory.firstPayment = parseISO(credit.firstPayment);
+        creditHistory.payDay = this.getDayString(new Date(credit.firstPayment));
+        creditHistory.payment = credit.payment;
+        creditHistory.status = StatusCredit[credit.status];
+        creditHistory.accounted = false;
+        creditHistory.balance = (!credit.balance) ? creditHistory.balance : credit.balance;
+        return await this.creditHistoryRepository.save(creditHistory);
+    }
+
+    private async updatePaymentsDetail(creditId: number, paymentsDetail: PaymentDetailCreateDto[]) {
+        var response = { success: false, error: '' };
+        const creditHistory = await this.creditHistoryRepository.findOne({ where: { credit: creditId, status: 1 }, relations: ['credit', 'paymentsDetail'] });
+        //console.log('creditHistory update: ', creditHistory);
+
+        for (const payment of creditHistory.paymentsDetail) {
+            const responseDelete = await this.deletePayment(payment.id);
+            if (responseDelete.affected > 0) response.success = true;
+        };
+        if (response.success) {
+            const responseUpdatePayments = await this.addPaymentDetail(paymentsDetail, creditHistory, creditHistory.credit);
+        }
+    }
+
+
+    private async deletePayment(id: number) {
+        return await this.paymentDetailRepository.delete(id);
+    }
 
 
     async getAll(id: number) {
         var referenceDate = new Date();
-        console.log("fecha de referencia: ", referenceDate);
+        //console.log("fecha de referencia: ", referenceDate);
         var argentinaTime = new Date(referenceDate.setHours(referenceDate.getHours() - 3));
-        console.log("fecha argentina: ", argentinaTime);
+        //console.log("fecha argentina: ", argentinaTime);
         const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
         const rangeDates = this.getStartDateEndDate(startDate, argentinaTime);
-        console.log("fechas rangos: ", rangeDates);
+        //console.log("fechas rangos: ", rangeDates);
         const user = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
         // console.log("usuario encontrado: ", user);
         const conditions = new Brackets((qb) => {
@@ -214,7 +254,7 @@ export class CreditService {
             const creditList = new CreditListDto(credit);
             return creditList;
         })
-        console.log("credits: ", creditsDto);
+        //console.log("credits: ", creditsDto);
 
         return creditsDto;
     }
@@ -374,18 +414,20 @@ export class CreditService {
     }
 
     async getPaymentsDetail(id: number): Promise<PaymentDetailDto[]> {
-        const credit = await this.creditHistoryRepository.findOne({ where: { id },
-            relations: ['credit', 'paymentsDetail'] });
+        const credit = await this.creditHistoryRepository.findOne({
+            where: { id },
+            relations: ['credit', 'paymentsDetail']
+        });
         console.log("credit: ", credit);
         const paymentsDetail = credit.paymentsDetail.sort((a, b) => {
             if (a.paymentDueDate.getTime() !== b.paymentDueDate.getTime()) {
-              return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
+                return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
             }
             return b.id - a.id;
-          })      
-        .map(x => {
-            return new PaymentDetailDto(x, credit.interest);
-        });
+        })
+            .map(x => {
+                return new PaymentDetailDto(x, credit.interest);
+            });
         return paymentsDetail;
     }
 
@@ -542,22 +584,40 @@ export class CreditService {
         payment.paymentDate = new Date();
         payment.actualPayment = paymentAmount;
         payment.balance = payment.balance - paymentAmount;
+        payment.creditHistory.balance = payment.creditHistory.balance - paymentAmount;
+        const paymentPending = payment.payment - paymentAmount;
         const saved = await this.paymentDetailRepository.save(payment);
         console.log("saved: ", saved);
         if (saved) {
             response.success = true;
             response.collection = new CollectionDto(saved);
             this.uptadeBalanceNextPayment(payment.balance, payment.creditHistory.id, payment.creditHistory.credit.id);
-            await this.updateBalanceCreditHistory(payment.creditHistory.id, paymentAmount);
+            const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, paymentAmount);
+            if (paymentPending > 0 && creditHistoryUpdate) await this.addPendingPayment(paymentPending, payment.creditHistory);
         }
         return response;
+    }
+
+    private async addPendingPayment(paymentPending: number, creditHistory: CreditHistory) {
+        var payment = new PaymentDetail();
+        payment.payment = paymentPending;
+        payment.paymentDueDate = addDays(new Date(), 1);
+        payment.paymentDate = null;
+        payment.paymentType = PaymentType.paymentInstallments;
+        payment.accountabilityDate = null;
+        payment.creditHistory = creditHistory;
+        payment.recoveryDateCommission = null;
+        payment.actualPayment = 0.00;
+        payment.balance = creditHistory.balance;
+        const responseAdd = await this.paymentDetailRepository.save(payment);
+        console.log("response add payment pending: ", responseAdd);
     }
 
     private async updateBalanceCreditHistory(id: number, paymentAmount: number) {
         const creditHistory = await this.creditHistoryRepository.findOne(id);
         if (creditHistory) {
             creditHistory.balance = creditHistory.balance - paymentAmount;
-            await this.creditHistoryRepository.save(creditHistory);
+            return await this.creditHistoryRepository.save(creditHistory);
         }
     }
 
@@ -825,12 +885,16 @@ export class CreditService {
     }
 
     async getById(id: string) {
-        const credit = await this.creditRepository.findOne({ where: { id: id }, relations: ['debtCollector', 'client', 'creditHistory'] });
+        const credit = await this.creditRepository.findOne({ where: { id: id }, relations: ['debtCollector', 'client', 'creditHistory', 'creditHistory.paymentsDetail'] });
         if (!credit) {
             throw new NotFoundException(`No se encontró el crédito con el id: ${id}`);
         };
+        const creditHistory = credit.creditHistory[credit.creditHistory.length - 1];
+        const paymentsDetailDto = creditHistory.paymentsDetail.map(x => {
+            return new PaymentDetailDto(x, creditHistory.interest)
+        });
 
-        return new CreditListDto(credit);
+        return new CreditEditDto(credit, paymentsDetailDto);
     }
 
     async getCreditsHistory(id: string) {

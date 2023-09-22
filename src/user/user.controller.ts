@@ -55,7 +55,7 @@ export class UserController {
     async getById(
         @Param('id') id: number
     ){
-       console.log("id: ", id);
+       //console.log("id: ", id);
         return await this.userService.getById(id);
     }
 }

@@ -19,7 +19,7 @@ export class CreditHistoryDto{
             payDay: creditHistory.payDay,
             principal: creditHistory.principal,
             interest: creditHistory.interest,
-            status: (creditHistory.status == 2)? 'No vigente': 'Vigente',
+            status: (creditHistory.status == 2)? 'Renovado': 'Actual',
             balance: creditHistory.balance
         };
         return creditHistoryDto;

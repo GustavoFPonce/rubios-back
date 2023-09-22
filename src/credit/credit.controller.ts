@@ -14,7 +14,7 @@ export class CreditController {
         @Body() createCreditDto: CreditCreateDto
     ) {
         const userId = 1;
-        //console.log("creditCreate: ", createCreditDto);
+        console.log("creditCreate: ", createCreditDto);
         return await this.creditService.create(createCreditDto, userId);
     }
 
@@ -23,6 +23,7 @@ export class CreditController {
         @Param('id') id: number,
         @Body() credit: any
     ) {
+        console.log("credit a editar: ", credit);
         var response = await this.creditService.update(id, credit);
         return response;
     }
@@ -133,13 +134,13 @@ export class CreditController {
         @Query('frequency') frequency: string,
         @Query('startDate') startDate: any,
         @Query('endDate') endDate: any,
-        @Req() req:any
+        @Req() req: any
     ) {
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-       if(user == 'null') user = req.user.userId;
+        if (user == 'null') user = req.user.userId;
         //console.log("user recibido: ", user);
         return await this.creditService.searchCredits(status, user, currency, frequency, start, end);
 
@@ -149,15 +150,15 @@ export class CreditController {
     @Get(':id')
     async getById(
         @Param('id') id: string
-    ){
+    ) {
         return await this.creditService.getById(id);
     }
 
     @Get(':id/credits-history')
     async getCreditsHistory(
         @Param('id') id: string
-    ){
-        console.log("id: ", id);
+    ) {
+        //console.log("id: ", id);
         return await this.creditService.getCreditsHistory(id);
     }
 

@@ -281,7 +281,7 @@ export class SaleCreditService {
 
     async getPaymentsDetail(id: number): Promise<PaymentDetailDto[]> {
         const credit = await this.saleCreditHistoryRepository.findOne({ where: { id }, relations: ['credit', 'paymentsDetail'] });
-        console.log("credit: ", credit);
+        //console.log("credit: ", credit);
         const paymentsDetail = credit.paymentsDetail.map(x => {
             return new PaymentDetailDto(x, credit.interest);
         });

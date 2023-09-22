@@ -29,7 +29,7 @@ export class ClientController {
     async delete(
         @Param('id') id: number
     ) {
-        console.log("id: ", id);
+        //console.log("id: ", id);
         return this.clientService.delete(id)
     }
 
@@ -64,7 +64,7 @@ export class ClientController {
         @Query('client') id: number,
         @Query('type') type: string
     ){
-       console.log("id: ", id);
+       //console.log("id: ", id);
         return await this.clientService.getByClientId(id, type);
     }
 
@@ -72,7 +72,7 @@ export class ClientController {
     async getById(
         @Param('id') id: number
     ){
-       console.log("id: ", id);
+      // console.log("id: ", id);
         return await this.clientService.getById(id);
     }
 }
