@@ -63,6 +63,13 @@ export class SaleCreditController {
 
     }
 
+    @Put((':id/cancel-registered-payment'))
+    async cancelRegisteredPayment(
+        @Param('id') id: number
+    ) {
+        return this.saleCreditService.cancelRegisteredPayment(id);
+    }
+
     @Put(':id')
     async update(
         @Param('id') id: number,

@@ -18,6 +18,7 @@ export class CollectionDto {
     principal: number;
     paymentType: string;
     statusCreditHistory: number;
+    numberPayment: number
 
 
 
@@ -42,7 +43,8 @@ export class CollectionDto {
             interest: paymentDetail.creditHistory.interest,
             principal: paymentDetail.creditHistory.principal,
             paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
-            statusCreditHistory: paymentDetail.creditHistory.status
+            statusCreditHistory: paymentDetail.creditHistory.status,
+            numberPayment: paymentDetail.creditHistory.credit.numberPayment
         };
         return collectionDto;
     }

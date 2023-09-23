@@ -16,10 +16,10 @@ export class PaymentDetailDto {
             actualPayment: paymentDetail.actualPayment,
             paymentDueDate: new Date(paymentDetail.paymentDueDate),
             //paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
-            paymentDate: (paymentDetail.paymentDate) ? new Date(paymentDetail.paymentDate): null,
-           // paymentDate: (paymentDetail.paymentDate) ? format(paymentDetail.paymentDate, "dd-MM-yyyy") : null,
+            paymentDate: (paymentDetail.paymentDate) ? new Date(paymentDetail.paymentDate) : null,
+            // paymentDate: (paymentDetail.paymentDate) ? format(paymentDetail.paymentDate, "dd-MM-yyyy") : null,
             balance: paymentDetail.balance,
-            paymentType: (paymentDetail.paymentType == 1)?'cuota':(parseFloat(interest)< parseFloat(paymentDetail.payment))?'capital-interés':'interés',
+            paymentType: (paymentDetail.paymentType == 1) ? 'cuota' : (parseFloat(interest) < parseFloat(paymentDetail.payment)) ? 'capital-interés' : 'interés',
         };
         return paymentDetailDto;
     }
