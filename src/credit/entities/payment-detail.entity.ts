@@ -30,6 +30,9 @@ export class PaymentDetail{
 
     @Column()
     paymentType: number;
+
+    @Column()
+    isNext: boolean;
     
 
     @ManyToOne(()=> CreditHistory, (creditHistory: CreditHistory) => creditHistory.paymentsDetail)

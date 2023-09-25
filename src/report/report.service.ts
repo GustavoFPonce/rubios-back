@@ -19,6 +19,7 @@ import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
 import { StatusCredit } from 'src/credit/enum';
 import { LoanPrincipalDto } from './dto/loan-principal-dto';
 import { addDays, subDays } from 'date-fns';
+import { TotalIndicatorDto } from './dto/total-indicator-dto';
 
 
 @Injectable()
@@ -531,8 +532,14 @@ export class ReportService {
     return await creditHistoryRepository.createQueryBuilder('creditHistory')
       .leftJoin('creditHistory.credit', 'credit')
       .select([
-        `SUM(CASE WHEN (YEAR(creditHistory.date) = :year AND credit.status  NOT IN (:...status) AND credit.typeCurrency = :currency AND creditHistory.status  = :historyStatus) THEN creditHistory.balance ELSE 0 END) as totalBalance`,
-        `COUNT(CASE WHEN (YEAR(creditHistory.date) = :year AND credit.status  NOT IN (:...status) AND credit.typeCurrency = :currency AND creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
+        `SUM(CASE WHEN (
+        credit.status  NOT IN (:...status) AND
+         credit.typeCurrency = :currency AND
+          creditHistory.status  = :historyStatus) THEN creditHistory.balance ELSE 0 END) as totalBalance`,
+        `COUNT(CASE WHEN (
+         credit.status  NOT IN (:...status) AND
+          credit.typeCurrency = :currency AND
+           creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
 
       ])
       .setParameters({ year, currency, status, historyStatus })
@@ -556,108 +563,145 @@ export class ReportService {
   async getTotalIndicators(currency: string) {
     const status = [StatusCredit.annulled, StatusCredit.bad];
     const historyStatus = '1';
-    const dates = getDateStartEnd(new Date(), new Date())
-    // const indicatorsCurrentPaymentsPersonalCredits = await this.getIndicatorsCurrentsPayments(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailRepository);
-    // console.log("indicatorsCurrentPaymentsPersonalCredits", indicatorsCurrentPaymentsPersonalCredits)
-    // const indicatorsCurrentPaymentsSaleCredits = await this.getIndicatorsCurrentsPayments(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailSaleCreditRepository);
-    // //console.log("indicatorsCurrentPaymentsSaleCredits", indicatorsCurrentPaymentsSaleCredits);
-    const indicatorsUpcomingDuePaymentPersonalCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, addDays(dates.startDate, 1), addDays(dates.endDate, 4), this.paymentDetailRepository);
-    console.log("indicatorsUpcomingDuePaymentPersonalCredits", indicatorsUpcomingDuePaymentPersonalCredits)
-    const indicatorsUpcomingDuePaymentSaleCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, addDays(dates.startDate, 1), addDays(dates.endDate, 4), this.paymentDetailSaleCreditRepository);
-    //console.log("indicatorsUpcomingDuePaymentSaleCredits", indicatorsUpcomingDuePaymentSaleCredits);
-    // const indicatorsDueTodayPaymentPersonalCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailRepository);
-    // console.log("indicatorsDueTodayPaymentPersonalCredits", indicatorsDueTodayPaymentPersonalCredits)
-    // const indicatorsDueTodayPaymentSaleCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailSaleCreditRepository);
-    // console.log("indicatorsDueTodayPaymentSaleCredits", indicatorsDueTodayPaymentSaleCredits)
-    // const indicatorsOverduePaymentPersonalCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, subDays(dates.startDate, 11), subDays(dates.endDate, 1), this.paymentDetailRepository);
-    // console.log("indicatorsOverduePaymentPersonalCredits", indicatorsOverduePaymentPersonalCredits)
-    // const indicatorsOverduePaymentSaleCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus,  subDays(dates.startDate, 11), subDays(dates.endDate, 1), this.paymentDetailSaleCreditRepository);
-    // console.log("indicatorsOverduePaymentSaleCredits", indicatorsOverduePaymentSaleCredits)
-    // const indicatorsOverduePaymentAlertPersonalCredits = await this.getIndicatorAlertsDuePayment(currency, status, historyStatus, subDays(dates.endDate, 12), this.paymentDetailRepository);
-    // console.log("indicatorsOverduePaymentAlertPersonalCredits", indicatorsOverduePaymentAlertPersonalCredits)
-    // const indicatorsOverduePaymentAlertSaleCredits = await this.getIndicatorAlertsDuePayment(currency, status, historyStatus, subDays(dates.endDate, 12), this.paymentDetailSaleCreditRepository);
-    // console.log("indicatorsOverduePaymentAlertSaleCredits", indicatorsOverduePaymentAlertSaleCredits)
+    const dates = getDateStartEnd(new Date(), new Date());
+    const isNext = true;
+    const totalRecordsPaymentsPersonalCredit = await this.getTotalRecordsPaymentsCredits(currency, status, historyStatus, this.paymentDetailRepository, isNext);
+    const totalRecordsPaymentsSaleCredit = await this.getTotalRecordsPaymentsCredits(currency, status, historyStatus, this.paymentDetailSaleCreditRepository, isNext);
+    const totalPaymentsPersonalCredit = await this.getTotalPaymentsCredits(currency, status, historyStatus, this.paymentDetailRepository, isNext);
+    const totalPaymentsSaleCredit = await this.getTotalPaymentsCredits(currency, status, historyStatus, this.paymentDetailSaleCreditRepository, isNext);
+    const totalRecords = parseFloat(totalRecordsPaymentsPersonalCredit.totalRecords) + parseFloat(totalRecordsPaymentsSaleCredit.totalRecords);
+    const totalCredits = parseFloat(totalPaymentsPersonalCredit.total) + parseFloat(totalPaymentsSaleCredit.total);
+    const indicatorsCurrentPaymentsPersonalCredits = await this.getIndicatorsCurrentsPayments(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailRepository, isNext);
+    const indicatorsCurrentPaymentsSaleCredits = await this.getIndicatorsCurrentsPayments(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailSaleCreditRepository, isNext);
+    const totalCurrentPayments = new TotalIndicatorDto('Al Corriente', indicatorsCurrentPaymentsPersonalCredits, indicatorsCurrentPaymentsSaleCredits, totalRecords, totalCredits);
+    const indicatorsUpcomingDuePaymentPersonalCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, addDays(dates.startDate, 1), addDays(dates.endDate, 4), this.paymentDetailRepository, isNext);
+    const indicatorsUpcomingDuePaymentSaleCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, addDays(dates.startDate, 1), addDays(dates.endDate, 4), this.paymentDetailSaleCreditRepository, isNext);
+    const totalUpcomingDuePayments = new TotalIndicatorDto('Próximos', indicatorsUpcomingDuePaymentPersonalCredits, indicatorsUpcomingDuePaymentSaleCredits, totalRecords, totalCredits);
+    const indicatorsDueTodayPaymentPersonalCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailRepository, isNext);
+    const indicatorsDueTodayPaymentSaleCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, dates.startDate, dates.endDate, this.paymentDetailSaleCreditRepository, isNext);
+    const totalDueTodayPayments = new TotalIndicatorDto('Por Vencer', indicatorsDueTodayPaymentPersonalCredits, indicatorsDueTodayPaymentSaleCredits, totalRecords, totalCredits);
+    const indicatorsOverduePaymentPersonalCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, subDays(dates.startDate, 11), subDays(dates.endDate, 1), this.paymentDetailRepository, isNext);
+    const indicatorsOverduePaymentSaleCredits = await this.getIndicatorsDuePayment(currency, status, historyStatus, subDays(dates.startDate, 11), subDays(dates.endDate, 1), this.paymentDetailSaleCreditRepository, isNext);
+    const totalOverduePayments = new TotalIndicatorDto('Vencidos', indicatorsOverduePaymentPersonalCredits, indicatorsOverduePaymentSaleCredits, totalRecords, totalCredits);
+    const indicatorsOverduePaymentAlertPersonalCredits = await this.getIndicatorAlertsDuePayment(currency, status, historyStatus, subDays(dates.endDate, 12), this.paymentDetailRepository, isNext);
+    const indicatorsOverduePaymentAlertSaleCredits = await this.getIndicatorAlertsDuePayment(currency, status, historyStatus, subDays(dates.endDate, 12), this.paymentDetailSaleCreditRepository, isNext);
+    const totalOverduePaymentAlert = new TotalIndicatorDto('Alerta', indicatorsOverduePaymentAlertPersonalCredits, indicatorsOverduePaymentAlertSaleCredits, totalRecords, totalCredits);
+    // console.log("indicadores: ", [
+    //   totalCurrentPayments,
+    //   totalUpcomingDuePayments,
+    //   totalDueTodayPayments,
+    //   totalOverduePayments,
+    //   totalOverduePaymentAlert
+    // ]);
 
+    return [
+      totalCurrentPayments,
+      totalUpcomingDuePayments,
+      totalDueTodayPayments,
+      totalOverduePayments,
+      totalOverduePaymentAlert
+    ]
 
   }
 
-  private async getIndicatorsCurrentsPayments(currency: string, status: StatusCredit[], historyStatus: string, startDate: Date, endDate: Date, paymentDetailRepository: any) {
+  private async getTotalRecordsPaymentsCredits(currency: string, status: StatusCredit[], historyStatus: string,
+    paymentDetailRepository: any, isNext: boolean) {
+    return await paymentDetailRepository
+      .createQueryBuilder('paymentDetail')
+      .leftJoin('paymentDetail.creditHistory', 'creditHistory')
+      .leftJoin('creditHistory.credit', 'credit')
+      .select(`COUNT(CASE WHEN (
+        paymentDetail.isNext = :isNext AND
+      credit.status NOT IN (:...status) AND
+       credit.typeCurrency = :currency AND
+        creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`)
+      .setParameters({ currency, status, historyStatus, isNext })
+      .getRawOne();
+  }
+
+  private async getTotalPaymentsCredits(currency: string, status: StatusCredit[], historyStatus: string,
+    paymentDetailRepository: any, isNext: boolean) {
+    return await paymentDetailRepository
+      .createQueryBuilder('paymentDetail')
+      .leftJoin('paymentDetail.creditHistory', 'creditHistory')
+      .leftJoin('creditHistory.credit', 'credit')
+      .select(`SUM(CASE WHEN (
+        paymentDetail.isNext = :isNext AND
+      credit.status NOT IN (:...status) AND
+       credit.typeCurrency = :currency AND
+        creditHistory.status  = :historyStatus) THEN paymentDetail.payment ELSE 0 END) as total`)
+      .setParameters({ currency, status, historyStatus, isNext })
+      .getRawOne();
+  }
+
+  private async getIndicatorsCurrentsPayments(currency: string,
+    status: StatusCredit[], historyStatus: string, startDate: Date,
+    endDate: Date, paymentDetailRepository: any, isNext: boolean) {
     const startDateRef = addDays(startDate, 5);
     return await paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoin('paymentDetail.creditHistory', 'creditHistory')
       .leftJoin('creditHistory.credit', 'credit')
       .select([
-        `SUM(CASE WHEN ((paymentDetail.paymentDate BETWEEN :startDate AND :endDate OR paymentDetail.paymentDueDate >= :startDateRef) AND credit.status NOT IN (:...status) AND credit.typeCurrency = :currency AND creditHistory.status  = :historyStatus) THEN paymentDetail.payment ELSE 0 END) as totalBalance`,
-        `COUNT(CASE WHEN ((paymentDetail.paymentDate BETWEEN :startDate AND :endDate OR paymentDetail.paymentDueDate >= :startDateRef) AND credit.status NOT IN (:...status) AND credit.typeCurrency = :currency AND creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
+        `SUM(CASE WHEN ((paymentDetail.paymentDate BETWEEN :startDate AND :endDate OR
+           paymentDetail.paymentDueDate >= :startDateRef) AND
+           paymentDetail.isNext = :isNext AND
+            credit.status NOT IN (:...status) AND
+             credit.typeCurrency = :currency AND
+              creditHistory.status  = :historyStatus) THEN paymentDetail.payment ELSE 0 END) as totalBalance`,
+        `COUNT(CASE WHEN ((paymentDetail.paymentDate BETWEEN :startDate AND :endDate OR
+           paymentDetail.paymentDueDate >= :startDateRef) AND
+           paymentDetail.isNext = :isNext AND
+            credit.status NOT IN (:...status) AND
+             credit.typeCurrency = :currency AND
+              creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
       ])
-      .setParameters({ currency, status, historyStatus, startDate, endDate, startDateRef })
+      .setParameters({ currency, status, historyStatus, startDate, endDate, startDateRef, isNext })
       .getRawOne();
   }
 
-  private async getIndicatorsDuePayment(currency: string, status: StatusCredit[], historyStatus: string, startDate: Date, endDate: Date, paymentDetailRepository: any) {
+  private async getIndicatorsDuePayment(currency: string, status: StatusCredit[], historyStatus: string,
+    startDate: Date, endDate: Date, paymentDetailRepository: any, isNext: boolean) {
     return await paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoin('paymentDetail.creditHistory', 'creditHistory')
       .leftJoin('creditHistory.credit', 'credit')
       .select([
         `SUM(CASE WHEN (paymentDetail.paymentDate IS NULL AND
            paymentDetail.paymentDueDate BETWEEN :startDate AND :endDate AND
+           paymentDetail.isNext = :isNext AND
             credit.status NOT IN (:...status) AND
              credit.typeCurrency = :currency AND
               creditHistory.status  = :historyStatus) THEN paymentDetail.payment ELSE 0 END) as totalBalance`,
         `COUNT(CASE WHEN (paymentDetail.paymentDate IS NULL AND
            paymentDetail.paymentDueDate BETWEEN :startDate AND :endDate AND
+           paymentDetail.isNext = :isNext AND
             credit.status NOT IN (:...status) AND
              credit.typeCurrency = :currency AND
               creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
       ])
-      .setParameters({ currency, status, historyStatus, startDate, endDate })
+      .setParameters({ currency, status, historyStatus, startDate, endDate, isNext })
       .getRawOne();
-
-    // return await paymentDetailRepository
-    // .createQueryBuilder('paymentDetail')
-    // .leftJoin('paymentDetail.creditHistory', 'creditHistory')
-    // .leftJoinAndSelect('creditHistory.credit', 'credit')
-    // .select([
-    //   'creditHistory.id as creditId', // ID del crédito
-    //   'SUM(paymentDetail.payment) as totalBalance', // Suma del importe de los pagos
-    //   'COUNT(*) as totalRecords', // Conteo de registros
-    // ])
-    // .where({
-    //   paymentDueDate: Between(startDate, endDate), // Asegúrate de que las fechas cumplan con tus condiciones
-    //   paymentDate: null,
-    //   'credit.status': Not(In(status)),
-    //   'credit.typeCurrency': currency,
-    //   'creditHistory.status': historyStatus,
-    // })
-    // .andWhere(qb => {
-    //   // Subconsulta para obtener el primer registro de cada crédito que cumple con la condición
-    //   const subQuery = qb.subQuery()
-    //     .select('MIN(paymentDetail.id)', 'firstPaymentId')
-    //     .from('payment_detail', 'paymentDetailSub')
-    //     .where('paymentDetailSub.credit_history_id = creditHistory.id')
-    //     .andWhere('paymentDetailSub.paymentDueDate BETWEEN :startDate AND :endDate AND paymentDetailSub.paymentDate IS NULL', {
-    //       startDate,
-    //       endDate,
-    //     })
-    //     .orderBy('paymentDetailSub.paymentDueDate', 'ASC') // Ordenar por fecha de pago ascendente
-    //     .groupBy('paymentDetailSub.credit_history_id')
-    //     .getQuery();
-    //   return `paymentDetail.id IN ${subQuery}`;
-    // })
-    // .groupBy('creditHistory.id') // Agrupar por ID de crédito
-    // .getRawMany();
-
   }
 
-  private async getIndicatorAlertsDuePayment(currency: string, status: StatusCredit[], historyStatus: string, endDate: Date, paymentDetailRepository: any) {
+  private async getIndicatorAlertsDuePayment(currency: string, status: StatusCredit[], historyStatus: string,
+    endDate: Date, paymentDetailRepository: any, isNext: boolean) {
     return await paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoin('paymentDetail.creditHistory', 'creditHistory')
       .leftJoin('creditHistory.credit', 'credit')
       .select([
-        `SUM(CASE WHEN (paymentDetail.paymentDate IS NULL AND paymentDetail.paymentDueDate <= :endDate AND credit.status NOT IN (:...status) AND credit.typeCurrency = :currency AND creditHistory.status  = :historyStatus) THEN paymentDetail.payment ELSE 0 END) as totalBalance`,
-        `COUNT(CASE WHEN (paymentDetail.paymentDate IS NULL AND paymentDetail.paymentDueDate <= :endDate AND credit.status NOT IN (:...status) AND credit.typeCurrency = :currency AND creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
+        `SUM(CASE WHEN (paymentDetail.paymentDate IS NULL AND
+           paymentDetail.paymentDueDate <= :endDate AND
+           paymentDetail.isNext = :isNext AND
+            credit.status NOT IN (:...status) AND
+             credit.typeCurrency = :currency AND 
+             creditHistory.status  = :historyStatus) THEN paymentDetail.payment ELSE 0 END) as totalBalance`,
+        `COUNT(CASE WHEN (paymentDetail.paymentDate IS NULL AND 
+          paymentDetail.paymentDueDate <= :endDate AND
+          paymentDetail.isNext = :isNext AND
+           credit.status NOT IN (:...status) AND
+            credit.typeCurrency = :currency AND 
+            creditHistory.status  = :historyStatus) THEN 1 ELSE NULL END) as totalRecords`,
       ])
-      .setParameters({ currency, status, historyStatus, endDate })
+      .setParameters({ currency, status, historyStatus, endDate, isNext })
       .getRawOne();
   }
 

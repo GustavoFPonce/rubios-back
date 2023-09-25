@@ -98,6 +98,7 @@ export class CreditService {
                 detail.balance = (paymentsDetail[i].status == StatusPayment.cancelled) ? parseFloat(((creditHistorySaved.payment * credit.numberPayment) - paymentsDetail[i].payment * (i + 1)).toFixed(2))
                     : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
+                detail.isNext = ((i== 0 && paymentsDetail[i].status == StatusPayment.active) || (paymentsDetail[i].status == StatusPayment.active && paymentsDetail[i-1].status == StatusPayment.cancelled))? true: false;
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
@@ -111,6 +112,7 @@ export class CreditService {
                 detail.creditHistory = creditHistorySaved;
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
                 detail.paymentType = PaymentType.paymentInstallments;
+                detail.isNext = (i == 0)? true: false;
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
