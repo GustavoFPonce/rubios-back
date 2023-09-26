@@ -98,7 +98,7 @@ export class CreditService {
                 detail.balance = (paymentsDetail[i].status == StatusPayment.cancelled) ? parseFloat(((creditHistorySaved.payment * credit.numberPayment) - paymentsDetail[i].payment * (i + 1)).toFixed(2))
                     : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
-                detail.isNext = ((i== 0 && paymentsDetail[i].status == StatusPayment.active) || (paymentsDetail[i].status == StatusPayment.active && paymentsDetail[i-1].status == StatusPayment.cancelled))? true: false;
+                detail.isNext = ((i == 0 && paymentsDetail[i].status == StatusPayment.active) || (paymentsDetail[i].status == StatusPayment.active && paymentsDetail[i - 1].status == StatusPayment.cancelled)) ? true : false;
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
@@ -112,7 +112,7 @@ export class CreditService {
                 detail.creditHistory = creditHistorySaved;
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
                 detail.paymentType = PaymentType.paymentInstallments;
-                detail.isNext = (i == 0)? true: false;
+                detail.isNext = (i == 0) ? true : false;
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
@@ -539,7 +539,7 @@ export class CreditService {
 
     private getConditionsFilterByDay(startDate: Date, endDate: Date, day: string) {
         if (day == 'current') {
-            console.log("estoy en current");
+            //  console.log("estoy en current");
             return new Brackets((qb) => {
                 qb.orWhere('paymentsDetail.paymentDueDate BETWEEN :startDate AND :endDate', {
                     startDate,
@@ -582,23 +582,28 @@ export class CreditService {
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where('paymentsDetail.id = :id', { id })
             .getOne();
-        console.log('payment_ :', payment);
+        // console.log('payment_ :', payment);
         payment.paymentDate = new Date();
         payment.actualPayment = paymentAmount;
         payment.balance = payment.balance - paymentAmount;
         payment.creditHistory.balance = payment.creditHistory.balance - paymentAmount;
+        payment.isNext = false;
         const paymentPending = payment.payment - paymentAmount;
         const saved = await this.paymentDetailRepository.save(payment);
-        console.log("saved: ", saved);
+        // console.log("saved: ", saved);
         if (saved) {
             response.success = true;
             response.collection = new CollectionDto(saved);
-            this.uptadeBalanceNextPayment(payment.balance, payment.creditHistory.id, payment.creditHistory.credit.id);
             const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, paymentAmount);
-            if (paymentPending > 0 && creditHistoryUpdate) await this.addPendingPayment(paymentPending, payment.creditHistory);
+            if (paymentPending > 0 && creditHistoryUpdate) {
+                await this.addPendingPayment(paymentPending, payment.creditHistory);
+            } else {
+                await this.updateStatusIsNextPayment(payment.id, true, payment.creditHistory.id);
+            }
         }
         return response;
     }
+
 
     private async addPendingPayment(paymentPending: number, creditHistory: CreditHistory) {
         var payment = new PaymentDetail();
@@ -611,8 +616,28 @@ export class CreditService {
         payment.recoveryDateCommission = null;
         payment.actualPayment = 0.00;
         payment.balance = creditHistory.balance;
+        payment.isNext = true;
         const responseAdd = await this.paymentDetailRepository.save(payment);
         console.log("response add payment pending: ", responseAdd);
+    }
+
+    private async updateStatusIsNextPayment(paymentId: number, isNext: boolean, id: number) {
+        try {
+            const creditHistory = await this.creditHistoryRepository.findOne({ where: { id }, relations: ['paymentsDetail'], order: { id: 'ASC' } });
+            //console.log("payments: ", creditHistory.paymentsDetail);
+            const payments = creditHistory.paymentsDetail;
+            const indexPaymentCurrent = payments.findIndex(x => x.id == paymentId);
+            const paymentNextId = payments[indexPaymentCurrent + 1].id
+            const paymentNext = await this.paymentDetailRepository.findOne({ where: { id: paymentNextId }, relations: ['creditHistory'] });
+            if (indexPaymentCurrent != -1 && paymentNext) {
+                paymentNext.isNext = isNext;
+                console.log("payment siguiente: ", paymentNext);
+                const responseUpdatePayment = await this.paymentDetailRepository.save(paymentNext);
+                console.log("response establecer siguiente pago: ", responseUpdatePayment);
+            }
+        } catch (err) {
+            console.log("Error al establecer proximo pago: ", err);
+        }
     }
 
     private async updateBalanceCreditHistory(id: number, paymentAmount: number) {
@@ -625,7 +650,7 @@ export class CreditService {
 
     private async uptadeBalanceNextPayment(balance: number, creditHistoryId: number, creditId: number) {
         const date = null;
-        console.log("modificacion de saldo");
+        // console.log("modificacion de saldo");
         var nextPayment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -653,14 +678,24 @@ export class CreditService {
     async cancelRegisteredPayment(id: number) {
         var response = { success: false, collection: {} };
         var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit'] });
-        //const isPartialPayment = payment.payment>
+        const isPartialPayment = payment.payment> payment.actualPayment;   
+        const actualPayment = payment.actualPayment;
+        const amountPaymentPartial = payment.payment - payment.actualPayment;
+        const paymentDate = addDays(payment.paymentDate, 1);
         payment.actualPayment = 0.00;
         payment.paymentDate = null;
+        payment.isNext = true;
         const saved = await this.paymentDetailRepository.save(payment);
-        console.log("saved: ", saved);
         if (saved) {
             response.success = true;
-            const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, (-payment.payment));
+            if (isPartialPayment) {
+                const paymentPartial = await this.paymentDetailRepository.findOne({ where: { payment: amountPaymentPartial, paymentDueDate: paymentDate } })
+                this.paymentDetailRepository.delete(paymentPartial.id);
+            } else {
+                await this.updateStatusIsNextPayment(payment.id, false, payment.creditHistory.id);
+            }
+            const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, (-actualPayment));
+
         }
         return response;
     }
