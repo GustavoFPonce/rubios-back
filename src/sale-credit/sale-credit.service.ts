@@ -6,7 +6,7 @@ import { SaleCreditCreateDto } from './dto/sale-credit-create-dto';
 import { Sale } from 'src/sale/entities/sale.entity';
 import { CreditHistoryCreateDto } from 'src/credit/dto/credit-history-create-dto';
 import { PaymentType, StatusCredit, StatusCreditHistory, StatusPayment } from 'src/credit/enum';
-import { addDays, addMonths, format, parseISO } from 'date-fns';
+import { addDays, addMonths, format, parseISO, subDays } from 'date-fns';
 import { User } from 'src/user/entities/user.entity';
 import { Client } from 'src/client/entities/client.entity';
 import { es } from 'date-fns/locale';
@@ -817,19 +817,41 @@ export class SaleCreditService {
         console.log("response add payment pending: ", responseAdd);
     }
 
+    // private async updateStatusIsNextPayment(paymentId: number, isNext: boolean, id: number) {
+    //     try {
+    //         const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { id }, relations: ['paymentsDetail'], order: { id: 'ASC' } });
+    //         //console.log("payments: ", creditHistory.paymentsDetail);
+    //         const payments = creditHistory.paymentsDetail;
+    //         const indexPaymentCurrent = payments.findIndex(x => x.id == paymentId);
+    //         const paymentNextId = payments[indexPaymentCurrent + 1].id
+    //         const paymentNext = await this.paymentDetailSaleCreditRepository.findOne({ where: { id: paymentNextId }, relations: ['creditHistory'] });
+    //         if (indexPaymentCurrent != -1 && paymentNext) {
+    //             paymentNext.isNext = isNext;
+    //             console.log("payment siguiente: ", paymentNext);
+    //             const responseUpdatePayment = await this.paymentDetailSaleCreditRepository.save(paymentNext);
+    //             console.log("response establecer siguiente pago: ", responseUpdatePayment);
+    //         }
+    //     } catch (err) {
+    //         console.log("Error al establecer proximo pago: ", err);
+    //     }
+    // }
+
     private async updateStatusIsNextPayment(paymentId: number, isNext: boolean, id: number) {
         try {
-            const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { id }, relations: ['paymentsDetail'], order: { id: 'ASC' } });
-            //console.log("payments: ", creditHistory.paymentsDetail);
+            const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { id }, relations: ['paymentsDetail', 'paymentsDetail.creditHistory'], order: { id: 'ASC' } });
+
             const payments = creditHistory.paymentsDetail;
+            const paymentCurrent = payments.find(x => x.id == paymentId);
             const indexPaymentCurrent = payments.findIndex(x => x.id == paymentId);
-            const paymentNextId = payments[indexPaymentCurrent + 1].id
-            const paymentNext = await this.paymentDetailSaleCreditRepository.findOne({ where: { id: paymentNextId }, relations: ['creditHistory'] });
-            if (indexPaymentCurrent != -1 && paymentNext) {
-                paymentNext.isNext = isNext;
-                console.log("payment siguiente: ", paymentNext);
-                const responseUpdatePayment = await this.paymentDetailSaleCreditRepository.save(paymentNext);
-                console.log("response establecer siguiente pago: ", responseUpdatePayment);
+            if (indexPaymentCurrent != -1) {
+                var paymentNext = payments[indexPaymentCurrent + 1];
+                if (!paymentNext) {
+                    const paymentPreviousIndex = payments.findIndex(x => x.paymentDate.toISOString().substr(0, 10) === subDays(paymentCurrent.paymentDueDate, 1).toISOString().substr(0, 10) && parseFloat(x.payment.toString()) == parseFloat(paymentCurrent.payment.toString()) + parseFloat(x.actualPayment.toString()) && x.creditHistory.id == paymentCurrent.creditHistory.id);
+                    if (paymentPreviousIndex != -1) paymentNext = payments[paymentPreviousIndex + 1];
+                    await this.setNextPayment(paymentNext, isNext);
+                } else {
+                    await this.setNextPayment(paymentNext, isNext);
+                }
             }
         } catch (err) {
             console.log("Error al establecer proximo pago: ", err);
