@@ -82,27 +82,12 @@ export class ClientService {
 
     async update(id: number, client: ClientCreateDto) {
         console.log("cliente nuevos datos: ", client);
+        console.log("id: ", id);
         var response = { success: false, error: '' };
         var savedClient = await this.clientRepository.findOne(id);
-        var existClientNumber: any = {};
-        if (savedClient) {
-            if (client.clientNumber != '') {
-                existClientNumber = await this.clientRepository.findOne({ clientNumber: client.clientNumber });
-                if (!existClientNumber || (existClientNumber.id == id)) {
-                    console.log("1");
-                    const responseUpdateValues = await this.updateValuesClient(savedClient, client);
-                    response.success = responseUpdateValues;
-                } else {
-                    console.log("2");
-                    response.success = false;
-                    response.error = `El número de ficha ${client.clientNumber} ya se encuentra registrado.`
-                }
-            } else {
-                console.log("3");
-                const responseUpdateValues = await this.updateValuesClient(savedClient, client);
-                response.success = responseUpdateValues;
-            }
-
+       if(savedClient){
+        const responseUpdateValues = await this.updateValuesClient(savedClient, client);
+        response.success = responseUpdateValues;
         } else {
             throw new NotFoundException(`Cliente no registrado.`);
         }
