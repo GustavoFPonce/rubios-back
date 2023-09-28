@@ -1,6 +1,7 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Cash } from "./cash.entity";
 import { Client } from "src/client/entities/client.entity";
+import { ExpenseType } from "../dto/expense-create-dto";
 
 @Entity()
 export class Expense {
@@ -18,7 +19,7 @@ export class Expense {
     concept: string;
 
     @Column()
-    type: string;
+    type: ExpenseType;
 
     @Column()
     currencyType: string;
@@ -27,5 +28,6 @@ export class Expense {
     amount: number;
 
     @ManyToOne(() => Cash, (cash: Cash) => cash.revenues)
+    @JoinColumn({ name: 'cash_id' }) 
     cash: Cash
 }

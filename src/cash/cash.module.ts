@@ -9,6 +9,7 @@ import { Expense } from './entities/expense.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Cash, Revenue, Expense])],
   controllers: [CashController],
-  providers: [CashService]
+  providers: [CashService],
+  exports: [CashService],
 })
 export class CashModule {}

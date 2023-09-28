@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { CashService } from './cash.service';
 
@@ -15,6 +15,13 @@ export class CashController {
      @Post('open')
      async openCash(){
         return await this.cashService.openCash();
+     }
+
+     @Get('transactions')
+     async getTransactions(
+      @Query('id') id: string,
+     ){
+        return await this.cashService.getTransactions(id);
      }
 
 }

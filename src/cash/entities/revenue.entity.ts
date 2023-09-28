@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Cash } from "./cash.entity";
 
 @Entity()
@@ -26,5 +26,6 @@ export class Revenue {
     amount: number;
 
     @ManyToOne(()=> Cash, (cash: Cash)=> cash.revenues)
+    @JoinColumn({ name: 'cash_id' }) 
     cash: Cash
 }
