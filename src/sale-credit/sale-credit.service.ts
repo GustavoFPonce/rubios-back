@@ -604,7 +604,7 @@ export class SaleCreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2')
+            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2 AND credit.typeCurrency = :currency', {currency})
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
@@ -627,7 +627,7 @@ export class SaleCreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user', { status: 2, type: '2', user })
+            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user AND credit.typeCurrency', { status: 2, type: '2', user, currency })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }

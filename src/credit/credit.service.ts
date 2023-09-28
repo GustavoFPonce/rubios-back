@@ -888,7 +888,7 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2')
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2 AND credit.typeCurrency = :currency', {currency})
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
@@ -911,7 +911,7 @@ export class CreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user', { status: 2, type: '2', user })
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user AND credit.typeCurrency = :currency', { status: 2, type: '2', user, currency })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
