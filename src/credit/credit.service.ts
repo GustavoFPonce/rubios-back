@@ -849,13 +849,14 @@ export class CreditService {
 
     private async getCollectionsByUserRole(userLogged: User,
         statusCredit: string,
-        currency: string,
+        currencyType: string,
         user: string,
         startDate: Date,
         endDate: Date,
         statusPayment: string) {
         const areDateEqual = this.areDatesEqual(startDate, endDate);
         var collections: any;
+        const currency = (currencyType == 'all')?['peso', 'dolar']:[currencyType];
         if (userLogged.role.name == "admin") {
             if (user == 'all') {
                 collections = await this.searchCollectionsByConditions(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual);
@@ -871,7 +872,7 @@ export class CreditService {
         return collections;
     }
 
-    async searchCollectionsByConditions(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+    async searchCollectionsByConditions(statusCredit: string, currency: string[], startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -888,12 +889,12 @@ export class CreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2 AND credit.typeCurrency = :currency', {currency})
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2 AND credit.typeCurrency IN (:...currency)', {currency})
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
 
-    async searchCollectionsByUserByConditions(statusCredit: string, currency: string, user: number, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+    async searchCollectionsByUserByConditions(statusCredit: string, currency: string[], user: number, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -911,15 +912,16 @@ export class CreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user AND credit.typeCurrency = :currency', { status: 2, type: '2', user, currency })
+            .orWhere('creditHistory.credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user AND credit.typeCurrency IN (:...currency)', { status: 2, type: '2', user, currency })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
 
-    private getConditionsFilterCollections(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+    private getConditionsFilterCollections(statusCredit: string, currency: string[], startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         console.log("estado de credito: ", statusCredit);
         const commonConditions = qb2 => {
-            if (currency != 'all') qb2.andWhere('credit.typeCurrency = :currency', { currency });
+            // if (currency != 'all') qb2.andWhere('credit.typeCurrency = :currency', { currency });
+            qb2.andWhere('credit.typeCurrency IN (:...currency)', { currency });
             if (statusPayment == 'canceled') qb2.andWhere('paymentsDetail.paymentDate IS NOT NULL');
             if (statusPayment == 'active') qb2.andWhere('paymentsDetail.paymentDate IS NULL');
 

@@ -125,6 +125,10 @@ export class CreditController {
         @Query('endDate') endDate: any,
         @Query('statusPayment') statusPayment: string,
     ) {
+        console.log("status: ", status);
+        console.log("debtcollectorer: ", debtcollector);
+        console.log("currency: ", currency);
+        console.log("statusPayment: ", statusPayment);
         console.log("startDate: ", startDate);
         console.log("endDate: ", endDate);
         const userId = req.user.userId;
@@ -143,6 +147,7 @@ export class CreditController {
         @Query('endDate') endDate: any,
         @Req() req: any
     ) {
+      
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);

@@ -565,12 +565,13 @@ export class SaleCreditService {
 
     private async getCollectionsByUserRole(userLogged: User,
         statusCredit: string,
-        currency: string,
+        currencyType: string,
         user: string,
         startDate: Date,
         endDate: Date,
         statusPayment: string) {
         const areDateEqual = this.areDatesEqual(startDate, endDate);
+        const currency = (currencyType == 'all')?['peso', 'dolar']:[currencyType];
         var collections: any;
         if (userLogged.role.name == "admin") {
             if (user == 'all') {
@@ -587,7 +588,7 @@ export class SaleCreditService {
         return collections;
     }
 
-    async searchCollectionsByConditions(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+    async searchCollectionsByConditions(statusCredit: string, currency: string[], startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailSaleCreditRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -604,12 +605,12 @@ export class SaleCreditService {
                     .getQuery();
                 return `creditHistory.id = ${subQuery}`;
             })
-            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2 AND credit.typeCurrency = :currency', {currency})
+            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = 2 AND paymentsDetail.paymentType = 2 AND credit.typeCurrency IN (:...currency)', {currency})
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
 
-    async searchCollectionsByUserByConditions(statusCredit: string, currency: string, user: number, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+    async searchCollectionsByUserByConditions(statusCredit: string, currency: string[], user: number, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         return await this.paymentDetailSaleCreditRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -627,15 +628,15 @@ export class SaleCreditService {
             .leftJoinAndSelect('credit.client', 'client')
             .andWhere('credit.debtCollector.id = :user', { user })
             .andWhere(this.getConditionsFilterCollections(statusCredit, currency, startDate, endDate, statusPayment, areDateEqual))
-            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user AND credit.typeCurrency', { status: 2, type: '2', user, currency })
+            .orWhere('creditHistory.sale_credit_id = credit.id AND creditHistory.status = :status AND paymentsDetail.paymentType = :type AND credit.debtCollector.id = :user AND credit.typeCurrency IN (:...currency)', { status: 2, type: '2', user, currency })
             .orderBy('paymentsDetail.paymentDueDate', 'ASC')
             .getMany();
     }
 
-    private getConditionsFilterCollections(statusCredit: string, currency: string, startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
+    private getConditionsFilterCollections(statusCredit: string, currency: string[], startDate: Date, endDate: Date, statusPayment: string, areDateEqual: boolean) {
         console.log("estado de credito: ", statusCredit);
         const commonConditions = qb2 => {
-            if (currency != 'all') qb2.andWhere('credit.typeCurrency = :currency', { currency });
+            qb2.andWhere('credit.typeCurrency IN (:...currency)', { currency });
             if (statusPayment == 'canceled') qb2.andWhere('paymentsDetail.paymentDate IS NOT NULL');
             if (statusPayment == 'active') qb2.andWhere('paymentsDetail.paymentDate IS NULL');
 
