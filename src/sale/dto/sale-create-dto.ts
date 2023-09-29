@@ -16,6 +16,9 @@ export class SaleCreateDto{
     @IsString()
     paymentType: string;
 
+    @IsString()
+    typeCurrency: string;
+
     @IsArray()
     saleDetails: []
     

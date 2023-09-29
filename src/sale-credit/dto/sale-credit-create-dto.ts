@@ -8,13 +8,15 @@ export class SaleCreditCreateDto{
 
     @IsNumber()
     readonly debtCollectorId: number;
-
     
     @IsString()
     readonly date: string;
 
     @IsString()
     readonly firstPayment: string;
+
+    @IsString()
+    readonly typeCurrency: string;
 
     @IsNumber()
     readonly principal: number;

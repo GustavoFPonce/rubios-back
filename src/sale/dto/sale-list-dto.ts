@@ -11,6 +11,7 @@ export class SaleListDto{
     payment: number;
     paymentType: string;
     status: number;
+    currencyType: string;
 
     constructor(sale: Sale) {
         const saleListDto: SaleListDto = {
@@ -21,7 +22,8 @@ export class SaleListDto{
             total: sale.total,
             payment: sale.payment,
             paymentType: sale.paymentType,
-            status: sale.status
+            status: sale.status,
+            currencyType: sale.currencyType
         };
         return saleListDto;
     }

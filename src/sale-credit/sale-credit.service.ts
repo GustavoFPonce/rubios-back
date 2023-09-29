@@ -46,7 +46,7 @@ export class SaleCreditService {
 
 
     async create(creditCreateDto: SaleCreditCreateDto, userId: number, sale: Sale) {
-        console.log("creditCreateDto: ", creditCreateDto);
+   
         var response = { success: false }
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
@@ -61,7 +61,7 @@ export class SaleCreditService {
         createCredit.status = StatusCredit.active;
         createCredit.numberPayment = creditCreateDto.numberPayment;
         createCredit.information = '';
-        createCredit.typeCurrency = 'peso';
+        createCredit.typeCurrency =  creditCreateDto.typeCurrency;
         createCredit.commission = creditCreateDto.commission;
         createCredit.sale = sale;
         const credit = this.saleCreditRepository.create(createCredit);

@@ -34,6 +34,7 @@ export class SaleService {
 
 
     async create(sale: SaleCreateDto, userId: number, credit: SaleCreditCreateDto | null) {
+        console.log("creditCreateDto: ", credit);
         var response = { success: false, error: '', message: '' };
         const client = await this.clientRepository.findOne(sale.clientId);
         var newSale = new Sale();
@@ -44,6 +45,7 @@ export class SaleService {
         newSale.total = sale.total;
         newSale.status = SaleStatus.valid;
         newSale.userId = userId;
+        newSale.currencyType = sale.typeCurrency;
         const saleCreate = this.saleRepository.create(newSale);
         console.log("venta a guardar: ", saleCreate);
         const saleSaved = await this.saleRepository.save(saleCreate);

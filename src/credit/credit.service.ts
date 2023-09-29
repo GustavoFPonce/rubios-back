@@ -693,10 +693,20 @@ export class CreditService {
     }
 
     private async cancelCredit(id: number) {
-        var credit = await this.creditRepository.findOne(id);
+        var credit = await this.creditRepository.findOne({where:{id}, relations: ['client']});
         if (credit) {
             credit.status = StatusCredit.canceled;
             await this.creditRepository.save(credit);
+        };
+       await this.deleteClientNumber(credit.client?.id)
+    }
+
+    private async deleteClientNumber(id: number){
+        const exists = await this.creditRepository.findOne({where: {client: id, status: StatusCredit.active}});
+        if(!exists){
+            const client = await this.clientRepository.findOne(id);
+            client.clientNumber = null;
+            this.clientRepository.save(client);
         }
     }
 

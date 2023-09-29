@@ -29,7 +29,10 @@ export class Sale {
     payment: number;
 
     @Column()
-    status: SaleStatus
+    status: SaleStatus;
+
+    @Column()
+    currencyType: string;
 
     @OneToMany(() => SaleDetail, (detail: SaleDetail) => detail.sale)
     saleDetails: SaleDetail[]
