@@ -167,6 +167,7 @@ export class CreditService {
         creditSaved.typeCurrency = credit.typeCurrency;
         creditSaved.status = parseInt(`${StatusCredit[credit.status]}`);
         creditSaved.commission = credit.commission;
+        creditSaved.interestRate = credit.interestRate;
         const updateCreditSaved = await this.creditRepository.save(creditSaved);
         //console.log("update credit: ", updateCreditSaved);
         const updateCreditHistorySaved = await this.updateCreditHistory(creditHistorySaved, credit);

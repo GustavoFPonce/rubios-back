@@ -32,8 +32,7 @@ export class SaleCreditController {
         console.log("id credit history: ", id);
         return this.saleCreditService.getPaymentsDetail(id);
     }
-
-    
+   
 
     @Get(':id/credits-history')
     async getCreditsHistory(
@@ -75,6 +74,7 @@ export class SaleCreditController {
         @Param('id') id: number,
         @Body() credit: any
     ) {
+        console.log("credito a modificar: ", credit);
         var response = await this.saleCreditService.update(id, credit);
         return response;
     }

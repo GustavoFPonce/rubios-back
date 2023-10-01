@@ -5,7 +5,7 @@ import { Brackets, Repository, Between } from 'typeorm';
 import { SaleCreateDto } from './dto/sale-create-dto';
 import { Client } from 'src/client/entities/client.entity';
 import { Product } from 'src/product/enities/product.entity';
-import { parseISO, subMonths } from 'date-fns';
+import { parseISO, subMonths, addDays } from 'date-fns';
 import { SaleDetailCreateDto } from './dto/sale-detail-create-dto';
 import { SaleDetail } from './entities/sale-detail.entity';
 import { SaleStatus } from './enum';
@@ -145,8 +145,12 @@ export class SaleService {
 
     async getAll() {
         var referenceDate = new Date();
-        var argentinaTime = new Date(referenceDate.setHours(referenceDate.getHours() - 3));
-        const rangeDates = getDateStartEnd(subMonths(argentinaTime, 1), argentinaTime);
+        //console.log("fecha de referencia: ", referenceDate);
+        var argentinaTime = referenceDate;
+        // new Date(referenceDate.setHours(referenceDate.getHours() - 3));
+       // console.log("argentinaTime: ", argentinaTime);
+        const rangeDates = {startDate: subMonths(argentinaTime, 1), endDate: argentinaTime};
+        //console.log("rangeDates: ", rangeDates);
         const sales = await this.saleRepository.find({
             where: {
                 date: Between(rangeDates.startDate, rangeDates.endDate)
@@ -154,9 +158,11 @@ export class SaleService {
             relations: ['client'],
             order: { date: 'DESC', id: 'DESC' }
         });
+       // console.log("sales: ", sales);
         const salesDto = sales.map(x => {
             return new SaleListDto(x)
         });
+       
         return salesDto;
     }
 
