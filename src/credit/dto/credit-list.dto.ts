@@ -18,6 +18,7 @@ export class CreditListDto {
     payDay: string;
     typeCurrency: string;
     firstPayment: string;
+    balance: number;
 
 
 
@@ -32,6 +33,7 @@ export class CreditListDto {
             debtCollectorId: parseInt(credit.debtCollector.id),
             date: (credit.creditHistory.length>0) ?format(credit.creditHistory[credit.creditHistory.length - 1]?.date, "dd-MM-yyyy"):'',
             principal: (credit.creditHistory.length>0) ?credit.creditHistory[credit.creditHistory.length - 1]?.principal:0,
+            balance: (credit.creditHistory.length>0) ?credit.creditHistory[credit.creditHistory.length - 1]?.balance:0,
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
             payment: (credit.creditHistory.length>0) ?credit.creditHistory[credit.creditHistory.length - 1]?.payment:0,
