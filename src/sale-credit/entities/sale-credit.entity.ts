@@ -43,6 +43,9 @@ export class SaleCredit {
     @Column()
     typeCurrency: string;
 
+    @Column()
+    downPayment: number;
+
     
     @Column()
     information: string

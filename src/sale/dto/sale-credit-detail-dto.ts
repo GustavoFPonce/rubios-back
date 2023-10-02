@@ -18,6 +18,9 @@ export class SaleCreditDetailDto {
     commission: number;
     interestRate: number;
     payment: number;
+    typeCurrency: string;
+    downPayment: number;
+
 
     constructor(sale: Sale, saleDetails: SaleDetailDto[]) {
         const saleDto: SaleCreditDetailDto = {
@@ -35,6 +38,8 @@ export class SaleCreditDetailDto {
             commission: (sale.saleCredit)?sale.saleCredit.commission: null,
             interestRate: (sale.saleCredit)?sale.saleCredit.interestRate: null,
             payment: (sale.saleCredit)?sale.saleCredit.creditHistory[sale.saleCredit.creditHistory.length-1].payment: sale.total,
+            typeCurrency: (sale.saleCredit)?sale.saleCredit.typeCurrency:'',
+            downPayment: (sale.saleCredit)? sale.saleCredit.downPayment:0
         };
         return saleDto;
     }

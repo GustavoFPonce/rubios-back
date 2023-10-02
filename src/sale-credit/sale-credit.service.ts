@@ -65,6 +65,7 @@ export class SaleCreditService {
         createCredit.typeCurrency = creditCreateDto.typeCurrency;
         createCredit.commission = creditCreateDto.commission;
         createCredit.sale = sale;
+        createCredit.downPayment = creditCreateDto.downPayment;
         const credit = this.saleCreditRepository.create(createCredit);
         const creditSaved = await this.saleCreditRepository.save(credit);
         const creditId = creditSaved.id;
