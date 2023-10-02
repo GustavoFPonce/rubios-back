@@ -1,6 +1,6 @@
 import { ConsoleLogger, Injectable, NotFoundException } from '@nestjs/common';
 import { Between, Brackets, Repository } from 'typeorm';
-import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays, parse } from 'date-fns';
+import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays, parse, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale'
 import { Credit } from './entities/credit.entity';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
@@ -81,7 +81,7 @@ export class CreditService {
         //console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
             await this.addPaymentDetail(payments, creditHistorySaved, creditSaved);
-            return response.success = true;
+            response.success = true;
         }
 
         return response;
@@ -215,10 +215,12 @@ export class CreditService {
     async getAll(id: number) {
         var referenceDate = new Date();
         //console.log("fecha de referencia: ", referenceDate);
-        var argentinaTime = new Date(referenceDate.setHours(referenceDate.getHours() - 3));
+        var argentinaTime = referenceDate;
+        //new Date(referenceDate.setHours(referenceDate.getHours() - 3));
         //console.log("fecha argentina: ", argentinaTime);
-        const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
-        const rangeDates = this.getStartDateEndDate(startDate, argentinaTime);
+        //const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
+       // const rangeDates = this.getStartDateEndDate(startDate, argentinaTime);
+       const rangeDates = {startDate: subMonths(argentinaTime, 1), endDate: argentinaTime};
         //console.log("fechas rangos: ", rangeDates);
         const user = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
         // console.log("usuario encontrado: ", user);

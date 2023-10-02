@@ -6,7 +6,7 @@ import { SaleCreditCreateDto } from './dto/sale-credit-create-dto';
 import { Sale } from 'src/sale/entities/sale.entity';
 import { CreditHistoryCreateDto } from 'src/credit/dto/credit-history-create-dto';
 import { PaymentType, StatusCredit, StatusCreditHistory, StatusPayment } from 'src/credit/enum';
-import { addDays, addMonths, format, parseISO, subDays } from 'date-fns';
+import { addDays, addMonths, format, parseISO, subDays, subMonths } from 'date-fns';
 import { User } from 'src/user/entities/user.entity';
 import { Client } from 'src/client/entities/client.entity';
 import { es } from 'date-fns/locale';
@@ -166,8 +166,14 @@ export class SaleCreditService {
     }
 
     async annulSaleCredit(saleId: number) {
+        console.log("saleId: ", saleId);
         var response = { success: false, error: '' };
-        const saleCredit = await this.saleCreditRepository.findOne({ where: { sale: saleId } });
+        const saleCredit = await this.saleCreditRepository.createQueryBuilder('saleCredit')
+        .leftJoinAndSelect('saleCredit.sale', 'sale')
+        .where('sale.id = :id', {id:saleId})
+        .getOne()
+        ;
+        console.log("saleCredit: ", saleCredit);
         saleCredit.status = StatusCredit.annulled;
         const updateCredit = await this.saleCreditRepository.save(saleCredit);
         if (updateCredit) response.success = true;
@@ -176,9 +182,11 @@ export class SaleCreditService {
 
     async getAll(id: number) {
         var referenceDate = new Date();
-        var argentinaTime = new Date(referenceDate.setHours(referenceDate.getHours() - 3));
-        const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
-        const rangeDates = getDateStartEnd(startDate, argentinaTime);
+        var argentinaTime = referenceDate;
+        // new Date(referenceDate.setHours(referenceDate.getHours() - 3));
+        //const startDate = new Date(referenceDate.setMonth(referenceDate.getMonth() - 1));
+        //const rangeDates = getDateStartEnd(startDate, argentinaTime);
+        const rangeDates = {startDate: subMonths(argentinaTime, 1), endDate: argentinaTime};
         const user = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
         // console.log("usuario encontrado: ", user);
         const conditions = new Brackets((qb) => {
