@@ -48,7 +48,7 @@ export class SaleCreditService {
     async create(creditCreateDto: SaleCreditCreateDto, userId: number, sale: Sale) {
 
         var response = { success: false }
-        const saleId= sale.id;
+        const saleId = sale.id;
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
@@ -331,10 +331,10 @@ export class SaleCreditService {
         creditSaved.commission = credit.commission;
         creditSaved.interestRate = credit.interestRate;
         const updateCreditSaved = await this.saleCreditRepository.save(creditSaved);
-        //console.log("update credit: ", updateCreditSaved);
+        console.log("update credit: ", updateCreditSaved);
         const updateCreditHistorySaved = await this.updateCreditHistory(creditHistorySaved, credit);
-        //console.log("updateCreditHistorySaved: ", updateCreditHistorySaved);
-        if (credit.paymentsDetail && credit.status == StatusCredit.active) await this.updatePaymentsDetail(id, credit.paymentsDetail);
+        console.log("updateCreditHistorySaved: ", updateCreditHistorySaved);
+        if (credit.paymentsDetail && credit.status == 'active') await this.updatePaymentsDetail(id, credit.paymentsDetail);
         if (updateCreditSaved) response.success = true;
         return response;
         //return null;
@@ -355,14 +355,18 @@ export class SaleCreditService {
     }
 
     private async updatePaymentsDetail(creditId: number, paymentsDetail: PaymentDetailCreateDto[]) {
+        console.log('updatePaymentsDetail: ');
         var response = { success: false, error: '' };
         const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { credit: creditId, status: 1 }, relations: ['credit', 'paymentsDetail'] });
-        //console.log('creditHistory update: ', creditHistory);
-
-        for (const payment of creditHistory.paymentsDetail) {
-            const responseDelete = await this.deletePayment(payment.id);
-            if (responseDelete.affected > 0) response.success = true;
-        };
+        console.log('creditHistory update: ', creditHistory);
+        if (creditHistory.paymentsDetail.length > 0) {
+            for (const payment of creditHistory.paymentsDetail) {
+                const responseDelete = await this.deletePayment(payment.id);
+                if (responseDelete.affected > 0) response.success = true;
+            };
+        } else {
+            response.success = true;
+        }
         if (response.success) {
             const responseUpdatePayments = await this.addPaymentDetail(paymentsDetail, creditHistory, creditHistory.credit);
         }

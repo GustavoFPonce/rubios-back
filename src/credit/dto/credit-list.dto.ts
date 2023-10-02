@@ -30,14 +30,14 @@ export class CreditListDto {
             clientNumber: credit.client?.clientNumber,
             debtCollector: credit.debtCollector.lastName + " " + credit.debtCollector.name,
             debtCollectorId: parseInt(credit.debtCollector.id),
-            date: format(credit.creditHistory[credit.creditHistory.length - 1].date, "dd-MM-yyyy"),
-            principal: credit.creditHistory[credit.creditHistory.length - 1].principal,
+            date: (credit.creditHistory.length>0) ?format(credit.creditHistory[credit.creditHistory.length - 1]?.date, "dd-MM-yyyy"):'',
+            principal: (credit.creditHistory.length>0) ?credit.creditHistory[credit.creditHistory.length - 1]?.principal:0,
             paymentFrequency: credit.paymentFrequency,
             numberPayment: credit.numberPayment,
-            payment: credit.creditHistory[credit.creditHistory.length - 1].payment,
-            payDay: credit.creditHistory[credit.creditHistory.length - 1].payDay,
+            payment: (credit.creditHistory.length>0) ?credit.creditHistory[credit.creditHistory.length - 1]?.payment:0,
+            payDay: (credit.creditHistory.length>0) ?credit.creditHistory[credit.creditHistory.length - 1]?.payDay:'',
             typeCurrency: credit.typeCurrency,
-            firstPayment: format(credit.creditHistory[credit.creditHistory.length - 1].firstPayment, "dd-MM-yyyy"),
+            firstPayment: (credit.creditHistory.length>0) ?format(credit.creditHistory[credit.creditHistory.length - 1]?.firstPayment, "dd-MM-yyyy"):'',
         };
         //console.log("credit list dto class: ", credit);
         return creditDto;
