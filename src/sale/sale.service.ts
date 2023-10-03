@@ -19,6 +19,7 @@ import { SaleCreditCreateDto } from 'src/sale-credit/dto/sale-credit-create-dto'
 import { SaleCreditService } from 'src/sale-credit/sale-credit.service';
 import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
 import { SaleCreditDetailDto } from './dto/sale-credit-detail-dto';
+import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
 
 @Injectable()
 export class SaleService {
@@ -29,7 +30,9 @@ export class SaleService {
         @InjectRepository(Product) private readonly productRepository: Repository<Product>,
         @InjectRepository(SaleDetail) private readonly saleDetailRepository: Repository<SaleDetail>,
         private readonly productService: ProductService,
-        private readonly saleCreditService: SaleCreditService
+        private readonly saleCreditService: SaleCreditService,
+        @InjectRepository(SaleCredit)
+        private saleCreditRepository: Repository<SaleCredit>
     ) { }
 
 
@@ -78,19 +81,19 @@ export class SaleService {
         const sale = await querySale.getOne();
 
         if (sale.paymentType === 'Crédito') {
-            querySale            
-            .leftJoinAndSelect('sale.saleCredit', 'saleCredit')            
-            .leftJoinAndSelect('saleCredit.debtCollector', 'debtCollector')
-            .leftJoinAndSelect('saleCredit.creditHistory', 'creditHistory')
-            .andWhere((qb) => {
-                const subQuery = qb
-                    .subQuery()
-                    .select('MAX(creditHistory.id)')
-                    .from(SaleCreditHistory, 'creditHistory')
-                    .where('creditHistory.sale_credit_id = saleCredit.id')
-                    .getQuery();
-                return `creditHistory.id = ${subQuery}`;
-            });;
+            querySale
+                .leftJoinAndSelect('sale.saleCredit', 'saleCredit')
+                .leftJoinAndSelect('saleCredit.debtCollector', 'debtCollector')
+                .leftJoinAndSelect('saleCredit.creditHistory', 'creditHistory')
+                .andWhere((qb) => {
+                    const subQuery = qb
+                        .subQuery()
+                        .select('MAX(creditHistory.id)')
+                        .from(SaleCreditHistory, 'creditHistory')
+                        .where('creditHistory.sale_credit_id = saleCredit.id')
+                        .getQuery();
+                    return `creditHistory.id = ${subQuery}`;
+                });;
         }
 
         const resultGetSale = await querySale.getOne();
@@ -137,6 +140,24 @@ export class SaleService {
         return response;
     }
 
+
+    async delete(id: number) {
+        console.log("id venta: ", id);
+        var response = { success: false, error: '' };
+        const sale = await this.getSale(id);
+        console.log("venta: ", sale);
+        if (!sale) throw new NotFoundException(`No se encontró la venta con el id: ${id}`);
+        await this.returnStockBySaleDetail(sale.saleDetails);        
+        await this.saleRepository.delete(sale.id);
+        const saleCredit = await this.saleCreditRepository.createQueryBuilder('credit')
+            .where('credit.sale_id = :id', { id: sale.id })
+            .getOne();
+        if (saleCredit) await this.saleCreditRepository.delete(saleCredit);
+        response = { success: true, error: '' }
+    }
+
+
+
     private async returnStockBySaleDetail(saleDetails: SaleDetail[]) {
         saleDetails.forEach(async detail => {
             await this.productService.affectStockBySale(detail.product.id, detail.quantity);
@@ -148,8 +169,8 @@ export class SaleService {
         //console.log("fecha de referencia: ", referenceDate);
         var argentinaTime = referenceDate;
         // new Date(referenceDate.setHours(referenceDate.getHours() - 3));
-       // console.log("argentinaTime: ", argentinaTime);
-        const rangeDates = {startDate: subMonths(argentinaTime, 1), endDate: argentinaTime};
+        // console.log("argentinaTime: ", argentinaTime);
+        const rangeDates = { startDate: subMonths(argentinaTime, 1), endDate: argentinaTime };
         //console.log("rangeDates: ", rangeDates);
         const sales = await this.saleRepository.find({
             where: {
@@ -158,11 +179,11 @@ export class SaleService {
             relations: ['client'],
             order: { date: 'DESC', id: 'DESC' }
         });
-       // console.log("sales: ", sales);
+        // console.log("sales: ", sales);
         const salesDto = sales.map(x => {
             return new SaleListDto(x)
         });
-       
+
         return salesDto;
     }
 

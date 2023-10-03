@@ -17,6 +17,7 @@ export class SaleCreditListDto {
     firstPayment: string;
     typeCurrency: string;
     balance: number;
+    downPayment: number
 
 
     constructor(credit: SaleCredit) {
@@ -37,6 +38,7 @@ export class SaleCreditListDto {
             payDay: credit.creditHistory[credit.creditHistory.length-1].payDay,
             firstPayment: format(credit.creditHistory[credit.creditHistory.length-1].firstPayment, "dd-MM-yyyy"),
             typeCurrency: credit.typeCurrency,
+            downPayment: credit.downPayment
         };
         //console.log("credit list dto class: ", credit);
         return creditDto;

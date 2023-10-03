@@ -38,7 +38,7 @@ export class CollectionDto {
             paymentDate: (paymentDetail.paymentDate)?format(paymentDetail.paymentDate, "dd-MM-yyyy"): null,
             payment: paymentDetail.payment,
             actualPayment: paymentDetail.actualPayment,
-            balance: paymentDetail.balance,
+            balance: paymentDetail.creditHistory.balance,
             typeCurrency: paymentDetail.creditHistory.credit.typeCurrency,
             interest: paymentDetail.creditHistory.interest,
             principal: paymentDetail.creditHistory.principal,

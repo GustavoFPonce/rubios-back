@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { Credit } from "../entities/credit.entity";
 import { StatusCredit } from "../enum";
 import { PaymentDetailDto } from "./payment-detail-dto";
+import { SaleCredit } from "src/sale-credit/entities/sale-credit.entity";
 
 export class CreditEditDto {
     id: number;
@@ -22,11 +23,12 @@ export class CreditEditDto {
     typeCurrency: string;
     status: string;
     commission: number;
-    paymentsDetail: PaymentDetailDto[]
+    paymentsDetail: PaymentDetailDto[];
+    downPayment: number
 
 
 
-    constructor(credit: Credit, paymentsDetail: PaymentDetailDto[]) {
+    constructor(credit: Credit | SaleCredit, paymentsDetail: PaymentDetailDto[]) {
         //console.log("credit**: ", credit);
         const creditDto: CreditEditDto = {
             id: credit.id,
@@ -47,7 +49,8 @@ export class CreditEditDto {
             typeCurrency: credit.typeCurrency,
             status: `${StatusCredit[credit.status]}`,
             commission: credit.commission,
-            paymentsDetail: paymentsDetail
+            paymentsDetail: paymentsDetail,
+            downPayment: (credit instanceof SaleCredit) ?credit.downPayment: null
         };
         //console.log("credit list dto class: ", credit);
         return creditDto;

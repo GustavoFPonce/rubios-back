@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { SaleService } from './sale.service';
 import { SaleCreateDto } from './dto/sale-create-dto';
@@ -20,7 +20,7 @@ export class SaleController {
         @Req() req: any
     ) {
         const userId = req.user.userId;
-       //console.log("sale a guaradar: ", sale);
+        //console.log("sale a guaradar: ", sale);
         console.log("credit a guaradar: ", credit);
         return await this.saleService.create(sale, userId, credit);
     }
@@ -75,6 +75,13 @@ export class SaleController {
         @Param('id') id: number
     ) {
         return await this.saleService.getById(id);
+    }
+
+    @Delete(':id')
+    async delete(
+        @Param('id') id: number
+    ) {
+        return await this.saleService.delete(id);
     }
 
 }
