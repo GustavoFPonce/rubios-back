@@ -10,6 +10,7 @@ import {
 
 import { Role } from '../../role/entities/role.entity';
 import { Credit } from 'src/credit/entities/credit.entity';
+import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 
 @Entity()
 export class User {
@@ -46,6 +47,9 @@ export class User {
 
   @OneToMany(() => Credit, (credit) => credit.debtCollector)
   credits: Credit[];
+
+  @OneToMany(()=> CreditTransaction, (transaction)=> transaction.user)
+    transactions: CreditTransaction[];
 
 
 }

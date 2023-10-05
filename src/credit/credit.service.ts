@@ -1,5 +1,5 @@
 import { ConsoleLogger, Injectable, NotFoundException } from '@nestjs/common';
-import { Between, Brackets, Repository } from 'typeorm';
+import { Between, Brackets, Repository, Transaction } from 'typeorm';
 import { format, parseISO, formatISO, addWeeks, addMonths, addDays, subDays, parse, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale'
 import { Credit } from './entities/credit.entity';
@@ -20,8 +20,11 @@ import { PaymentDetailCreateDto } from './dto/payment-detaill-create-dto';
 import { CreditEditDto } from './dto/credit-edit-dto';
 import { Cash } from 'src/cash/entities/cash.entity';
 import { CashService } from '../cash/cash.service';
-import { Expense } from 'src/cash/entities/expense.entity';
 import { ExpenseCreateDto, ExpenseType } from 'src/cash/dto/expense-create-dto';
+import { CreditTransactionCreateDto } from 'src/cash/dto/credit-transaction-create-dto';
+import { TransactionType } from '../cash/dto/enum';
+import { CreditTransactionDetail } from '../cash/entities/credit-transaction-detail.entity';
+import { CreditTransaction } from '../cash/entities/credit-transaction.entity';
 
 @Injectable()
 export class CreditService {
@@ -38,7 +41,9 @@ export class CreditService {
         private clientRepository: Repository<Client>,
         @InjectRepository(Cash)
         private cashRepository: Repository<Cash>,
-        private readonly cashService: CashService
+        private readonly cashService: CashService,
+        @InjectRepository(CreditTransactionDetail)
+        private creditTransactionDetailRepository: Repository<CreditTransactionDetail>,
     ) { }
 
 
@@ -584,14 +589,14 @@ export class CreditService {
 
     //register payments
 
-    async registerPayment(id: number, paymentAmount: number) {
+    async registerTrasactionAndPayment(id: number, paymentAmount: number, userId: number) {
         var response = { success: false, collection: {} };
 
-        // var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
-        // if (!lastCash || lastCash.closingDate != null) {
-        //     lastCash = await this.cashService.openCash();
-        // }
-        //console.log("ultima caja: ", lastCash);
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = await this.cashService.openCash();
+        }
+        console.log("ultima caja: ", lastCash);
         var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -599,16 +604,37 @@ export class CreditService {
             .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
             .where('paymentsDetail.id = :id', { id })
             .getOne();
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        console.log("user: ", user);
+        var concept = (paymentAmount > payment.payment) ? 'Pago de multiples cuotas' : 'Pago de cuota';
+        const transaction = await this.registerCreditTransaction(paymentAmount, payment, user, lastCash, concept, TransactionType.payment);
+        console.log("transacci{on registrada: ", transaction);
+        await this.registerPayment(payment, paymentAmount, transaction, user.role.name);
+        return response;
+    }
+
+    private async registerPayment(payment: PaymentDetail, paymentAmount: number, transaction: CreditTransaction | null, role: string) {
+        var response = { success: false, error: '' };
+        console.log("payment: ", payment);
+        console.log("import pagado: ", paymentAmount);
         payment.paymentDate = new Date();
-        payment.actualPayment = (paymentAmount<= payment.payment)?paymentAmount: payment.payment;
-        //payment.creditHistory.balance = payment.creditHistory.balance - paymentAmount;
+        payment.actualPayment = (paymentAmount <= payment.payment) ? paymentAmount : payment.payment;
         payment.isNext = false;
-        //payment.cash = lastCash;
         const paymentPending = payment.payment - paymentAmount;
         const saved = await this.paymentDetailRepository.save(payment);
+        if (role == 'admin') {
+            var creditTransactionDetail = new CreditTransactionDetail();
+            creditTransactionDetail.creditTransaction = transaction;
+            creditTransactionDetail.paymentId = payment.id;
+            creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+            creditTransactionDetail.paymentDate = payment.paymentDate;
+            creditTransactionDetail.payment = payment.payment;
+            creditTransactionDetail.actualPayment = payment.actualPayment;
+            const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
+        }
         if (saved) {
             response.success = true;
-            response.collection = new CollectionDto(saved);
+            //response.collection = new CollectionDto(saved);
             const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, payment.actualPayment);
             if (creditHistoryUpdate) {
                 if (paymentPending > 0) {
@@ -618,22 +644,35 @@ export class CreditService {
                     if (payment.creditHistory.credit.numberPayment != 1) await this.updateStatusIsNextPayment(payment.id, true, payment.creditHistory.id);
                     if (paymentPending < 0) {
                         const paymentNext = await this.getPaymentNext(creditHistoryUpdate.id);
-                        if (paymentNext) await this.registerPayment(paymentNext.id, -paymentPending);
+                        console.log("paymentNext: ", paymentNext);
+                        if (paymentNext) await this.registerPayment(paymentNext, -paymentPending, transaction, role);
                     }
                 }
+                response.success = true;
             }
         }
-        return response;
+
     }
 
     private async getPaymentNext(crediHistoryId: number) {
-        const payment = await this.paymentDetailRepository.createQueryBuilder('payment')
-        .where('payment.credit_history_id = :id AND payment.isNext = :isNext', {id: crediHistoryId, isNext: true})
-        .getOne();
+        const payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
+            .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('paymentsDetail.credit_history_id = :id AND paymentsDetail.isNext = :isNext', { id: crediHistoryId, isNext: true })
+            .getOne();
         console.log("payment siguiente: ", payment);
         return payment;
     }
 
+    private async registerCreditTransaction(paymentAmount: number, payment: PaymentDetail, user: User, lastCash: Cash, concept: string, transactionType: TransactionType) {
+        if (user.role.name == 'admin') {
+            const creditTransactionCreateDto = new CreditTransactionCreateDto(payment.creditHistory.credit.client,
+                payment.creditHistory.credit, lastCash, paymentAmount, concept, transactionType, user);
+            const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
+            console.log("responseSavedTrasaction: ", responseSavedTrasaction);
+            return responseSavedTrasaction;
+        }
+    }
 
 
     private async addPendingPayment(paymentPending: number, creditHistory: CreditHistory, date: Date) {
@@ -727,12 +766,12 @@ export class CreditService {
         }
     }
 
-    async cancelRegisteredPayment(id: number) {
+    async cancelRegisteredPayment(id: number, userId: number) {
         var response = { success: false, collection: {} };
-        // var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
-        // if (!lastCash || lastCash.closingDate != null) {
-        //     lastCash = await this.cashService.openCash();
-        // }
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = await this.cashService.openCash();
+        }
         var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit', 'creditHistory.credit.client', 'cash'] });
         console.log("payment here: ", payment)
         const isPartialPayment = parseFloat(payment.payment.toString()) > parseFloat(payment.actualPayment.toString());
@@ -740,14 +779,23 @@ export class CreditService {
         const amountPaymentPartial = payment.payment - payment.actualPayment;
         console.log("amountPaymentPartial")
         const paymentDate = addDays(payment.paymentDueDate, 1);
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        console.log("user: ", user);
+        var concept = 'Cancelación pago de cuota';
+        const transaction = await this.registerCreditTransaction(actualPayment, payment, user, lastCash, concept, TransactionType.payment);
+        if (user.role.name == 'admin') {
+            var creditTransactionDetail = new CreditTransactionDetail();
+            creditTransactionDetail.creditTransaction = transaction;
+            creditTransactionDetail.paymentId = payment.id;
+            creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+            creditTransactionDetail.paymentDate = payment.paymentDate;
+            creditTransactionDetail.payment = payment.payment;
+            creditTransactionDetail.actualPayment = payment.actualPayment;
+            const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
+        }
         payment.actualPayment = 0.00;
         payment.paymentDate = null;
         payment.isNext = true;
-        // if (lastCash.id == payment.cash.id) {
-        //     payment.cash = null;
-        // } else {
-        //     this.addExpense(payment.creditHistory, actualPayment);
-        // };
         const saved = await this.paymentDetailRepository.save(payment);
         if (saved) {
             response.success = true;
@@ -775,14 +823,12 @@ export class CreditService {
         await this.cashService.createExpense(expense)
     }
 
-    async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any) {
-        // var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
-        // if (!lastCash || lastCash.closingDate != null) {
-        //     lastCash = await this.cashService.openCash();
-        // }
+    async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any, userId: number) {
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = await this.cashService.openCash();
+        }
         let deletePaymentDetail = false;
-        console.log("id: ", id);
-        console.log("paymentAmount: ", paymentAmount);
         var response = { success: false, collection: {} };
         const paymentDetail = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
@@ -806,6 +852,11 @@ export class CreditService {
         if (paymentDetail.creditHistory.credit.paymentFrequency == 'Un pago') deletePaymentDetail = true;
         var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         const newFirstPayment = new Date(firstPayment);
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        console.log("user: ", user);
+        var concept = (paymentAmount > paymentDetail.creditHistory.interest) ? 'Pago de interés y reducción de capital' :
+            ((paymentAmount == paymentDetail.creditHistory.interest) ? 'Pago de interés' : 'Pago de interés y capitalización de intereses');
+        const transaction = await this.registerCreditTransaction(paymentAmount, paymentDetail, user, lastCash, concept, TransactionType.paymentInterest);      
         var newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(),
             principal: principal,
@@ -831,11 +882,18 @@ export class CreditService {
         newPaymentDetail.actualPayment = paymentAmount;
         newPaymentDetail.paymentType = PaymentType.cancellationInterest;
         newPaymentDetail.isNext = false;
-        // newPaymentDetail.cash = lastCash;
-        console.log("new payment: ", newPaymentDetail);
-        console.log("newCreditHistory: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
-        this.newPaymentDetail(newPaymentDetail);
+        const payment =  await this.newPaymentDetail(newPaymentDetail);        
+        if (user.role.name == 'admin') {
+            var creditTransactionDetail = new CreditTransactionDetail();
+            creditTransactionDetail.creditTransaction = transaction;
+            creditTransactionDetail.paymentId = payment.id;
+            creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+            creditTransactionDetail.paymentDate = payment.paymentDate;
+            creditTransactionDetail.payment = payment.payment;
+            creditTransactionDetail.actualPayment = payment.actualPayment;
+            const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
+        }
         console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
             lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;

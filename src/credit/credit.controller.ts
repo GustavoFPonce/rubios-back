@@ -93,16 +93,20 @@ export class CreditController {
     async registerPayment(
         @Param('id') id: number,
         @Body('payment') payment: number,
+        @Req() req: any
     ) {
         console.log("paymemt recibido: ", payment);
-        return this.creditService.registerPayment(id, payment);
+        const user = req.user.userId;
+        return this.creditService.registerTrasactionAndPayment(id, payment, user);
     }
 
     @Put((':id/cancel-registered-payment'))
     async cancelRegisteredPayment(
-        @Param('id') id: number
+        @Param('id') id: number,
+        @Req() req: any
     ) {
-        return this.creditService.cancelRegisteredPayment(id);
+        const user = req.user.userId;
+        return this.creditService.cancelRegisteredPayment(id, user);
     }
 
     @Put((':id/register-cancellation-interest-principal'))
@@ -110,9 +114,11 @@ export class CreditController {
         @Param('id') id: number,
         @Body('payment') payment: number,
         @Body('firstPayment') firstPayment: number,
+        @Req() req: any
     ) {
         console.log("paymemt recibido: ", payment);
-        return this.creditService.registerCancellationInterestPrincipal(id, payment, firstPayment);
+        const user = req.user.userId;
+        return this.creditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }
 
     @Get('search-collections')

@@ -4,6 +4,7 @@ import { Client } from "src/client/entities/client.entity";
 import { PaymentDetailSaleCredit } from "./payment-detail-sale-credit.entity";
 import { Sale } from "src/sale/entities/sale.entity";
 import { SaleCreditHistory } from "./sale-credit-history.entity";
+import { CreditTransaction } from "src/cash/entities/credit-transaction.entity";
 
 @Entity()
 export class SaleCredit {
@@ -51,5 +52,8 @@ export class SaleCredit {
     information: string
 
     @OneToMany(() => SaleCreditHistory, (creditHistory: SaleCreditHistory) => creditHistory.credit)
-    creditHistory: SaleCreditHistory[]
+    creditHistory: SaleCreditHistory[];
+
+    @OneToMany(() => CreditTransaction, (transaction: CreditTransaction) => transaction.credit)
+    transactions: CreditTransaction[]
 }

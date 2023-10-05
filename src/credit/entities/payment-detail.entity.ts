@@ -33,14 +33,9 @@ export class PaymentDetail{
     paymentType: number;
 
     @Column()
-    isNext: boolean;
-    
+    isNext: boolean;    
 
     @ManyToOne(()=> CreditHistory, (creditHistory: CreditHistory) => creditHistory.paymentsDetail)
     @JoinColumn({ name: 'credit_history_id' }) 
     creditHistory: CreditHistory;
-
-    @ManyToOne(()=> Cash, (cash: Cash) => cash.paymentDetailPersonalCredit)
-    @JoinColumn({ name: 'cash_id' }) 
-    cash: Cash;
 }

@@ -64,9 +64,11 @@ export class SaleCreditController {
 
     @Put((':id/cancel-registered-payment'))
     async cancelRegisteredPayment(
-        @Param('id') id: number
+        @Param('id') id: number,
+        @Req() req:any
     ) {
-        return this.saleCreditService.cancelRegisteredPayment(id);
+        const user = req.user.userId;
+        return this.saleCreditService.cancelRegisteredPayment(id, user);
     }
 
     @Put(':id')
@@ -122,9 +124,11 @@ export class SaleCreditController {
     async registerPayment(
         @Param('id') id: number,
         @Body('payment') payment: number,
+        @Req() req: any
     ) {
         console.log("paymemt recibido: ", payment);
-        return this.saleCreditService.registerPayment(id, payment);
+        const user = req.user.userId;
+        return this.saleCreditService.registerTrasactionAndPayment(id, payment, user);
     }
 
     @Put((':id/register-cancellation-interest-principal'))
@@ -132,10 +136,12 @@ export class SaleCreditController {
         @Param('id') id: number,
         @Body('payment') payment: number,
         @Body('firstPayment') firstPayment: number,
+        @Req() req: any
 
     ) {
         console.log("paymemt recibido: ", payment);
-        return this.saleCreditService.registerCancellationInterestPrincipal(id, payment, firstPayment);
+        const user = req.user.userId;
+        return this.saleCreditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }
 
     

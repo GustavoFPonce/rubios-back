@@ -46,10 +46,4 @@ export class Cash {
 
     @OneToMany(() => Expense, (expense: Expense) => expense.cash)
     expenses: Expense[];
-
-    @OneToMany(() => PaymentDetail, (detail: PaymentDetail) => detail.cash)
-    paymentDetailPersonalCredit: PaymentDetail[]
-
-    @OneToMany(() => PaymentDetailSaleCredit, (detail: PaymentDetailSaleCredit) => detail.cash)
-    paymentDetailSaleCredit: PaymentDetailSaleCredit[]
 }
