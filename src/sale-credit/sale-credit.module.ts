@@ -10,9 +10,10 @@ import { User } from 'src/user/entities/user.entity';
 import { Cash } from 'src/cash/entities/cash.entity';
 import { CashModule } from 'src/cash/cash.module';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
+import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([SaleCredit, SaleCreditHistory, PaymentDetailSaleCredit, Client, User, Cash, CreditTransactionDetail]), CashModule],
+  imports:[TypeOrmModule.forFeature([SaleCredit, SaleCreditHistory, PaymentDetailSaleCredit, Client, User, Cash, CreditTransactionDetail, CreditTransaction]), CashModule],
   controllers: [SaleCreditController],
   providers: [SaleCreditService],
   exports:[SaleCreditService]

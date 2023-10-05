@@ -10,9 +10,10 @@ import { CreditHistory } from './entities/credit-history.entity';
 import { Cash } from 'src/cash/entities/cash.entity';
 import { CashModule } from 'src/cash/cash.module';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
+import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Credit, PaymentDetail, User, Client, CreditHistory, Cash, CreditTransactionDetail]), CashModule],
+  imports: [TypeOrmModule.forFeature([Credit, PaymentDetail, User, Client, CreditHistory, Cash, CreditTransactionDetail, CreditTransaction]), CashModule],
   controllers: [CreditController],
   providers: [CreditService]
 })

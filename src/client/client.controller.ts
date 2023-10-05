@@ -68,6 +68,14 @@ export class ClientController {
         return await this.clientService.getByClientId(id, type);
     }
 
+    @Get(':id/transactions')
+    async getTransactions(
+        @Param('id') id: number,
+        @Query('type') type: number
+    ){
+        return await this.clientService.getTransactions(id, type);
+    }
+
     @Get(':id')
     async getById(
         @Param('id') id: number

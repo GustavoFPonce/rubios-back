@@ -18,15 +18,6 @@ export class CreditController {
         return await this.creditService.create(createCreditDto, userId);
     }
 
-    @Put(':id')
-    async update(
-        @Param('id') id: number,
-        @Body() credit: any
-    ) {
-        console.log("credit a editar: ", credit);
-        var response = await this.creditService.update(id, credit);
-        return response;
-    }
 
     @Get()
     async getAll(
@@ -89,6 +80,17 @@ export class CreditController {
         return await this.creditService.getCollectionsByDate(userId, date);
     }
 
+    @Put('reschedule-payment')
+    async reschedulePayment(
+        @Body() paymentDate: {id: number, dueDate: Date}
+    ) {
+        console.log("id", paymentDate.id)
+        console.log("newDate", paymentDate.dueDate)
+        var response = await this.creditService.reschedulePayment(paymentDate.id, paymentDate.dueDate);
+        return response;
+    }
+
+
     @Put((':id/register-payment'))
     async registerPayment(
         @Param('id') id: number,
@@ -121,6 +123,18 @@ export class CreditController {
         return this.creditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }
 
+
+    
+    @Put(':id')
+    async update(
+        @Param('id') id: number,
+        @Body() credit: any
+    ) {
+        console.log("credit a editar: ", credit);
+        var response = await this.creditService.update(id, credit);
+        return response;
+    }
+    
     @Get('search-collections')
     async searchCollections(
         @Req() req: any,
@@ -178,6 +192,13 @@ export class CreditController {
     ) {
         //console.log("id: ", id);
         return await this.creditService.getCreditsHistory(id);
+    }
+
+    @Get(':id/transactions')
+    async getTransactions(
+        @Param('id') id: number,
+    ){
+       return await this.creditService.getTransactions(id);
     }
 
 

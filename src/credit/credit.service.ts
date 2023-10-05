@@ -25,6 +25,7 @@ import { CreditTransactionCreateDto } from 'src/cash/dto/credit-transaction-crea
 import { TransactionType } from '../cash/dto/enum';
 import { CreditTransactionDetail } from '../cash/entities/credit-transaction-detail.entity';
 import { CreditTransaction } from '../cash/entities/credit-transaction.entity';
+import { CreditTransactionDto } from 'src/cash/dto/credit-transactions-dto';
 
 @Injectable()
 export class CreditService {
@@ -44,6 +45,8 @@ export class CreditService {
         private readonly cashService: CashService,
         @InjectRepository(CreditTransactionDetail)
         private creditTransactionDetailRepository: Repository<CreditTransactionDetail>,
+        @InjectRepository(CreditTransaction)
+        private creditTransactionRepository: Repository<CreditTransaction>
     ) { }
 
 
@@ -615,8 +618,6 @@ export class CreditService {
 
     private async registerPayment(payment: PaymentDetail, paymentAmount: number, transaction: CreditTransaction | null, role: string) {
         var response = { success: false, error: '' };
-        console.log("payment: ", payment);
-        console.log("import pagado: ", paymentAmount);
         payment.paymentDate = new Date();
         payment.actualPayment = (paymentAmount <= payment.payment) ? paymentAmount : payment.payment;
         payment.isNext = false;
@@ -669,7 +670,6 @@ export class CreditService {
             const creditTransactionCreateDto = new CreditTransactionCreateDto(payment.creditHistory.credit.client,
                 payment.creditHistory.credit, lastCash, paymentAmount, concept, transactionType, user);
             const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
-            console.log("responseSavedTrasaction: ", responseSavedTrasaction);
             return responseSavedTrasaction;
         }
     }
@@ -696,9 +696,16 @@ export class CreditService {
         try {
             const creditHistory = await this.creditHistoryRepository.findOne({ where: { id }, relations: ['paymentsDetail', 'paymentsDetail.creditHistory'], order: { id: 'ASC' } });
 
-            const payments = creditHistory.paymentsDetail;
+            const payments = creditHistory.paymentsDetail.sort((a, b) => {
+                if (a.paymentDueDate.getTime() !== b.paymentDueDate.getTime()) {
+                    return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
+                }
+            });
+
+
             const paymentCurrent = payments.find(x => x.id == paymentId);
             const indexPaymentCurrent = payments.findIndex(x => x.id == paymentId);
+            console.log("indexPaymentCurrent", indexPaymentCurrent)
             if (indexPaymentCurrent != -1) {
                 var paymentNext = payments[indexPaymentCurrent + 1];
                 if (!paymentNext) {
@@ -856,7 +863,7 @@ export class CreditService {
         console.log("user: ", user);
         var concept = (paymentAmount > paymentDetail.creditHistory.interest) ? 'Pago de interés y reducción de capital' :
             ((paymentAmount == paymentDetail.creditHistory.interest) ? 'Pago de interés' : 'Pago de interés y capitalización de intereses');
-        const transaction = await this.registerCreditTransaction(paymentAmount, paymentDetail, user, lastCash, concept, TransactionType.paymentInterest);      
+        const transaction = await this.registerCreditTransaction(paymentAmount, paymentDetail, user, lastCash, concept, TransactionType.paymentInterest);
         var newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(),
             principal: principal,
@@ -883,7 +890,7 @@ export class CreditService {
         newPaymentDetail.paymentType = PaymentType.cancellationInterest;
         newPaymentDetail.isNext = false;
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
-        const payment =  await this.newPaymentDetail(newPaymentDetail);        
+        const payment = await this.newPaymentDetail(newPaymentDetail);
         if (user.role.name == 'admin') {
             var creditTransactionDetail = new CreditTransactionDetail();
             creditTransactionDetail.creditTransaction = transaction;
@@ -1196,4 +1203,24 @@ export class CreditService {
             startDate, endDate
         }
     }
+
+    async getTransactions(id: number) {
+        const transactions = await this.creditTransactionRepository.createQueryBuilder('creditTransactions')
+            .leftJoinAndSelect('creditTransactions.client', 'client')
+            .leftJoinAndSelect('creditTransactions.credit', 'credit')
+            .where('creditTransactions.credit_id = :id', { id })
+            .getMany();
+        return transactions.map(x => {
+            return new CreditTransactionDto(x, x.credit);
+        })
+    }
+
+    async reschedulePayment(id: number, newDate: Date) {
+        const payment = await this.paymentDetailRepository.findOne(id);
+        if (payment) {
+            payment.paymentDueDate = newDate;
+            await this.paymentDetailRepository.save(payment);
+        }
+    }
+
 }

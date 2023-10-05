@@ -27,6 +27,7 @@ import { CreditTransactionCreateDto } from 'src/cash/dto/credit-transaction-crea
 import { TransactionType } from 'src/cash/dto/enum';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
 import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
+import { CreditTransactionDto } from 'src/cash/dto/credit-transactions-dto';
 
 @Injectable()
 export class SaleCreditService {
@@ -46,6 +47,8 @@ export class SaleCreditService {
         private readonly cashService: CashService,
         @InjectRepository(CreditTransactionDetail)
         private creditTransactionDetailRepository: Repository<CreditTransactionDetail>,
+        @InjectRepository(CreditTransaction)
+        private creditTransactionRepository: Repository<CreditTransaction>
     ) { }
 
 
@@ -993,7 +996,12 @@ export class SaleCreditService {
         try {
             const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { id }, relations: ['paymentsDetail', 'paymentsDetail.creditHistory'], order: { id: 'ASC' } });
 
-            const payments = creditHistory.paymentsDetail;
+            const payments = creditHistory.paymentsDetail.sort((a, b) => {
+                if (a.paymentDueDate.getTime() !== b.paymentDueDate.getTime()) {
+                    return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
+                }
+            });
+
             const paymentCurrent = payments.find(x => x.id == paymentId);
             const indexPaymentCurrent = payments.findIndex(x => x.id == paymentId);
             if (indexPaymentCurrent != -1) {
@@ -1201,5 +1209,26 @@ export class SaleCreditService {
         const paymentDetail = this.paymentDetailSaleCreditRepository.create(newPaymentDetail);
         return await this.paymentDetailSaleCreditRepository.save(paymentDetail);
     }
+
+    async getTransactions(id: number) {
+        const transactions = await this.creditTransactionRepository.createQueryBuilder('creditTransactions')
+            .leftJoinAndSelect('creditTransactions.client', 'client')
+            .leftJoinAndSelect('creditTransactions.saleCredit', 'credit')
+            .where('creditTransactions.sale_credit_id = :id', { id })
+            .getMany();
+            console.log("transactions: ", transactions);
+        return transactions.map(x => {
+            return new CreditTransactionDto(x, x.saleCredit);
+        })
+    }
+
+    async reschedulePayment(id: number, newDate: Date) {
+        const payment = await this.paymentDetailSaleCreditRepository.findOne(id);
+        if (payment) {
+            payment.paymentDueDate = newDate;
+            await this.paymentDetailSaleCreditRepository.save(payment);
+        }
+    }
+
 
 }

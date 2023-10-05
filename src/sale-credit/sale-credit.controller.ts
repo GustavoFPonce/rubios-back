@@ -120,6 +120,17 @@ export class SaleCreditController {
 
     }
 
+    @Put('reschedule-payment')
+    async reschedulePayment(
+        @Body() paymentDate: {id: number, dueDate: Date}
+    ) {
+        console.log("id", paymentDate.id)
+        console.log("newDate", paymentDate.dueDate)
+        var response = await this.saleCreditService.reschedulePayment(paymentDate.id, paymentDate.dueDate);
+        return response;
+    }
+
+
     @Put((':id/register-payment'))
     async registerPayment(
         @Param('id') id: number,
@@ -144,6 +155,13 @@ export class SaleCreditController {
         return this.saleCreditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }
 
+    @Get(':id/transactions')
+    async getTransactions(
+        @Param('id') id: number,
+    ){
+        console.log("obteniendo transacciones: ", id);
+       return await this.saleCreditService.getTransactions(id);
+    }
     
 
     @Get(':id')

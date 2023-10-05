@@ -5,12 +5,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { async } from 'rxjs';
 import { ClientCreateDto } from './dto/client-create-dto';
 import { ClientListDto } from './dto/client-list-dto';
+import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
+import { CreditTransactionDto } from '../cash/dto/credit-transactions-dto';
 
 @Injectable()
 export class ClientService {
     constructor(
         @InjectRepository(Client)
-        private readonly clientRepository: Repository<Client>) { }
+        private readonly clientRepository: Repository<Client>,
+        @InjectRepository(CreditTransaction)
+        private creditTransactionRepository: Repository<CreditTransaction>,) { }
 
     async all() {
         const clients = await this.clientRepository
@@ -118,6 +122,19 @@ export class ClientService {
         }
 
         return client;
+    }
+
+    async getTransactions(id: number, type: number){
+        console.log("type: ", type);
+        const transactions = await this.creditTransactionRepository.createQueryBuilder('creditTransactions')
+        .leftJoinAndSelect('creditTransactions.client', 'client')
+        .leftJoinAndSelect('creditTransactions.credit', 'credit')
+        .leftJoinAndSelect('creditTransactions.saleCredit', 'saleCredit')
+        .where('creditTransactions.client_id = :id', {id})
+        .getMany();
+        return transactions.map(x=>{
+            return new CreditTransactionDto(x, (type==1)? x.credit: x.saleCredit);
+        })
     }
 }
 
