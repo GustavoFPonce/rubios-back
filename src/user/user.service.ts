@@ -113,6 +113,7 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto) {
     var response = { success: false };
+    
     const role = await this.roleService.findOneByName(createUserDto.roleName);
     console.log("rol obtenido: ", role);
     console.log("usuario a registrar: ", createUserDto);
@@ -134,7 +135,7 @@ export class UserService {
     const candidate = await this.findOneByEmail(updateUserDto.email);
     console.log("existe email: ", candidate);
 
-    if (candidate && candidate.id == id && candidate.email !== updateUserDto.email) {
+    if (candidate && candidate.id != id && candidate.email == updateUserDto.email) {
       response.error = 'Email ya registrado.'
     } else {
       const role =

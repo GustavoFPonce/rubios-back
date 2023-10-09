@@ -22,7 +22,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly jwtService: JwtService
   ) { }
-  
+
 
   async login(userDto: LoginUserDto) {
     var loggedUser = new LoggedUserDto();
@@ -73,16 +73,21 @@ export class AuthService {
   }
 
   async registration(userDto: CreateUserDto) {
+    var response = { success: false, error: '' };
     const candidate = await this.userService.findOneByEmail(userDto.email);
     console.log("existe email: ", candidate);
 
-    if (candidate) return null;
+    if (candidate) {
+      response.error = 'Email ya registrado.';
+    } else {
+      const hashedPassword = await bcrypt.hash(userDto.password, 7);
+      const responseCreate: any = await this.userService.create({
+        ...userDto,
+        password: hashedPassword,
+      });
+      if(responseCreate)response.success =  true;
+    }
 
-    const hashedPassword = await bcrypt.hash(userDto.password, 7);
-    const response: any = await this.userService.create({
-      ...userDto,
-      password: hashedPassword,
-    });
 
     return response;
     // const token = await this.tokenService.generateTokens(user.id);
