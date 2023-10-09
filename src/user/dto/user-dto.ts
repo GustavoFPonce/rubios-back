@@ -9,6 +9,7 @@ export class UserDto {
     phoneNumber: string;
     roleName: string;
     email: string;
+    userName: string;
 
     constructor(user: User) {
         const userDto: UserDto = {
@@ -18,7 +19,8 @@ export class UserDto {
             address: user.address,
             phoneNumber: user.phoneNumber,
             roleName: `${RoleType[user.role.name]}`,
-            email: user.email
+            email: user.email,
+            userName: user.userName
         };
         return userDto;
     }

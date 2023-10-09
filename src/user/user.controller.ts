@@ -40,7 +40,7 @@ export class UserController {
     ) {
         // console.log("id: ", id);
         // console.log("user: ", user);
-        return this.userService.update(id, user);
+        return this.userService.update( id, user);
     }
 
     @Delete(':id')

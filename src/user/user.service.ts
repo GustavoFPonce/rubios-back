@@ -11,6 +11,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { RoleService } from '../role/role.service';
 import { Role } from './enum';
 import { UserDto } from './dto/user-dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -128,25 +129,44 @@ export class UserService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    const role =
-      updateUserDto.roleName &&
-      (await this.roleService.findOneByName(updateUserDto.roleName));
+    console.log("nuevos datos del usuario: ", updateUserDto);
+    var response = { success: false, error: '' };
+    const candidate = await this.findOneByEmail(updateUserDto.email);
+    console.log("existe email: ", candidate);
 
-    const user = await this.userRepository.preload({
-      id,
-      ...updateUserDto,
-      role,
-    });
-
-    console.log("user modificado: ", user);
-
-    // if (!user) {
-    //   throw new NotFoundException(`There is no user under id ${id}`);
-    // }
-
-    const response = await this.userRepository.save(user);
-    console.log("response: ", response);
+    if (candidate && candidate.id == id && candidate.email !== updateUserDto.email) {
+      response.error = 'Email ya registrado.'
+    } else {
+      const role =
+        updateUserDto.roleName &&
+        (await this.roleService.findOneByName(updateUserDto.roleName));
+      if (updateUserDto.password) {
+        const hashedPassword = await bcrypt.hash(updateUserDto.password, 7);
+        const responseUpdate = await this.userRepository.save({
+          ...updateUserDto,
+          role,
+          password: hashedPassword,
+        });
+        console.log("response: ", response);
+        if (responseUpdate) response.success = true;
+      } else {
+        const user = await this.userRepository.findOne(id);
+        user.lastName = updateUserDto.lastName;
+        user.name = updateUserDto.name;
+        user.address = updateUserDto.address;
+        user.email = updateUserDto.email;
+        user.phoneNumber = updateUserDto.phoneNumber;
+        user.userName = updateUserDto.userName;
+        user.role = role;
+        const responseUpdate = await this.userRepository.save(user);
+        console.log("response: ", response);
+        if (responseUpdate) response.success = true;
+      }
+    }
     return response;
+    // const token = await this.tokenService.generateTokens(user.id);
+    // console.log("token: ", token);
+    // return token;
   }
 
   async remove(id: string) {
@@ -160,12 +180,12 @@ export class UserService {
   }
 
   async getById(id: number) {
-    const user = await this.userRepository.findOne({where:{id}, relations: ['role']})
+    const user = await this.userRepository.findOne({ where: { id }, relations: ['role'] })
     if (!user) {
-        throw new NotFoundException(`There is no user under id ${id}`);
+      throw new NotFoundException(`There is no user under id ${id}`);
     }
 
     return new UserDto(user);
-}
+  }
 
 }
