@@ -1120,6 +1120,7 @@ export class CreditService {
         const startDate = this.getStartDateEndDate(argentinaTime, argentinaTime).startDate;
         const endDate = this.getStartDateEndDate(argentinaTime, argentinaTime).endDate;
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        console.log("admin?: ", user.role.name);
         if (client) {
             var collections = [];
             if (user.role.name == 'admin') {
@@ -1181,9 +1182,10 @@ export class CreditService {
             })
             //.andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .andWhere('credit.debtCollector.id = :userId AND credit.client.id = :client', { userId, client })
-            .orWhere('paymentsDetail.paymenttype  = :type AND credit.client.id = :client', {
+            .orWhere('paymentsDetail.paymentType  = :type AND credit.client.id = :client AND credit.debtCollector.id = :userId', {
                 type: 2,
-                client
+                client, 
+                userId
             })
             .leftJoinAndSelect('credit.client', 'client')
             .addOrderBy('paymentsDetail.paymentDueDate', 'ASC')

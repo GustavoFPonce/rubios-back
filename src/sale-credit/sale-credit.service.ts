@@ -829,9 +829,10 @@ export class SaleCreditService {
             })
             //.andWhere(this.getConditionsFilterByDay(startDate, endDate, day))
             .andWhere('credit.debtCollector.id = :userId AND credit.client.id = :client', { userId, client })
-            .orWhere('paymentsDetail.paymenttype  = :type AND credit.client.id = :client', {
+            .orWhere('paymentsDetail.paymentType  = :type AND credit.client.id = :client AND credit.debtCollector.id = :userId', {
                 type: 2,
-                client
+                client,
+                userId
             })
             .leftJoinAndSelect('credit.client', 'client')
             .addOrderBy('paymentsDetail.paymentDueDate', 'ASC')
