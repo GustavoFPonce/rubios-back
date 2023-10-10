@@ -76,8 +76,16 @@ export class SaleCreditService {
         const credit = this.saleCreditRepository.create(createCredit);
         const creditSaved = await this.saleCreditRepository.save(credit);
         const creditId = creditSaved.id;
-        // console.log("creditSaved: ", creditSaved);
-        // console.log("balance: ", creditCreateDto.balance);
+        if(creditSaved.downPayment>0){
+            var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+            if (!lastCash || lastCash.closingDate != null) {
+                lastCash = await this.cashService.openCash();
+            }
+            const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+            const creditTransactionCreateDto = new CreditTransactionCreateDto(client,
+                creditSaved, lastCash, creditSaved.downPayment, 'Venta - Anticipo', TransactionType.downPayment, user);
+            const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
+        }     
         const newCreditHistory: CreditHistoryCreateDto = {
             date: new Date(creditCreateDto.date),
             principal: creditCreateDto.principal,
@@ -92,10 +100,8 @@ export class SaleCreditService {
             balance: creditCreateDto.balance
 
         };
-        //console.log("newCreditHistory: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         const creditHistoryId = creditHistorySaved.id;
-        //console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
             await this.addPaymentDetail(payments, creditHistorySaved, creditSaved);
             return response.success = true;

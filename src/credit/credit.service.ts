@@ -779,7 +779,7 @@ export class CreditService {
         if (!lastCash || lastCash.closingDate != null) {
             lastCash = await this.cashService.openCash();
         }
-        var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit', 'creditHistory.credit.client', 'cash'] });
+        var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit', 'creditHistory.credit.client'] });
         console.log("payment here: ", payment)
         const isPartialPayment = parseFloat(payment.payment.toString()) > parseFloat(payment.actualPayment.toString());
         const actualPayment = payment.actualPayment;

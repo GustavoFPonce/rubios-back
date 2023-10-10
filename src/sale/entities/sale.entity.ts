@@ -3,6 +3,7 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGene
 import { SaleDetail } from "./sale-detail.entity";
 import { SaleStatus } from "../enum";
 import { SaleCredit } from "src/sale-credit/entities/sale-credit.entity";
+import { Cash } from "src/cash/entities/cash.entity";
 
 @Entity()
 export class Sale {
@@ -39,4 +40,8 @@ export class Sale {
 
     @OneToOne(() => SaleCredit, (saleCredit: SaleCredit) => saleCredit.sale)
     saleCredit: SaleCredit;
+
+    @ManyToOne(()=> Cash, (cash: Cash) => cash.sales)
+    @JoinColumn({ name: 'cash_id' }) 
+    cash: Cash;
 }

@@ -20,6 +20,8 @@ import { SaleCreditService } from 'src/sale-credit/sale-credit.service';
 import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
 import { SaleCreditDetailDto } from './dto/sale-credit-detail-dto';
 import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
+import { Cash } from 'src/cash/entities/cash.entity';
+import { CashService } from 'src/cash/cash.service';
 
 @Injectable()
 export class SaleService {
@@ -32,13 +34,20 @@ export class SaleService {
         private readonly productService: ProductService,
         private readonly saleCreditService: SaleCreditService,
         @InjectRepository(SaleCredit)
-        private saleCreditRepository: Repository<SaleCredit>
+        private saleCreditRepository: Repository<SaleCredit>,
+        @InjectRepository(Cash)
+        private cashRepository: Repository<Cash>,
+        private readonly cashService: CashService,
     ) { }
 
 
     async create(sale: SaleCreateDto, userId: number, credit: SaleCreditCreateDto | null) {
         console.log("creditCreateDto: ", credit);
         var response = { success: false, error: '', message: '' };
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = await this.cashService.openCash();
+        }
         const client = await this.clientRepository.findOne(sale.clientId);
         var newSale = new Sale();
         newSale.client = client;
@@ -49,6 +58,7 @@ export class SaleService {
         newSale.status = SaleStatus.valid;
         newSale.userId = userId;
         newSale.currencyType = sale.typeCurrency;
+        newSale.cash = (!credit)? lastCash: null;
         const saleCreate = this.saleRepository.create(newSale);
         console.log("venta a guardar: ", saleCreate);
         const saleSaved = await this.saleRepository.save(saleCreate);

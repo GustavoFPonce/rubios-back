@@ -3,6 +3,9 @@ import { Revenue } from "./revenue.entity";
 import { Expense } from "./expense.entity";
 import { PaymentDetail } from "src/credit/entities/payment-detail.entity";
 import { PaymentDetailSaleCredit } from "src/sale-credit/entities/payment-detail-sale-credit.entity";
+import { CreditTransactionDetail } from "./credit-transaction-detail.entity";
+import { CreditTransaction } from "./credit-transaction.entity";
+import { Sale } from "src/sale/entities/sale.entity";
 
 
 @Entity()
@@ -46,4 +49,11 @@ export class Cash {
 
     @OneToMany(() => Expense, (expense: Expense) => expense.cash)
     expenses: Expense[];
+
+    @OneToMany(() => CreditTransaction, (transaction: CreditTransaction) => transaction.cash)
+    creditTransaction: CreditTransaction[];
+
+    @OneToMany(() => Sale, (sale: Sale) => sale.cash)
+    sales: Sale[]
+
 }

@@ -17,7 +17,7 @@ export class Revenue {
     concept: string;
 
     @Column()
-    type: string;
+    type: number;
 
     @Column()
     currencyType: string;

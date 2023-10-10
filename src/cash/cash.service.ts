@@ -16,7 +16,7 @@ export class CashService {
         @InjectRepository(Expense) private expenseRepository: Repository<Expense>,
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(CreditTransaction) private creditTransactionRepository: Repository<CreditTransaction>,
-        ) { }
+    ) { }
 
     async getLastCash() {
         return this.cashRepository.findOne({ order: { id: 'DESC' } });
@@ -49,24 +49,50 @@ export class CashService {
     }
 
     async getTransactions(id: string) {
-        //const cash = await this.cashRepository.findOne({ where: { id }, relations: ['revenues', 'expenses', 'paymentDetailPersonalCredit.creditHistory', 'paymentDetailSaleCredit.creditHistory'] });
-        const cash = await this.cashRepository.createQueryBuilder('cash')
-        .leftJoinAndSelect('cash.paymentDetailPersonalCredit', 'paymentDetailPersonalCredit')
-        .leftJoinAndSelect('paymentDetailPersonalCredit.creditHistory', 'personalCreditHistory')
-        .leftJoinAndSelect('personalCreditHistory.credit', 'personalCredit')
-        .leftJoinAndSelect('personalCredit.client', 'personalCreditClient')
-        .leftJoinAndSelect('cash.paymentDetailSaleCredit', 'paymentDetailSaleCredit')
-        .leftJoinAndSelect('paymentDetailSaleCredit.creditHistory', 'saleCreditHistory')
-        .leftJoinAndSelect('saleCreditHistory.credit', 'saleCredit')
-        .leftJoinAndSelect('saleCredit.client', 'saleCreditClient')
-        .leftJoinAndSelect('cash.revenues', 'revenues')
-        .leftJoinAndSelect('cash.expenses', 'expenses')
-        .getOne();
-        console.log("transactions: ", cash);
+        const transactionsQuery: any = await this.cashRepository.createQueryBuilder('cash')
+            .leftJoinAndSelect('cash.revenues', 'revenues')
+            .leftJoinAndSelect('cash.expenses', 'expenses')
+            .leftJoinAndSelect('cash.sales', 'sales')
+            .leftJoinAndSelect('sales.client', 'clientSale')
+            .leftJoinAndSelect('cash.creditTransaction', 'creditTransactions')
+            .leftJoinAndSelect('creditTransactions.credit', 'credit')
+            .leftJoinAndSelect('credit.client', 'clientCredit')
+            .leftJoinAndSelect('creditTransactions.saleCredit', 'saleCredit')
+            .leftJoinAndSelect('saleCredit.client', 'clientSaleCredit')
+            .leftJoinAndSelect('creditTransactions.creditTransactionsDetails', 'creditTransactionsDetails')
+            .where('cash.id = :id', { id })
+            .getOne();
+        console.log("transactionsQuery: ", transactionsQuery);
+        var transactions = [];
+        transactionsQuery.revenues?.map(x => {
+            transactions.push(x);
+        });
+        transactionsQuery.expenses?.map(x => {
+            transactions.push(x);
+        });
+        transactionsQuery.creditTransaction?.map(x => {
+            transactions.push(x);
+        })
+        transactionsQuery.sales?.map(x => {
+            transactions.push(x);
+        })
+        transactions.sort((a, b) => {
+            if (a.date.getTime() !== b.date.getTime()) {
+                return b.date.getTime() - a.date.getTime();
+            }
+        });
+        console.log("transactionsCredits************: ", transactions);
         var transactionsDto: TransactionDto[] = [];
-        cash.revenues.map(x=> transactionsDto.push(new TransactionDto(x, 'revenue')));
-        cash.expenses.map(x=> transactionsDto.push(new TransactionDto(x, 'expense')));
-        return transactionsDto;
+        transactions.map(x => {
+            if (x instanceof CreditTransaction) {
+                transactionsDto.push(
+                    new TransactionDto(x, (x.credit) ? x.credit : x.saleCredit));
+            } else {
+                transactionsDto.push(
+                    new TransactionDto(x));
+            }
+        })
+        return transactionsDto
     }
 
 
@@ -85,27 +111,27 @@ export class CashService {
         console.log("response create expense: ", responseCreate);
     }
 
-    async createTransaction(transaction: CreditTransactionCreateDto){
+    async createTransaction(transaction: CreditTransactionCreateDto) {
         const trasactionCreate = new CreditTransaction();
         trasactionCreate.client = transaction.client;
         trasactionCreate.user = transaction.user;
         trasactionCreate.type = transaction.type;
         trasactionCreate.concept = transaction.concept;
         trasactionCreate.currencyType = transaction.currencyType;
-        trasactionCreate.credit = (transaction.client.type == 1)? transaction.credit: null;
-        trasactionCreate.saleCredit = (transaction.client.type == 2)? transaction.credit: null;
+        trasactionCreate.credit = (transaction.client.type == 1) ? transaction.credit : null;
+        trasactionCreate.saleCredit = (transaction.client.type == 2) ? transaction.credit : null;
         trasactionCreate.amount = transaction.amount;
         trasactionCreate.cash = transaction.cash;
         trasactionCreate.date = new Date();
         trasactionCreate.creditTransactionsDetails = [];
         const newTransaction = this.creditTransactionRepository.create(trasactionCreate);
-        const responseSaveTrasaction = await this.creditTransactionRepository.save(newTransaction);        
+        const responseSaveTrasaction = await this.creditTransactionRepository.save(newTransaction);
         console.log("response guardando transacción: ", responseSaveTrasaction);
         return responseSaveTrasaction;
     }
 
 
-    async addCreditTransactionDetail(creditTransaction: CreditTransaction){
+    async addCreditTransactionDetail(creditTransaction: CreditTransaction) {
         const response = await this.creditTransactionRepository.save(creditTransaction);
         console.log("response: ", response);
     }
