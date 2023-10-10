@@ -36,18 +36,32 @@ export class ReportService {
 
 
 
+
+
   async getChargesAccountedAndCollected(start: any, end: any, type: string): Promise<any[]> {
-    const dates = getDateStartEnd(start, end)
-    const startDate = dates.startDate;
-    console.log("star date: ", startDate);
-    const endDate = dates.endDate;
-    console.log("end Date: ", endDate);
+    console.log("start: ", start);
     const currencyPesos = 'peso';
     const currencyDollar = 'dolar';
     const status = '1';
-    const result = (type == '1') ?
-      await this.getChargesAccountedAndCollectedPersonalCredits(currencyPesos, currencyDollar, startDate, endDate, status) :
-      await this.getChargesAccountedAndCollectedSaleCredits(currencyPesos, currencyDollar, startDate, endDate, status);
+    var startDate: Date | null = null;
+    var endDate: Date | null = null;
+    var result = [];
+    if (start != 'null') {
+      const dates = getDateStartEnd(start, end)
+      startDate = dates.startDate;
+      endDate = dates.endDate;
+      result = (type == '1') ?
+        await this.getChargesAccountedAndCollectedPersonalCreditsByRangeDate(currencyPesos, currencyDollar, startDate, endDate, status) :
+        await this.getChargesAccountedAndCollectedSaleCreditsByRangeDate(currencyPesos, currencyDollar, startDate, endDate, status);
+    } else {
+      const endDate = new Date(end);
+      endDate.setHours(23, 59, 59, 999);
+      endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
+      console.log("pidiendo sin fecha inicial");
+      result = (type == '1') ?
+        await this.getChargesAccountedAndCollectedPersonalCredits(currencyPesos, currencyDollar, endDate, status) :
+        await this.getChargesAccountedAndCollectedSaleCredits(currencyPesos, currencyDollar, endDate, status);
+    }
 
     const chargesAccountedAndCollectedDto = result.map(x => {
       return new TotalChargeAccountedCollected(x);
@@ -57,41 +71,113 @@ export class ReportService {
     //return null
   }
 
-  private async getChargesAccountedAndCollectedPersonalCredits(currencyPesos: string, currencyDollar: string, startDate: Date, endDate: Date, status: string) {
-    return await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
-      .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
-      .leftJoinAndSelect('creditHistory.credit', 'credit')
-      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-      .select([
-        'debtCollector.id as debtCollectorId',
-        'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
-        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyPesos AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
-        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyDollar AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
-        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL AND paymentDetail.paymentDate < :endDateValue  AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
-        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL AND paymentDetail.paymentDate < :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
+  private async getChargesAccountedAndCollectedPersonalCreditsByRangeDate(currencyPesos: string, currencyDollar: string, startDate: Date, endDate: Date, status: string) {
+    return await this.userRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.credits', 'credit')
+    .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+    .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
+    //.leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+    .select([
+      'user.id as debtCollectorId',
+      'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
+        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL)THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
       ])
       .setParameters({ currencyPesos, currencyDollar, startDateValue: startDate, endDateValue: endDate, status })
-      .groupBy('debtCollector.id, debtCollector.lastName')
+      .groupBy('user.id, user.lastName')
       .getRawMany();
   }
 
-  private async getChargesAccountedAndCollectedSaleCredits(currencyPesos: string, currencyDollar: string, startDate: Date, endDate: Date, status: string) {
-    return await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentDetail')
-      .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
-      .leftJoinAndSelect('creditHistory.credit', 'credit')
-      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+  private async getChargesAccountedAndCollectedSaleCreditsByRangeDate(currencyPesos: string, currencyDollar: string, startDate: Date, endDate: Date, status: string) {
+    return await this.userRepository.createQueryBuilder('user')
+      .leftJoinAndSelect('user.saleCredits', 'credit')
+      .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
+      //.leftJoinAndSelect('credit.debtCollector', 'debtCollector')
       .select([
-        'debtCollector.id as debtCollectorId',
-        'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
-        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyPesos AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
-        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDueDate < :startDateValue AND paymentDetail.paymentDate IS NULL AND credit.typeCurrency = :currencyDollar AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
-        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL AND paymentDetail.paymentDate < :endDateValue  AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
-        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) OR (paymentDetail.paymentDate IS NOT NULL AND paymentDetail.paymentDate < :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
+        'user.id as debtCollectorId',
+        'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
+        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDate BETWEEN :startDateValue AND :endDateValue  AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL)THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
       ])
       .setParameters({ currencyPesos, currencyDollar, startDateValue: startDate, endDateValue: endDate, status })
-      .groupBy('debtCollector.id, debtCollector.lastName')
+      .groupBy('user.id, user.lastName')
       .getRawMany();
   }
+
+  private async getChargesAccountedAndCollectedPersonalCredits(currencyPesos: string, currencyDollar: string, endDate: Date, status: string) {
+    return await this.userRepository.createQueryBuilder('user')
+    .leftJoinAndSelect('user.credits', 'credit')
+    .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+    .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
+    //.leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+    .select([
+      'user.id as debtCollectorId',
+      'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
+      'SUM(CASE WHEN (paymentDetail.paymentDueDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
+      'SUM(CASE WHEN (paymentDetail.paymentDueDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
+      'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
+      'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
+    ])
+    .setParameters({ currencyPesos, currencyDollar, endDateValue: endDate, status })
+    .groupBy('user.id, user.lastName')
+    .getRawMany();
+  }
+
+  private async getChargesAccountedAndCollectedSaleCredits(currencyPesos: string, currencyDollar: string, endDate: Date, status: string) {
+    return await this.userRepository.createQueryBuilder('user')
+      .leftJoinAndSelect('user.saleCredits', 'credit')
+      .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+      .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
+      //.leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .select([
+        'user.id as debtCollectorId',
+        'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDueDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
+        'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
+      ])
+      .setParameters({ currencyPesos, currencyDollar, endDateValue: endDate, status })
+      .groupBy('user.id, user.lastName')
+      .getRawMany();
+  }
+
+
+
+  async getPaymentsCollectedAndPendingDetail(id: string, start: any, end: any, type: string) {
+    const debtCollector = await this.userRepository.findOne(id);
+    var paymentsDetail: PaymentDetail[] = await this.getPaymentsDetail(id, start, end, type);
+    const paymentsDetailsDto = paymentsDetail.map((x) => {
+      return new PaymentDetailReportDto(x);
+    });
+    const details = new ReportCollectionsAndCommissionsDto(debtCollector, paymentsDetailsDto);
+    return details;
+  }
+
+
+  private async getPaymentsDetail(id: string, start: any, end: any, type: string) {
+    if (start != 'null' && start != null) {
+      const dates = getDateStartEnd(getDateObject(start), new Date(end))
+      const startDate = dates.startDate;
+      const endDate = dates.endDate;
+      return await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
+    } else {
+      const endDate = new Date(end);
+      console.log("fecha fin: ", endDate);
+      endDate.setHours(23, 59, 59, 999);
+      endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
+      console.log("estoy en null");
+      const paymentsRendicion = await this.getPaymentsDetailByDebtCollector(id, type, endDate);
+      console.log("paymentsRendicion: ", paymentsRendicion);
+      return paymentsRendicion;
+    }
+  }
+
 
 
   async getCollectionsAndCommissionsDetail(id: string, start: any, end: any, type: string) {
@@ -104,33 +190,35 @@ export class ReportService {
     return details;
   }
 
-  private async getPaymentsDetail(id: string, start: any, end: any, type: string) {
-    if ((start != 'null' && start != null) && (end != 'null' && end != null)) {
-      console.log("no estoy en null");
-      const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
-      const startDate = dates.startDate;
-      const endDate = dates.endDate;
-      return await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
-    } else {
-      console.log("estoy en null");
-      return await this.getPaymentsDetailByDebtCollector(id, type);
-    }
-  }
+  // private async getPaymentsDetailByDates(id: string, start: any, end: any, type: string) {
+  //   if ((start != 'null' && start != null) && (end != 'null' && end != null)) {
+  //     console.log("no estoy en null");
+  //     const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
+  //     const startDate = dates.startDate;
+  //     const endDate = dates.endDate;
+  //     return await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
+  //   } else {
+  //     console.log("estoy en null");
+  //     return await this.getPaymentsDetailByDebtCollector(id, type);
+  //   }
+  // }
 
 
-  private async getPaymentsDetailByDebtCollector(id: string, type: string) {
+  private async getPaymentsDetailByDebtCollector(id: string, type: string, endDate: Date) {
     try {
       const status = '1';
       const paymentType = 2;
+      console.log("pidiendo detalle");
       const paymentsDetail = (type == '1') ?
-        await this.getPaymentsDetailByDebtCollectorPersonalCredits(id, paymentType, status) :
-        await this.getPaymentsDetailByDebtCollectorSaleCredits(id, paymentType, status);
+        await this.getPaymentsDetailByDebtCollectorPersonalCredits(id, paymentType, status, endDate) :
+        await this.getPaymentsDetailByDebtCollectorSaleCredits(id, paymentType, status, endDate);
+        console.log("payments obtenidos para hacer la rendición: ", paymentsDetail);
       return paymentsDetail;
     } catch (err) { console.log("error: ", err) }
 
   }
 
-  private async getPaymentsDetailByDebtCollectorPersonalCredits(id: string, paymentType: number, status: string) {
+  private async getPaymentsDetailByDebtCollectorPersonalCredits(id: string, paymentType: number, status: string, endDate: Date) {
     return await this.paymentDetailRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -139,17 +227,17 @@ export class ReportService {
       .where('debtCollector.id = :id', { id })
       .andWhere(
         new Brackets((qb) => {
-          qb.where('paymentDetail.paymentDate IS NOT NULL AND creditHistory.status =:status AND paymentDetail.accountabilityDate IS NULL', { status })
-            .orWhere('paymentDetail.paymentDate IS NOT NULL AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
-              paymentType
+          qb.where('((paymentDetail.paymentDueDate <= :endDate AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDate <= :endDate AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status =:status))', { status, endDate })
+            .orWhere('paymentDetail.paymentDate <= :endDate AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
+              paymentType,
+              endDate
             })
         })
       )
       .getMany();
   }
 
-  private async getPaymentsDetailByDebtCollectorSaleCredits(id: string, paymentType: number, status: string) {
-    console.log("getPaymentsDetailByDebtCollectorSaleCredits");
+  private async getPaymentsDetailByDebtCollectorSaleCredits(id: string, paymentType: number, status: string, endDate: Date) {
     return await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentDetail')
       .leftJoinAndSelect('paymentDetail.creditHistory', 'creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -158,9 +246,10 @@ export class ReportService {
       .where('debtCollector.id = :id', { id })
       .andWhere(
         new Brackets((qb) => {
-          qb.where('paymentDetail.paymentDate IS NOT NULL AND creditHistory.status =:status AND paymentDetail.accountabilityDate IS NULL', { status })
-            .orWhere('paymentDetail.paymentDate IS NOT NULL AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
-              paymentType
+          qb.where('((paymentDetail.paymentDueDate <= :endDate AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status =:status) OR (paymentDetail.paymentDate <= :endDate AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status =:status))', { status, endDate })
+            .orWhere('paymentDetail.paymentDate <= :endDate AND paymentDetail.accountabilityDate IS NULL AND paymentDetail.paymentType =:paymentType', {
+              paymentType,
+              endDate
             })
         })
       )
@@ -198,16 +287,9 @@ export class ReportService {
             endDate,
             status
           })
-            .orWhere(
-              'paymentDetail.paymentDueDate < :startDate AND paymentDetail.paymentDate IS NULL AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status = :status',
-              { startDate, status }
-            )
             .orWhere('paymentDetail.paymentDate BETWEEN :startDate AND :endDate AND paymentDetail.accountabilityDate IS NULL', {
               startDate,
               endDate,
-            })
-            .orWhere('paymentDetail.paymentDate < :endDate AND paymentDetail.accountabilityDate IS NULL', {
-              endDate
             })
         })
       );
@@ -227,19 +309,13 @@ export class ReportService {
             endDate,
             status
           })
-            .orWhere(
-              'paymentDetail.paymentDueDate < :startDate AND paymentDetail.paymentDate IS NULL AND paymentDetail.accountabilityDate IS NULL AND creditHistory.status = :status',
-              { startDate, status }
-            )
             .orWhere('paymentDetail.paymentDate BETWEEN :startDate AND :endDate AND paymentDetail.accountabilityDate IS NULL', {
               startDate,
               endDate,
             })
-            .orWhere('paymentDetail.paymentDate < :endDate AND paymentDetail.accountabilityDate IS NULL', {
-              endDate
-            })
         })
       );
+
   }
 
 
@@ -355,6 +431,7 @@ export class ReportService {
   }
 
   async getCommissionsTotal(type: string) {
+    console.log("type: ", type);
     const currencyPesos = 'peso';
     const currencyDollar = 'dolar';
     const status = 2;
@@ -372,35 +449,37 @@ export class ReportService {
   }
 
   async getCommissionsTotalPersonalCredits(currencyPesos: string, currencyDollar: string, accounted: boolean) {
-    return await this.creditRepository
-      .createQueryBuilder('credit')
-      .innerJoinAndSelect('credit.creditHistory', 'creditHistory')
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.credits', 'credit')
+      .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
       .select([
-        'debtCollector.id as debtCollectorId',
-        'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
+        'user.id as debtCollectorId',
+        'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
         'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyPesos) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsPesos',
         'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyDollar) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsDollar'
       ])
       .setParameters({ currencyPesos, currencyDollar, status: 2, historyStatus: 1, accounted })
-      .groupBy('debtCollector.id, debtCollector.lastName')
+      .groupBy('user.id, user.lastName')
       .getRawMany();
   }
 
   async getCommissionsTotalSaleCredits(currencyPesos: string, currencyDollar: string, accounted: boolean) {
-    return await this.saleCreditRepository
-      .createQueryBuilder('credit')
-      .innerJoinAndSelect('credit.creditHistory', 'creditHistory')
-      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-      .select([
-        'debtCollector.id as debtCollectorId',
-        'CONCAT(debtCollector.lastName, \' \', debtCollector.name) as debtCollectorName',
-        'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyPesos) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsPesos',
-        'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyDollar) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsDollar'
-      ])
-      .setParameters({ currencyPesos, currencyDollar, status: 2, historyStatus: 1, accounted })
-      .groupBy('debtCollector.id, debtCollector.lastName')
-      .getRawMany();
+    return await this.userRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.saleCredits', 'credit')
+    .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+    .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+    .select([
+      'user.id as debtCollectorId',
+      'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
+      'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyPesos) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsPesos',
+      'SUM(CASE WHEN (credit.status = :status AND creditHistory.status = :historyStatus AND creditHistory.accounted = :accounted AND creditHistory.commissionPaymentDate IS NULL AND credit.typeCurrency = :currencyDollar) THEN credit.commission * creditHistory.interest /100 ELSE 0 END) as totalCommissionsDollar'
+    ])
+    .setParameters({ currencyPesos, currencyDollar, status: 2, historyStatus: 1, accounted })
+    .groupBy('user.id, user.lastName')
+    .getRawMany();
   }
 
 
@@ -461,13 +540,9 @@ export class ReportService {
       .getMany();
   }
 
-  async getCommissionsCreditsHistory(id: number) {
-    const creditsCommissions = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
-      .leftJoinAndSelect('creditHistory.credit', 'credit')
-      .leftJoinAndSelect('credit.client', 'client')
-      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-      .where('debtCollector.id = :id AND creditHistory.commissionPaymentDate IS NOT NULL', { id })
-      .getMany();
+  async getCommissionsCreditsHistory(id: number, type: string) {
+    const creditsCommissions = (type == '1')? await this.getCommissionsCreditsHistoryByTypeCredit(id, this.creditHistoryRepository):
+    await this.getCommissionsCreditsHistoryByTypeCredit(id, this.saleCreditHistoryRepository)
     const debtCollector = await this.userRepository.findOne(id);
     const creditsDetailDto = creditsCommissions.map(x => {
       return new CommissionCreditDto(x)
@@ -476,6 +551,15 @@ export class ReportService {
     const commissionListDebtCollector = new CommissionListDebtCollector(debtCollector, creditsDetailDto);
     return commissionListDebtCollector;
   };
+
+  private async getCommissionsCreditsHistoryByTypeCredit(id: number, creditHistoryRepository: any){
+    return await creditHistoryRepository.createQueryBuilder('creditHistory')
+    .leftJoinAndSelect('creditHistory.credit', 'credit')
+    .leftJoinAndSelect('credit.client', 'client')
+    .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+    .where('debtCollector.id = :id AND creditHistory.commissionPaymentDate IS NOT NULL', { id })
+    .getMany();
+  }
 
   async getLoanPrincipal() {
     const notDesiredStatuses = [StatusCredit.canceled, StatusCredit.annulled];

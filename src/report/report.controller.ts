@@ -13,8 +13,23 @@ export class ReportController {
         @Query('end') end: any,
         @Query('type') type: string
     ){
+        console.log("fecha 1: ", start);
+        console.log("fecha 2: ", end);
        
         return await this.reportService.getChargesAccountedAndCollected(start, end, type);
+    }
+
+    @Get('payments-collected-pending')
+    async getPaymentsCollectedAndPendingDetail(
+        @Query('id') id: string,
+        @Query('start') start: any,
+        @Query('end') end: any,
+        @Query('type') type: string
+    ){
+        console.log("start controller: ", start);
+        console.log("end controller: ", end);
+        console.log("type controller: ", type);
+        return await this.reportService.getPaymentsCollectedAndPendingDetail(id, start, end, type);
     }
 
     @Get('collections-commissions-detail')
@@ -108,9 +123,10 @@ export class ReportController {
 
     @Get(':id/commissions-credits-history')
     async getCommissionsCreditsHistory(
-        @Param('id') id: number
+        @Param('id') id: number,
+        @Query('type') type: string
     ){
-        return await this.reportService.getCommissionsCreditsHistory(id);
+        return await this.reportService.getCommissionsCreditsHistory(id, type);
     }
 
 }
