@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { CashService } from './cash.service';
 
@@ -22,6 +22,13 @@ export class CashController {
       @Query('id') id: string,
      ){
         return await this.cashService.getTransactions(id);
+     }
+
+     @Put(':id/close')
+     async closeCash(
+      @Param('id') id: number
+     ){
+        return await this.cashService.closeCash(id);
      }
 
 }

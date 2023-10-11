@@ -21,14 +21,14 @@ import { CashModule } from './cash/cash.module';
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: 'mysql',      
+      type: 'mysql',
       host: 'MYSQL5048.site4now.net',
       port: 3306,
-      //username: 'a7f37d_rubios',
-      username: 'a7f37d_test',
+      username: 'a7f37d_rubios',
+      //  username: 'a7f37d_test',
       password: 'Abcd1234',
-      //database: 'db_a7f37d_rubios',
-      database: 'db_a7f37d_test',
+      database: 'db_a7f37d_rubios',
+      //database: 'db_a7f37d_test',
       autoLoadEntities: true,
       synchronize: false,
       entities: [join(__dirname, '**', '*.entity.{ts,js}')],
@@ -47,4 +47,4 @@ import { CashModule } from './cash/cash.module';
     CashModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -71,16 +71,6 @@ export class SaleCreditController {
         return this.saleCreditService.cancelRegisteredPayment(id, user);
     }
 
-    @Put(':id')
-    async update(
-        @Param('id') id: number,
-        @Body() credit: any
-    ) {
-        console.log("credito a modificar: ", credit);
-        var response = await this.saleCreditService.update(id, credit);
-        return response;
-    }
-
     @Get('collections-by-client')
     async getCollectionsByClient(
         @Query('client') client: number,
@@ -161,6 +151,18 @@ export class SaleCreditController {
     ){
         console.log("obteniendo transacciones: ", id);
        return await this.saleCreditService.getTransactions(id);
+    }
+
+    
+
+    @Put(':id')
+    async update(
+        @Param('id') id: number,
+        @Body() credit: any
+    ) {
+        console.log("credito a modificar: ", credit);
+        var response = await this.saleCreditService.update(id, credit);
+        return response;
     }
     
 
