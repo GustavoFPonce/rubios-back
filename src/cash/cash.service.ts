@@ -164,9 +164,9 @@ export class CashService {
         cash.totalExpenseDollar = totalExpenseDollar;
         cash.closingBalancePeso = (cash.openingBalancePeso + totalRevenuePeso) - cash.totalExpensePeso;
         cash.closingBalanceDollar = (cash.openingBalanceDollar + totalRevenueDollar) - cash.totalExpenseDollar;
-        const updateCashClose = await this.cashRepository.save(cash);
-        console.log("updateCash: ", updateCashClose);
-        if(updateCashClose) response.success = true;
+        //const updateCashClose = await this.cashRepository.save(cash);
+        // console.log("updateCash: ", updateCashClose);
+        // if(updateCashClose) response.success = true;
 
     }
 }
