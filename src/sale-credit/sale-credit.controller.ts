@@ -127,7 +127,6 @@ export class SaleCreditController {
         @Body('payment') payment: number,
         @Req() req: any
     ) {
-        console.log("paymemt recibido: ", payment);
         const user = req.user.userId;
         return this.saleCreditService.registerTrasactionAndPayment(id, payment, user);
     }
@@ -140,7 +139,6 @@ export class SaleCreditController {
         @Req() req: any
 
     ) {
-        console.log("paymemt recibido: ", payment);
         const user = req.user.userId;
         return this.saleCreditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }

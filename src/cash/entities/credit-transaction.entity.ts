@@ -36,6 +36,9 @@ export class CreditTransaction {
     @Column()
     amount: number;
 
+    @Column()
+    accounted: boolean;
+
     @ManyToOne(()=> Credit, (credit: Credit) => credit.transactions)
     @JoinColumn({ name: 'credit_id' }) 
     credit: Credit;

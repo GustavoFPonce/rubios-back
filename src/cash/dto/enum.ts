@@ -5,6 +5,8 @@ export enum TransactionType {
     revenue = 3,
     expense = 4,
     sale = 5,
-    downPayment = 6
+    downPayment = 6,
+    cancellationPayment = 7,
+    cancellationPaymentInterest = 8,
     
 }

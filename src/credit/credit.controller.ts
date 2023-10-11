@@ -97,7 +97,6 @@ export class CreditController {
         @Body('payment') payment: number,
         @Req() req: any
     ) {
-        console.log("paymemt recibido: ", payment);
         const user = req.user.userId;
         return this.creditService.registerTrasactionAndPayment(id, payment, user);
     }
@@ -118,7 +117,6 @@ export class CreditController {
         @Body('firstPayment') firstPayment: number,
         @Req() req: any
     ) {
-        console.log("paymemt recibido: ", payment);
         const user = req.user.userId;
         return this.creditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }
@@ -145,12 +143,6 @@ export class CreditController {
         @Query('endDate') endDate: any,
         @Query('statusPayment') statusPayment: string,
     ) {
-        console.log("status: ", status);
-        console.log("debtcollectorer: ", debtcollector);
-        console.log("currency: ", currency);
-        console.log("statusPayment: ", statusPayment);
-        console.log("startDate: ", startDate);
-        console.log("endDate: ", endDate);
         const userId = req.user.userId;
         return await this.creditService.searchCollections(userId, status, currency, debtcollector, startDate, endDate, statusPayment);
 

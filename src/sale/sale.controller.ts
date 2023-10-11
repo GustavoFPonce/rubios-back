@@ -20,8 +20,6 @@ export class SaleController {
         @Req() req: any
     ) {
         const userId = req.user.userId;
-        //console.log("sale a guaradar: ", sale);
-        console.log("credit a guaradar: ", credit);
         return await this.saleService.create(sale, userId, credit);
     }
 
@@ -55,10 +53,6 @@ export class SaleController {
         @Query('status') status: string,
         @Query('paymentType') paymentType: string
     ) {
-        // console.log("start: ", startDate);
-        // console.log("end: ", endDate);
-        // console.log("status: ", status);
-        // console.log("payemntType: ", paymentType);
         return await this.saleService.search(startDate, endDate, status, paymentType);
     }
 

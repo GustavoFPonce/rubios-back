@@ -12,10 +12,7 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any,
         @Query('type') type: string
-    ){
-        console.log("fecha 1: ", start);
-        console.log("fecha 2: ", end);
-       
+    ){       
         return await this.reportService.getChargesAccountedAndCollected(start, end, type);
     }
 
@@ -26,9 +23,6 @@ export class ReportController {
         @Query('end') end: any,
         @Query('type') type: string
     ){
-        console.log("start controller: ", start);
-        console.log("end controller: ", end);
-        console.log("type controller: ", type);
         return await this.reportService.getPaymentsCollectedAndPendingDetail(id, start, end, type);
     }
 
@@ -39,9 +33,6 @@ export class ReportController {
         @Query('end') end: any,
         @Query('type') type: string
     ){
-        console.log("start controller: ", start);
-        console.log("end controller: ", end);
-        console.log("type controller: ", type);
         return await this.reportService.getCollectionsAndCommissionsDetail(id, start, end, type);
     }
 

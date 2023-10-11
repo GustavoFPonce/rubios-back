@@ -7,6 +7,7 @@ export class PaymentDetailReportDto{
     typeCurrency: string;
     paymentDueDate: string;
     payment: number;
+    actualPayment: number;
     commission: string;
     accountability: Date;
     recoveryCommission: boolean;
@@ -21,6 +22,7 @@ export class PaymentDetailReportDto{
             typeCurrency: paymentDetail.creditHistory.credit.typeCurrency,
             paymentDueDate: format(paymentDetail.paymentDueDate, 'dd-MM-yyyy'),
             payment: paymentDetail.payment,
+            actualPayment: paymentDetail.actualPayment,
             commission: getCommission(paymentDetail),
             accountability: paymentDetail.accountabilityDate,
             recoveryCommission: (paymentDetail.recoveryDateCommission)?true: false,

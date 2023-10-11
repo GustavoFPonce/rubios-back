@@ -96,8 +96,6 @@ export class ProductController {
     @Query('start') start: Date,
     @Query('end') end: Date
   ){
-    console.log("start: ", start);
-    console.log("end: ", end);
     return await this.productService.getInventoryByDate(id, start, end);
   }
 

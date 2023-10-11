@@ -47,8 +47,6 @@ export class CategoryService {
     }
 
     async update(id: number, category: CategoryEditDto) {
-        console.log("id: ", id);
-        // console.log("category: ", category);
         var response = { success: false };
         var categorySaved = await this.categoryRepository.findOne(id);
         if (categorySaved) {

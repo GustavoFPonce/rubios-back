@@ -520,7 +520,6 @@ export class CreditService {
     }
 
     async getCollectionsByDayDebtCollector(userId: number, startDate: Date, endDate: Date, day: string) {
-        console.log("userId: ", userId);
         var collections = await this.paymentDetailRepository
             .createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -599,7 +598,6 @@ export class CreditService {
         if (!lastCash || lastCash.closingDate != null) {
             lastCash = await this.cashService.openCash();
         }
-        console.log("ultima caja: ", lastCash);
         var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
             .leftJoinAndSelect('creditHistory.credit', 'credit')
@@ -608,7 +606,6 @@ export class CreditService {
             .where('paymentsDetail.id = :id', { id })
             .getOne();
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        console.log("user: ", user);
         var concept = (paymentAmount > payment.payment) ? 'Pago de multiples cuotas' : 'Pago de cuota';
         const transaction = await this.registerCreditTransaction(paymentAmount, payment, user, lastCash, concept, TransactionType.payment);
         console.log("transacci{on registrada: ", transaction);
@@ -623,16 +620,14 @@ export class CreditService {
         payment.isNext = false;
         const paymentPending = payment.payment - paymentAmount;
         const saved = await this.paymentDetailRepository.save(payment);
-        if (role == 'admin') {
-            var creditTransactionDetail = new CreditTransactionDetail();
-            creditTransactionDetail.creditTransaction = transaction;
-            creditTransactionDetail.paymentId = payment.id;
-            creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
-            creditTransactionDetail.paymentDate = payment.paymentDate;
-            creditTransactionDetail.payment = payment.payment;
-            creditTransactionDetail.actualPayment = payment.actualPayment;
-            const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
-        }
+        var creditTransactionDetail = new CreditTransactionDetail();
+        creditTransactionDetail.creditTransaction = transaction;
+        creditTransactionDetail.paymentId = payment.id;
+        creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+        creditTransactionDetail.paymentDate = payment.paymentDate;
+        creditTransactionDetail.payment = payment.payment;
+        creditTransactionDetail.actualPayment = payment.actualPayment;
+        const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
         if (saved) {
             response.success = true;
             //response.collection = new CollectionDto(saved);
@@ -666,12 +661,11 @@ export class CreditService {
     }
 
     private async registerCreditTransaction(paymentAmount: number, payment: PaymentDetail, user: User, lastCash: Cash, concept: string, transactionType: TransactionType) {
-        if (user.role.name == 'admin') {
-            const creditTransactionCreateDto = new CreditTransactionCreateDto(payment.creditHistory.credit.client,
-                payment.creditHistory.credit, lastCash, paymentAmount, concept, transactionType, user);
-            const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
-            return responseSavedTrasaction;
-        }
+        const accounted = (user.role.name == 'admin') ? true : false;
+        const creditTransactionCreateDto = new CreditTransactionCreateDto(payment.creditHistory.credit.client,
+            payment.creditHistory.credit, lastCash, paymentAmount, concept, transactionType, user, accounted);
+        const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
+        return responseSavedTrasaction;
     }
 
 
@@ -787,19 +781,16 @@ export class CreditService {
         console.log("amountPaymentPartial")
         const paymentDate = addDays(payment.paymentDueDate, 1);
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        console.log("user: ", user);
         var concept = 'Cancelación pago de cuota';
         const transaction = await this.registerCreditTransaction(actualPayment, payment, user, lastCash, concept, TransactionType.payment);
-        if (user.role.name == 'admin') {
-            var creditTransactionDetail = new CreditTransactionDetail();
-            creditTransactionDetail.creditTransaction = transaction;
-            creditTransactionDetail.paymentId = payment.id;
-            creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
-            creditTransactionDetail.paymentDate = payment.paymentDate;
-            creditTransactionDetail.payment = payment.payment;
-            creditTransactionDetail.actualPayment = payment.actualPayment;
-            const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
-        }
+        var creditTransactionDetail = new CreditTransactionDetail();
+        creditTransactionDetail.creditTransaction = transaction;
+        creditTransactionDetail.paymentId = payment.id;
+        creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+        creditTransactionDetail.paymentDate = payment.paymentDate;
+        creditTransactionDetail.payment = payment.payment;
+        creditTransactionDetail.actualPayment = payment.actualPayment;
+        const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
         payment.actualPayment = 0.00;
         payment.paymentDate = null;
         payment.isNext = true;
@@ -860,7 +851,6 @@ export class CreditService {
         var interest = principal * paymentDetail.creditHistory.credit.interestRate / 100;
         const newFirstPayment = new Date(firstPayment);
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
-        console.log("user: ", user);
         var concept = (paymentAmount > paymentDetail.creditHistory.interest) ? 'Pago de interés y reducción de capital' :
             ((paymentAmount == paymentDetail.creditHistory.interest) ? 'Pago de interés' : 'Pago de interés y capitalización de intereses');
         const transaction = await this.registerCreditTransaction(paymentAmount, paymentDetail, user, lastCash, concept, TransactionType.paymentInterest);
@@ -891,16 +881,14 @@ export class CreditService {
         newPaymentDetail.isNext = false;
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
         const payment = await this.newPaymentDetail(newPaymentDetail);
-        if (user.role.name == 'admin') {
-            var creditTransactionDetail = new CreditTransactionDetail();
-            creditTransactionDetail.creditTransaction = transaction;
-            creditTransactionDetail.paymentId = payment.id;
-            creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
-            creditTransactionDetail.paymentDate = payment.paymentDate;
-            creditTransactionDetail.payment = payment.payment;
-            creditTransactionDetail.actualPayment = payment.actualPayment;
-            const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
-        }
+        var creditTransactionDetail = new CreditTransactionDetail();
+        creditTransactionDetail.creditTransaction = transaction;
+        creditTransactionDetail.paymentId = payment.id;
+        creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+        creditTransactionDetail.paymentDate = payment.paymentDate;
+        creditTransactionDetail.payment = payment.payment;
+        creditTransactionDetail.actualPayment = payment.actualPayment;
+        const responseSaved = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
         console.log("creditHistorySaved: ", creditHistorySaved);
         if (creditHistorySaved) {
             lastUpdateCreditHistory.status = StatusCreditHistory.notCurrent;
@@ -1184,7 +1172,7 @@ export class CreditService {
             .andWhere('credit.debtCollector.id = :userId AND credit.client.id = :client', { userId, client })
             .orWhere('paymentsDetail.paymentType  = :type AND credit.client.id = :client AND credit.debtCollector.id = :userId', {
                 type: 2,
-                client, 
+                client,
                 userId
             })
             .leftJoinAndSelect('credit.client', 'client')
@@ -1212,6 +1200,7 @@ export class CreditService {
             .leftJoinAndSelect('creditTransactions.credit', 'credit')
             .where('creditTransactions.credit_id = :id', { id })
             .getMany();
+        console.log("transactions: ", transactions);
         return transactions.map(x => {
             return new CreditTransactionDto(x, x.credit);
         })

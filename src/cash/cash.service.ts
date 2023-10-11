@@ -8,6 +8,7 @@ import { TransactionDto } from './dto/transactions-dto';
 import { CreditTransactionCreateDto } from './dto/credit-transaction-create-dto';
 import { CreditTransaction } from './entities/credit-transaction.entity';
 import { User } from 'src/user/entities/user.entity';
+import { TransactionType } from './dto/enum';
 
 @Injectable()
 export class CashService {
@@ -121,9 +122,9 @@ export class CashService {
         trasactionCreate.cash = transaction.cash;
         trasactionCreate.date = new Date();
         trasactionCreate.creditTransactionsDetails = [];
+        trasactionCreate.accounted = transaction.accounted;
         const newTransaction = this.creditTransactionRepository.create(trasactionCreate);
         const responseSaveTrasaction = await this.creditTransactionRepository.save(newTransaction);
-        console.log("response guardando transacción: ", responseSaveTrasaction);
         return responseSaveTrasaction;
     }
 
@@ -134,6 +135,7 @@ export class CashService {
     }
 
     async closeCash(id: number) {
+        var response = {success: false, error:''}
         var cash = await this.cashRepository.findOne({ where: { id }, relations: ['revenues', 'expenses', 'creditTransaction', 'sales'] });
         console.log("cash a cerrar: ", cash);
         var totalRevenuePeso = 0;
@@ -141,14 +143,30 @@ export class CashService {
         var totalExpensePeso = 0;
         var totalExpenseDollar = 0;
         totalRevenuePeso = totalRevenuePeso + cash.revenues.filter(x => x.currencyType == 'peso').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);
-        console.log("totalRevenuePeso: ", totalRevenuePeso);
-        var totalRevenueDollar = cash.revenues.filter(x => x.currencyType == 'dolar').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);;
-        console.log("totalRevenueDollar: ", totalRevenueDollar);
+        var totalRevenueDollar = cash.revenues.filter(x => x.currencyType == 'dolar').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);
         var totalExpensePeso = cash.expenses.filter(x => x.currencyType == 'peso').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);
+        var totalExpenseDollar = cash.expenses.filter(x => x.currencyType == 'dolar').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);
+        totalRevenuePeso = totalRevenuePeso + cash.sales.filter(x => x.currencyType == 'peso').reduce((total, sale) => total + parseFloat(sale.total.toString()), 0);
+        totalRevenueDollar = totalRevenueDollar + cash.sales.filter(x => x.currencyType == 'dolar').reduce((total, sale) => total + parseFloat(sale.total.toString()), 0);
+        totalRevenuePeso = totalRevenuePeso + cash.creditTransaction.filter(x => x.currencyType === 'peso' && (x.type === TransactionType.payment || x.type === TransactionType.paymentInterest || x.type === TransactionType.downPayment)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
+        totalRevenueDollar = totalRevenueDollar + cash.creditTransaction.filter(x => x.currencyType == 'dolar' && (x.type === TransactionType.payment || x.type === TransactionType.paymentInterest || x.type === TransactionType.downPayment)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
+        totalExpensePeso = totalExpensePeso + cash.creditTransaction.filter(x => x.currencyType == 'peso' && (x.type === TransactionType.cancellationPayment || x.type === TransactionType.cancellationPaymentInterest)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
+        totalExpenseDollar = totalExpenseDollar + cash.creditTransaction.filter(x => x.currencyType == 'dolar' && (x.type === TransactionType.cancellationPayment || x.type === TransactionType.cancellationPaymentInterest)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
+
+        console.log("totalRevenuePeso: ", totalRevenuePeso);
+        console.log("totalRevenueDollar: ", totalRevenueDollar);
         console.log("totalExpensePeso: ", totalExpensePeso);
-        var totalExpenseDollar = cash.expenses.filter(x => x.currencyType == 'dolar').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);;
         console.log("totalExpenseDollar: ", totalExpenseDollar);
-        totalRevenuePeso = totalRevenuePeso + cash.sales.filter(x => x.currencyType == 'peso').reduce((total, sale)=>total + parseFloat(sale.total.toString()), 0);
-        totalRevenueDollar = totalRevenueDollar + cash.sales.filter(x => x.currencyType == 'dolar').reduce((total, sale)=>total + parseFloat(sale.total.toString()), 0);
+        cash.closingDate = new Date();
+        cash.totalRevenuePeso = totalRevenuePeso;
+        cash.totalRevenueDollar = totalRevenueDollar;
+        cash.totalExpensePeso = totalExpensePeso;
+        cash.totalExpenseDollar = totalExpenseDollar;
+        cash.closingBalancePeso = (cash.openingBalancePeso + totalRevenuePeso) - cash.totalExpensePeso;
+        cash.closingBalanceDollar = (cash.openingBalanceDollar + totalRevenueDollar) - cash.totalExpenseDollar;
+        const updateCashClose = await this.cashRepository.save(cash);
+        console.log("updateCash: ", updateCashClose);
+        if(updateCashClose) response.success = true;
+
     }
 }

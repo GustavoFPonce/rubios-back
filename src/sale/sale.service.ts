@@ -42,7 +42,6 @@ export class SaleService {
 
 
     async create(sale: SaleCreateDto, userId: number, credit: SaleCreditCreateDto | null) {
-        console.log("creditCreateDto: ", credit);
         var response = { success: false, error: '', message: '' };
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
@@ -60,7 +59,6 @@ export class SaleService {
         newSale.currencyType = sale.typeCurrency;
         newSale.cash = (!credit)? lastCash: null;
         const saleCreate = this.saleRepository.create(newSale);
-        console.log("venta a guardar: ", saleCreate);
         const saleSaved = await this.saleRepository.save(saleCreate);
         await this.addSaleDetail(sale.saleDetails, saleSaved);
         if (saleSaved && credit) await this.saleCreditService.create(credit, userId, saleSaved)

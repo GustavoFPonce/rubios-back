@@ -85,8 +85,6 @@ export class ClientService {
     }
 
     async update(id: number, client: ClientCreateDto) {
-        console.log("cliente nuevos datos: ", client);
-        console.log("id: ", id);
         var response = { success: false, error: '' };
         var savedClient = await this.clientRepository.findOne(id);
        if(savedClient){
@@ -103,7 +101,6 @@ export class ClientService {
             savedClient[clave] = valor;
         };
         const responseClient = await this.clientRepository.save(savedClient);
-        console.log("cliente modificado: ", responseClient);
         if (responseClient) return true;
     }
 

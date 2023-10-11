@@ -14,9 +14,10 @@ export class CreditTransactionCreateDto {
     amount: number;
     cash: Cash;
     credit: any;
+    accounted: boolean;
 
 
-    constructor(client: Client, credit: Credit | SaleCredit, cash: Cash, amount: number, concept: string, trasanctionType: number, user: User) {
+    constructor(client: Client, credit: Credit | SaleCredit, cash: Cash, amount: number, concept: string, trasanctionType: number, user: User, accounted: boolean) {
         this.client = client;
         this.credit = credit;
         this.concept = concept;
@@ -25,5 +26,6 @@ export class CreditTransactionCreateDto {
         this.type = trasanctionType;
         this.currencyType = credit.typeCurrency;
         this.user = user;
+        this.accounted = accounted;
     }
 }
