@@ -2,6 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "t
 import { Cash } from "./cash.entity";
 import { Client } from "src/client/entities/client.entity";
 import { ExpenseType } from "../dto/expense-create-dto";
+import { User } from "src/user/entities/user.entity";
 
 @Entity()
 export class Expense {
@@ -12,8 +13,9 @@ export class Expense {
     @Column()
     date: Date;
 
-    @Column()
-    user: string;
+    @ManyToOne(() => User, (user) => user.expenses)
+    @JoinColumn({ name: 'user_id' })
+    user: User;
 
     @Column()
     concept: string;

@@ -596,7 +596,7 @@ export class CreditService {
 
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         var payment = await this.paymentDetailRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -771,7 +771,7 @@ export class CreditService {
         var response = { success: false, collection: {} };
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit', 'creditHistory.credit.client'] });
         console.log("payment here: ", payment)
@@ -809,22 +809,10 @@ export class CreditService {
     }
 
 
-    private async addExpense(creditHistory: CreditHistory, actualPayment: number) {
-        const client = await this.clientRepository.findOne({ where: { id: creditHistory.credit.client.id } });
-        var expense: ExpenseCreateDto = {
-            user: client?.lastName + " " + client?.name,
-            concept: 'Cancelación de pago de cuota.',
-            type: ExpenseType.cancellationPayment,
-            currencyType: creditHistory.credit.typeCurrency,
-            amount: actualPayment,
-        };
-        await this.cashService.createExpense(expense)
-    }
-
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any, userId: number) {
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         let deletePaymentDetail = false;
         var response = { success: false, collection: {} };

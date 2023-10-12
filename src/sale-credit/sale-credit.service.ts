@@ -79,7 +79,7 @@ export class SaleCreditService {
         if (creditSaved.downPayment > 0) {
             var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
             if (!lastCash || lastCash.closingDate != null) {
-                lastCash = await this.cashService.openCash();
+                lastCash = (await this.cashService.openCash()).cash;
             }
             const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
             const creditTransactionCreateDto = new CreditTransactionCreateDto(client,
@@ -848,7 +848,7 @@ export class SaleCreditService {
 
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         var payment = await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentsDetail')
             .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
@@ -1058,7 +1058,7 @@ export class SaleCreditService {
         var response = { success: false, collection: {} };
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         var payment = await this.paymentDetailSaleCreditRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit', 'creditHistory.credit.client'] });
         console.log("payment here: ", payment)
@@ -1098,23 +1098,11 @@ export class SaleCreditService {
         return response;
     }
 
-    private async addExpense(creditHistory: SaleCreditHistory, actualPayment: number) {
-        const client = await this.clientRepository.findOne({ where: { id: creditHistory.credit.client.id } });
-        var expense: ExpenseCreateDto = {
-            user: client?.lastName + " " + client?.name,
-            concept: 'Cancelación de pago de cuota.',
-            type: ExpenseType.cancellationPayment,
-            currencyType: creditHistory.credit.typeCurrency,
-            amount: actualPayment,
-        };
-        await this.cashService.createExpense(expense)
-    }
-
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any, userId: number) {
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         let deletePaymentDetail = false;
         var response = { success: false, collection: {} };

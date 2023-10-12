@@ -32,9 +32,9 @@ export class TransactionDto {
          else if (transaction instanceof Revenue || transaction instanceof Expense ) {
             this.id = transaction.id;
             this.date = format(transaction.date, 'dd-MM-yyyy HH:mm:ss'),
-            this.user = transaction.user;
+            this.user = transaction.user.lastName + " " + transaction.user.name;
             this.concept = transaction.concept;
-            this.type = transaction.type;
+            this.type = (transaction instanceof Revenue)?3:4;
             this.currencyType = transaction.currencyType;
             this.amount = transaction.amount;
         }else{

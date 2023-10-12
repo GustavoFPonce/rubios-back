@@ -45,7 +45,7 @@ export class SaleService {
         var response = { success: false, error: '', message: '' };
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
-            lastCash = await this.cashService.openCash();
+            lastCash = (await this.cashService.openCash()).cash;
         }
         const client = await this.clientRepository.findOne(sale.clientId);
         var newSale = new Sale();

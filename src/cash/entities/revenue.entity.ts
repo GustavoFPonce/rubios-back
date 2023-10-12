@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Cash } from "./cash.entity";
+import { User } from "src/user/entities/user.entity";
 
 @Entity()
 export class Revenue {
@@ -10,14 +11,12 @@ export class Revenue {
     @Column()
     date: Date;
 
-    @Column()
-    user: string;
+    @ManyToOne(() => User, (user) => user.revenues)
+    @JoinColumn({ name: 'user_id' })
+    user: User;
 
     @Column()
     concept: string;
-
-    @Column()
-    type: number;
 
     @Column()
     currencyType: string;
