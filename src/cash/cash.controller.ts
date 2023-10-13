@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { CashService } from './cash.service';
 
@@ -49,5 +49,14 @@ export class CashController {
    ) {
       return await this.cashService.closeCash(id);
    }
+
+   @Delete(':id')
+    async delete(
+        @Param('id') id: number,
+        @Query('type') type: number,
+    ) {
+        console.log("id delete: ", id);
+        return await this.cashService.delete(id, type);
+    }
 
 }

@@ -26,7 +26,7 @@ export class CashService {
     }
 
     async openCash() {
-        var response = {success: false, error:'', cash: null}
+        var response = { success: false, error: '', cash: null }
         const cash = new Cash();
         cash.openingDate = new Date();
         cash.closingDate = null;
@@ -48,9 +48,9 @@ export class CashService {
         };
         const newCash = this.cashRepository.create(cash);
         const responseSaved = await this.cashRepository.save(newCash);
-        if(responseSaved){
-             response.success = true;
-             response.cash = responseSaved;
+        if (responseSaved) {
+            response.success = true;
+            response.cash = responseSaved;
         }
         return response;
     }
@@ -79,7 +79,7 @@ export class CashService {
             transactions.push(x);
         });
         transactionsQuery.creditTransaction?.map(x => {
-            if(x.accounted) transactions.push(x);
+            if (x.accounted) transactions.push(x);
         })
         transactionsQuery.sales?.map(x => {
             transactions.push(x);
@@ -128,7 +128,7 @@ export class CashService {
     }
 
     async closeCash(id: number) {
-        var response = {success: false, error:''}
+        var response = { success: false, error: '' }
         var cash = await this.cashRepository.findOne({ where: { id }, relations: ['revenues', 'expenses', 'creditTransaction', 'sales'] });
         var totalRevenuePeso = 0;
         var totalRevenueDollar = 0;
@@ -140,8 +140,8 @@ export class CashService {
         var totalExpenseDollar = cash.expenses.filter(x => x.currencyType == 'dolar').reduce((total, revenue) => total + parseFloat(revenue.amount.toString()), 0);
         totalRevenuePeso = totalRevenuePeso + cash.sales.filter(x => x.currencyType == 'peso').reduce((total, sale) => total + parseFloat(sale.total.toString()), 0);
         totalRevenueDollar = totalRevenueDollar + cash.sales.filter(x => x.currencyType == 'dolar').reduce((total, sale) => total + parseFloat(sale.total.toString()), 0);
-        totalRevenuePeso = totalRevenuePeso + cash.creditTransaction.filter(x => x.currencyType === 'peso'&& x.accounted && (x.type === TransactionType.payment || x.type === TransactionType.paymentInterest || x.type === TransactionType.downPayment)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);        
-        totalRevenueDollar = totalRevenueDollar + cash.creditTransaction.filter(x => x.currencyType == 'dolar' && x.accounted && (x.type === TransactionType.payment|| x.type === TransactionType.paymentInterest || x.type === TransactionType.downPayment)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
+        totalRevenuePeso = totalRevenuePeso + cash.creditTransaction.filter(x => x.currencyType === 'peso' && x.accounted && (x.type === TransactionType.payment || x.type === TransactionType.paymentInterest || x.type === TransactionType.downPayment)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
+        totalRevenueDollar = totalRevenueDollar + cash.creditTransaction.filter(x => x.currencyType == 'dolar' && x.accounted && (x.type === TransactionType.payment || x.type === TransactionType.paymentInterest || x.type === TransactionType.downPayment)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
         totalExpensePeso = totalExpensePeso + cash.creditTransaction.filter(x => x.currencyType == 'peso' && x.accounted && (x.type === TransactionType.cancellationPayment || x.type === TransactionType.cancellationPaymentInterest)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
         totalExpenseDollar = totalExpenseDollar + cash.creditTransaction.filter(x => x.currencyType == 'dolar' && x.accounted && (x.type === TransactionType.cancellationPayment || x.type === TransactionType.cancellationPaymentInterest)).reduce((total, transaction) => total + parseFloat(transaction.amount.toString()), 0);
 
@@ -156,20 +156,20 @@ export class CashService {
         console.log("cash: ", cash);
         const updateCashClose = await this.cashRepository.save(cash);
         console.log("updateCash: ", updateCashClose);
-        if(updateCashClose){
-             response.success = true;
+        if (updateCashClose) {
+            response.success = true;
         }
         return response;
 
     }
 
-    async addRevenue(record: any, userId: number){
+    async addRevenue(record: any, userId: number) {
         console.log("record: ", record);
-        var response = {success: false, error: ''}
+        var response = { success: false, error: '' }
         const cash = await this.getLastCash();
-        const user = await this.userRepository.findOne({where:{id: userId}})
-        if(cash){
-            var newRevenue =  new Revenue();
+        const user = await this.userRepository.findOne({ where: { id: userId } })
+        if (cash) {
+            var newRevenue = new Revenue();
             newRevenue.date = new Date();
             newRevenue.concept = record.concept;
             newRevenue.currencyType = record.currencyType;
@@ -179,19 +179,19 @@ export class CashService {
             console.log("newRevenue: ", newRevenue);
             const revenue = await this.revenueRepository.save(newRevenue);
             console.log("revenue: ", revenue);
-            if(revenue)response.success = true;
+            if (revenue) response.success = true;
         };
         return response;
     }
 
-    async addExpense(record: any, userId: number){
-        var response = {success: false, error: ''}
+    async addExpense(record: any, userId: number) {
+        var response = { success: false, error: '' }
         const cash = await this.getLastCash();
-        const user = await this.userRepository.findOne({where:{id: userId}})
-        if(cash){
-            var newExpense =  new Expense();
+        const user = await this.userRepository.findOne({ where: { id: userId } })
+        if (cash) {
+            var newExpense = new Expense();
             newExpense.date = new Date();
-            newExpense.concept = (record.type == 1)?'Retiro':record.concept;
+            newExpense.concept = (record.type == 1) ? 'Retiro' : record.concept;
             newExpense.currencyType = record.currencyType;
             newExpense.type = record.type;
             newExpense.user = user;
@@ -199,8 +199,23 @@ export class CashService {
             newExpense.amount = record.amount;
 
             const expense = await this.expenseRepository.save(newExpense);
-            if(expense)response.success = true;
+            if (expense) response.success = true;
         };
+        return response;
+    }
+
+    async delete(id: number, type: number) {
+        var response = { success: false, error: '' }
+        if (type == 3) {
+            const revenue = await this.revenueRepository.findOne(id);
+            const responseDelete = await this.revenueRepository.delete(revenue);
+            if(responseDelete) response.success = true;
+        }else{
+            const expense = await this.expenseRepository.findOne(id);
+            const responseDelete = await this.expenseRepository.delete(expense);
+            if(responseDelete) response.success = true;
+        }
+
         return response;
     }
 }

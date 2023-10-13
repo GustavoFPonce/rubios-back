@@ -82,13 +82,13 @@ export class CreditController {
 
     @Put('reschedule-payment')
     async reschedulePayment(
-        @Body() paymentDate: {id: number, dueDate: Date}
+        @Body() paymentDate: { id: number, dueDate: Date }
     ) {
         console.log("id", paymentDate.id)
         console.log("newDate", paymentDate.dueDate)
         var response = await this.creditService.reschedulePayment(paymentDate.id, paymentDate.dueDate);
-        return response;
-    }
+        return response;
+    }
 
 
     @Put((':id/register-payment'))
@@ -132,7 +132,7 @@ export class CreditController {
     }
 
 
-    
+
     @Put(':id')
     async update(
         @Param('id') id: number,
@@ -142,7 +142,7 @@ export class CreditController {
         var response = await this.creditService.update(id, credit);
         return response;
     }
-    
+
     @Get('search-collections')
     async searchCollections(
         @Req() req: any,
@@ -169,7 +169,7 @@ export class CreditController {
         @Query('endDate') endDate: any,
         @Req() req: any
     ) {
-      
+
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
@@ -199,9 +199,14 @@ export class CreditController {
     @Get(':id/transactions')
     async getTransactions(
         @Param('id') id: number,
-    ){
-       return await this.creditService.getTransactions(id);
+    ) {
+        return await this.creditService.getTransactions(id);
     }
 
+    @Get('/report/by-month')
+    async getCreditsByMonth() {
+        //const user = req.user.userId;
+        return this.creditService.getCreditsByMonths();
+    }
 
 }

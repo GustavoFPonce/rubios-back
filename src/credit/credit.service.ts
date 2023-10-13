@@ -59,7 +59,7 @@ export class CreditService {
             lastCash = (await this.cashService.openCash()).cash;
         }
 
-        const user = await this.userRepository.findOne({where:{id: userId}});
+        const user = await this.userRepository.findOne({ where: { id: userId } });
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
@@ -603,6 +603,24 @@ export class CreditService {
         return format(date, 'EEEE', { locale: es });
     }
 
+    async getCreditsByMonths(): Promise<{ month: number; count: number }[]> {
+        const twelveMonthsAgo = subMonths(new Date(), 12);
+        const result = await this.creditHistoryRepository
+            .createQueryBuilder("creditHistory")
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .select("MONTH(creditHistory.date) as month")
+            .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
+            .addSelect("COUNT(*) as count")
+            .groupBy("month")
+            .getRawMany();
+
+        console.log("result", result);
+        return result.map((row) => ({
+            month: parseInt(row.month, 10),
+            count: parseInt(row.count, 10),
+        }));
+    }
+
     //register payments
 
     async registerTrasactionAndPayment(id: number, paymentAmount: number, userId: number) {
@@ -839,7 +857,7 @@ export class CreditService {
         creditTransactionDetail.paymentDate = payment.paymentDate;
         creditTransactionDetail.payment = payment.payment;
         creditTransactionDetail.actualPayment = payment.actualPayment;
-       const responseSavedTransaction = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
+        const responseSavedTransaction = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
         console.log("responseSavedTransaction: ", responseSavedTransaction);
         payment.payment = payment.creditHistory.payment;
         payment.paymentDueDate = payment.creditHistory.firstPayment;
@@ -850,33 +868,33 @@ export class CreditService {
         const responseUpdatePayment = await this.paymentDetailRepository.save(payment);
         const creditId = payment.creditHistory.credit.id;
         const removeCreditHistoryRenewed = await this.removeCreditHistoryRenewed(creditId);
-        if(removeCreditHistoryRenewed) await this.updateStatusCreditHistory(creditId);
+        if (removeCreditHistoryRenewed) await this.updateStatusCreditHistory(creditId);
         const saved = await this.paymentDetailRepository.save(payment);
-        if(responseSavedTransaction && responseUpdatePayment && saved) response.success = true;
+        if (responseSavedTransaction && responseUpdatePayment && saved) response.success = true;
         return response;
     }
 
-    async removeCreditHistoryRenewed(id: number){
+    async removeCreditHistoryRenewed(id: number) {
         const creditHistory = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
-        .leftJoinAndSelect('creditHistory.credit', 'credit')
-        .where('creditHistory.status =:status AND credit.id =:id', {status:1, id})
-        .orderBy('creditHistory.date', 'DESC')
-        .getOne();
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('creditHistory.status =:status AND credit.id =:id', { status: 1, id })
+            .orderBy('creditHistory.date', 'DESC')
+            .getOne();
         const responseRemoveCreditHistoryRenewed = await this.creditHistoryRepository.delete(creditHistory.id);
         console.log("responseRemoveCreditHistoryRenewed: ", responseRemoveCreditHistoryRenewed);
         return responseRemoveCreditHistoryRenewed;
     }
 
-    async updateStatusCreditHistory(id: number){
+    async updateStatusCreditHistory(id: number) {
         const creditHistory = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
-        .leftJoinAndSelect('creditHistory.credit', 'credit')
-        .where('creditHistory.status =:status AND credit.id =:id', {status:2, id})
-        .orderBy('creditHistory.date', 'DESC')
-        .getOne();
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('creditHistory.status =:status AND credit.id =:id', { status: 2, id })
+            .orderBy('creditHistory.date', 'DESC')
+            .getOne();
         console.log("creditHistory: ", creditHistory);
         creditHistory.status = 1;
         const responseUpdateCreditHistory = await this.creditHistoryRepository.save(creditHistory);
-        console.log("responseUpdateCreditHistory: ",responseUpdateCreditHistory);
+        console.log("responseUpdateCreditHistory: ", responseUpdateCreditHistory);
 
     }
 
