@@ -25,7 +25,7 @@ export class TransactionDto {
             this.user = credit.client?.lastName + " " + credit.client?.name;
             this.concept = transaction.concept;
             this.type =  transaction.type,
-            (transaction.type == 1) ? TransactionType.payment : TransactionType.paymentInterest;
+            //(transaction.type == 1) ? TransactionType.payment : TransactionType.paymentInterest;
             this.currencyType = transaction.currencyType;
             this.amount = transaction.amount;
         }

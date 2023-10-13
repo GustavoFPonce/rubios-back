@@ -53,6 +53,13 @@ export class CreditService {
     async create(creditCreateDto: CreditCreateDto, userId: number) {
         //console.log("creditCreate: ", creditCreateDto);
         var response = { success: false }
+
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = (await this.cashService.openCash()).cash;
+        }
+
+        const user = await this.userRepository.findOne({where:{id: userId}});
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
         const client = await this.clientRepository.findOne(creditCreateDto.clientId);
@@ -70,6 +77,7 @@ export class CreditService {
         createCredit.commission = creditCreateDto.commission;
         const credit = this.creditRepository.create(createCredit);
         const creditSaved = await this.creditRepository.save(credit);
+        if (creditSaved) await this.createTransaction(creditSaved, lastCash, creditCreateDto.principal, user);
         const newCreditHistory: CreditHistoryCreateDto = {
             date: parseISO(creditCreateDto.date),
             principal: creditCreateDto.principal,
@@ -92,6 +100,12 @@ export class CreditService {
             response.success = true;
         }
 
+        return response;
+    }
+
+    private async createTransaction(credit: Credit, cash: Cash, amount: number, user: User) {
+        var newTransaction = new CreditTransactionCreateDto(credit.client, credit, cash, amount, 'Capital Crédito', TransactionType.credit, user, true);
+        const response = await this.cashService.createTransaction(newTransaction);
         return response;
     }
 
@@ -782,7 +796,7 @@ export class CreditService {
         const paymentDate = addDays(payment.paymentDueDate, 1);
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
         var concept = 'Cancelación pago de cuota';
-        const transaction = await this.registerCreditTransaction(actualPayment, payment, user, lastCash, concept, TransactionType.payment);
+        const transaction = await this.registerCreditTransaction(actualPayment, payment, user, lastCash, concept, TransactionType.cancellationPayment);
         var creditTransactionDetail = new CreditTransactionDetail();
         creditTransactionDetail.creditTransaction = transaction;
         creditTransactionDetail.paymentId = payment.id;
