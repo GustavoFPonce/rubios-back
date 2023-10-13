@@ -110,6 +110,16 @@ export class CreditController {
         return this.creditService.cancelRegisteredPayment(id, user);
     }
 
+    @Put((':id/cancel-registered-payment-interest'))
+    async cancelRegisteredPaymentInterest(
+        @Param('id') id: number,
+        @Req() req: any
+    ) {
+        console.log("cancelando pago de interés");
+        const user = req.user.userId;
+        return this.creditService.cancelRegisteredPaymentInterest(id, user);
+    }
+
     @Put((':id/register-cancellation-interest-principal'))
     async registerCancellationInterestPrincipal(
         @Param('id') id: number,

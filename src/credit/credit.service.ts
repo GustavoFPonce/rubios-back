@@ -822,6 +822,63 @@ export class CreditService {
         return response;
     }
 
+    async cancelRegisteredPaymentInterest(id: number, userId: number) {
+        var response = { success: false, collection: {} };
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = (await this.cashService.openCash()).cash;
+        }
+        var payment = await this.paymentDetailRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit', 'creditHistory.credit.client'] });
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+        var concept = 'Cancelación pago de interés';
+        const transaction = await this.registerCreditTransaction(payment.payment, payment, user, lastCash, concept, TransactionType.cancellationPaymentInterest);
+        var creditTransactionDetail = new CreditTransactionDetail();
+        creditTransactionDetail.creditTransaction = transaction;
+        creditTransactionDetail.paymentId = payment.id;
+        creditTransactionDetail.paymentDueDate = payment.paymentDueDate;
+        creditTransactionDetail.paymentDate = payment.paymentDate;
+        creditTransactionDetail.payment = payment.payment;
+        creditTransactionDetail.actualPayment = payment.actualPayment;
+       const responseSavedTransaction = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
+        console.log("responseSavedTransaction: ", responseSavedTransaction);
+        payment.payment = payment.creditHistory.payment;
+        payment.paymentDueDate = payment.creditHistory.firstPayment;
+        payment.paymentType = 1;
+        payment.actualPayment = 0.00;
+        payment.paymentDate = null;
+        payment.isNext = true;
+        const responseUpdatePayment = await this.paymentDetailRepository.save(payment);
+        const creditId = payment.creditHistory.credit.id;
+        const removeCreditHistoryRenewed = await this.removeCreditHistoryRenewed(creditId);
+        if(removeCreditHistoryRenewed) await this.updateStatusCreditHistory(creditId);
+        const saved = await this.paymentDetailRepository.save(payment);
+        if(responseSavedTransaction && responseUpdatePayment && saved) response.success = true;
+        return response;
+    }
+
+    async removeCreditHistoryRenewed(id: number){
+        const creditHistory = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
+        .leftJoinAndSelect('creditHistory.credit', 'credit')
+        .where('creditHistory.status =:status AND credit.id =:id', {status:1, id})
+        .orderBy('creditHistory.date', 'DESC')
+        .getOne();
+        const responseRemoveCreditHistoryRenewed = await this.creditHistoryRepository.delete(creditHistory.id);
+        console.log("responseRemoveCreditHistoryRenewed: ", responseRemoveCreditHistoryRenewed);
+        return responseRemoveCreditHistoryRenewed;
+    }
+
+    async updateStatusCreditHistory(id: number){
+        const creditHistory = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
+        .leftJoinAndSelect('creditHistory.credit', 'credit')
+        .where('creditHistory.status =:status AND credit.id =:id', {status:2, id})
+        .orderBy('creditHistory.date', 'DESC')
+        .getOne();
+        console.log("creditHistory: ", creditHistory);
+        creditHistory.status = 1;
+        const responseUpdateCreditHistory = await this.creditHistoryRepository.save(creditHistory);
+        console.log("responseUpdateCreditHistory: ",responseUpdateCreditHistory);
+
+    }
 
     async registerCancellationInterestPrincipal(id: number, paymentAmount: number, firstPayment: any, userId: number) {
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });

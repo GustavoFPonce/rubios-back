@@ -71,6 +71,16 @@ export class SaleCreditController {
         return this.saleCreditService.cancelRegisteredPayment(id, user);
     }
 
+    @Put((':id/cancel-registered-payment-interest'))
+    async cancelRegisteredPaymentInterest(
+        @Param('id') id: number,
+        @Req() req: any
+    ) {
+        console.log("cancelando pago de interés");
+        const user = req.user.userId;
+        return this.saleCreditService.cancelRegisteredPaymentInterest(id, user);
+    }
+
     @Get('collections-by-client')
     async getCollectionsByClient(
         @Query('client') client: number,
