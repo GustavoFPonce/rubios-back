@@ -104,7 +104,7 @@ export class CreditService {
     }
 
     private async createTransaction(credit: Credit, cash: Cash, amount: number, user: User) {
-        var newTransaction = new CreditTransactionCreateDto(credit.client, credit, cash, amount, 'Capital Crédito', TransactionType.credit, user, true);
+        var newTransaction = new CreditTransactionCreateDto(credit.client, credit, cash, amount, 'Crédito Personal', TransactionType.credit, user, true);
         const response = await this.cashService.createTransaction(newTransaction);
         return response;
     }

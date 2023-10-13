@@ -8,6 +8,7 @@ export enum TransactionType {
     downPayment = 6,
     cancellationPayment = 7,
     cancellationPaymentInterest = 8,
-    credit = 9
+    credit = 9,
+    commission = 10
     
 }

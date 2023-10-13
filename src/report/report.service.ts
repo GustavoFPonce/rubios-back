@@ -22,6 +22,10 @@ import { addDays, subDays } from 'date-fns';
 import { TotalIndicatorDto } from './dto/total-indicator-dto';
 import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
+import { TransactionType } from 'src/cash/dto/enum';
+import { CreditTransactionCreateDto } from 'src/cash/dto/credit-transaction-create-dto';
+import { Cash } from 'src/cash/entities/cash.entity';
+import { CashService } from 'src/cash/cash.service';
 
 
 @Injectable()
@@ -38,6 +42,9 @@ export class ReportService {
     private creditTransactionRepository: Repository<CreditTransaction>,
     @InjectRepository(CreditTransactionDetail)
     private creditTransactionDetailRepository: Repository<CreditTransactionDetail>,
+    private readonly cashService: CashService,
+    @InjectRepository(Cash)
+    private cashRepository: Repository<Cash>,
   ) { }
 
 
@@ -385,6 +392,11 @@ export class ReportService {
 
   async registerCommissionsCredit(id: number, type: string) {
     try {
+      var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+      if (!lastCash || lastCash.closingDate != null) {
+        lastCash = (await this.cashService.openCash()).cash;
+      }
+      const user = await this.userRepository.findOne(id);
       const credits = (type == '1') ? await this.getCreditsByDebtCollectorPersonalCredits(id) :
         await this.getCreditsByDebtCollectorSaleCredits(id)
       //console.log("credits: ", credits);
@@ -396,8 +408,10 @@ export class ReportService {
           } else {
             await this.saleCreditHistoryRepository.save(credit);
           }
+          await this.createTransaction(credit.credit, lastCash, (credit.credit.commission / 100 * credit.interest), (type == '1')?'Comisión Crédito Personal': 'Comisión Crédito Venta', user);
         }
-      }
+      };
+
       return { success: true, error: '' };
     } catch (err) {
       return { success: false, error: 'An error occurred.' };
@@ -405,14 +419,22 @@ export class ReportService {
   }
 
 
+  private async createTransaction(credit: Credit, cash: Cash, amount: number, concept: string, user: User) {
+    var newTransaction = new CreditTransactionCreateDto(credit.client, credit, cash, amount, concept, TransactionType.commission, user, true);
+    const response = await this.cashService.createTransaction(newTransaction);
+    return response;
+  }
+
   private async getCreditsByDebtCollectorPersonalCredits(id: number) {
     const status = '2';
+    const statusCreditHistory = 1;
     const results = await this.creditHistoryRepository.createQueryBuilder('creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
       .leftJoinAndSelect('credit.client', 'client')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-      .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL', { id, status })
+      .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.status =:statusCreditHistory AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL',
+        { id, status, statusCreditHistory })
       .getMany();
 
     console.log("results: ", results)
@@ -421,12 +443,14 @@ export class ReportService {
 
   private async getCreditsByDebtCollectorSaleCredits(id: number) {
     const status = '2';
+    const statusCreditHistory = 1;
     const results = await this.saleCreditHistoryRepository.createQueryBuilder('creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentDetail')
       .leftJoinAndSelect('credit.client', 'client')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-      .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL', { id, status })
+      .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.status =:statusCreditHistory AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL',
+       { id, status, statusCreditHistory})
       .getMany();
 
     console.log("results: ", results)

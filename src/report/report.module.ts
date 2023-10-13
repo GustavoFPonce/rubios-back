@@ -11,10 +11,12 @@ import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.
 import { PaymentDetailSaleCredit } from 'src/sale-credit/entities/payment-detail-sale-credit.entity';
 import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
+import { CashModule } from 'src/cash/cash.module';
+import { Cash } from 'src/cash/entities/cash.entity';
 
 @Module({
   imports:[TypeOrmModule.forFeature([Credit, PaymentDetail, User, CreditHistory, SaleCredit, SaleCreditHistory, PaymentDetailSaleCredit,
-  CreditTransaction, CreditTransactionDetail])],
+  CreditTransaction, CreditTransactionDetail, Cash]), CashModule],
   controllers: [ReportController],
   providers: [ReportService],
 })

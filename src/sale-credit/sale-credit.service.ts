@@ -55,6 +55,12 @@ export class SaleCreditService {
     async create(creditCreateDto: SaleCreditCreateDto, userId: number, sale: Sale) {
 
         var response = { success: false }
+        var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
+        if (!lastCash || lastCash.closingDate != null) {
+            lastCash = (await this.cashService.openCash()).cash;
+        }
+        
+        const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
         const saleId = sale.id;
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
         const debtCollector = await this.userRepository.findOne(creditCreateDto.debtCollectorId);
@@ -75,13 +81,10 @@ export class SaleCreditService {
         createCredit.downPayment = creditCreateDto.downPayment;
         const credit = this.saleCreditRepository.create(createCredit);
         const creditSaved = await this.saleCreditRepository.save(credit);
+        if (creditSaved) await this.createTransaction(creditSaved, lastCash, creditCreateDto.principal, user);
         const creditId = creditSaved.id;
         if (creditSaved.downPayment > 0) {
-            var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
-            if (!lastCash || lastCash.closingDate != null) {
-                lastCash = (await this.cashService.openCash()).cash;
-            }
-            const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
+           
             const creditTransactionCreateDto = new CreditTransactionCreateDto(client,
                 creditSaved, lastCash, creditSaved.downPayment, 'Venta - Anticipo', TransactionType.downPayment, user, true);
             const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
@@ -1179,6 +1182,12 @@ export class SaleCreditService {
 
         }
         if (deletePaymentDetail) await this.paymentDetailSaleCreditRepository.delete(paymentDetail.id);
+        return response;
+    }
+
+    private async createTransaction(credit: SaleCredit, cash: Cash, amount: number, user: User) {
+        var newTransaction = new CreditTransactionCreateDto(credit.client, credit, cash, amount, 'Crédito Venta', TransactionType.credit, user, true);
+        const response = await this.cashService.createTransaction(newTransaction);
         return response;
     }
 
