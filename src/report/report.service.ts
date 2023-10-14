@@ -840,7 +840,7 @@ export class ReportService {
       .getRawMany();
 
     console.log("result", result);
-    return result.map((row) => ({
+    return result.sort((a, b) => a.month - b.month).map((row) => ({
       month: parseInt(row.month, 10),
       count: parseInt(row.count, 10),
     }));
