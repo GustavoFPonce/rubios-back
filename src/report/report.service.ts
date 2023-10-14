@@ -868,7 +868,7 @@ export class ReportService {
 
     const creditCounts = {};
     credits.forEach(result => {
-      creditCounts[`${result.debtCollector_lastName} ${result.debtCollector_lastName}`] = +result.creditCount;
+      creditCounts[`${result.debtCollector_name} ${result.debtCollector_lastName}`] = +result.creditCount;
     });
 
     return creditCounts;
