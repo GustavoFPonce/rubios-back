@@ -864,6 +864,7 @@ export class ReportService {
       .addSelect('COUNT(*)', 'creditCount')
       .andWhere('credit.status = :status', { status: StatusCredit.active })
       .groupBy('credit.debtCollector_id')
+      .orderBy('credit.debtCollector_id')
       .getRawMany();
 
     const creditCounts = {};
