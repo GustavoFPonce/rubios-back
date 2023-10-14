@@ -12,7 +12,7 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any,
         @Query('type') type: string
-    ){       
+    ) {
         return await this.reportService.getChargesAccountedAndCollected(start, end, type);
     }
 
@@ -22,7 +22,7 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any,
         @Query('type') type: string
-    ){
+    ) {
         return await this.reportService.getPaymentsCollectedAndPendingDetail(id, start, end, type);
     }
 
@@ -32,7 +32,7 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any,
         @Query('type') type: string
-    ){
+    ) {
         return await this.reportService.getCollectionsAndCommissionsDetail(id, start, end, type);
     }
 
@@ -42,15 +42,15 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any,
         @Query('type') type: string
-    ){
-       // console.log("registrando rendición: ", start, end);
+    ) {
+        // console.log("registrando rendición: ", start, end);
         return await this.reportService.registerAccountedPayments(id, start, end, type);
     }
 
-    
+
 
     @Get('loan-principal')
-    async getLoanPrincipal(){
+    async getLoanPrincipal() {
         return await this.reportService.getPendingBalanceCredits();
     }
 
@@ -58,7 +58,7 @@ export class ReportController {
     async registerCommissionsPayment(
         @Query('id') id: number,
         @Query('type') type: string
-    ){
+    ) {
         console.log("llegue a pagar comisiones: ", id);
         return await this.reportService.registerCommissionsCredit(id, type);
     }
@@ -66,39 +66,52 @@ export class ReportController {
     @Get('commissions-total')
     async getCommissionsTotal(
         @Query('type') type: string
-    ){
+    ) {
         return await this.reportService.getCommissionsTotal(type);
     }
 
     @Get('total-balance')
     async getTotalBalance(
-        @Query('currencyType') currencyType: string,        
+        @Query('currencyType') currencyType: string,
         @Query('year') year: string
-    ){
+    ) {
         return await this.reportService.getTotalBalance(currencyType, year);
     }
 
     @Get('total-balance-bad')
     async getTotalBalanceBadCredits(
-        @Query('currencyType') currencyType: string,        
+        @Query('currencyType') currencyType: string,
         @Query('year') year: string
-    ){
+    ) {
         return await this.reportService.getTotalBalanceBadCredits(currencyType, year);
     }
 
-    
+
     @Get('total-indicators')
     async getIndicators(
-        @Query('currencyType') currencyType: string,  
-    ){
+        @Query('currencyType') currencyType: string,
+    ) {
         return await this.reportService.getTotalIndicators(currencyType);
+    }
+
+    @Get('monthly-credits')
+    async getMonthlyCredits(
+    ) {
+        return await this.reportService.getMonthlyCredits();
+    }
+
+    
+    @Get('credits-by-debtcollector')
+    async getCreditsByDebtCollector(
+    ) {
+        return await this.reportService.getCreditsByDebtCollector();
     }
 
     @Get(':id/commissions-credit-by-deb-collector')
     async getCommissionsCreditsByDebtCollector(
         @Param('id') id: number,
         @Query('type') type: string
-    ){
+    ) {
         return await this.reportService.getCommissionsCreditsByDebtCollector(id, type);
     }
 
@@ -108,7 +121,7 @@ export class ReportController {
         @Query('start') start: any,
         @Query('end') end: any,
         @Query('type') type: string
-    ){
+    ) {
         return await this.reportService.getCollectionsAccountedHistory(id, start, end, type);
     }
 
@@ -116,7 +129,7 @@ export class ReportController {
     async getCommissionsCreditsHistory(
         @Param('id') id: number,
         @Query('type') type: string
-    ){
+    ) {
         return await this.reportService.getCommissionsCreditsHistory(id, type);
     }
 

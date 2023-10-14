@@ -18,7 +18,7 @@ import { PaymentDetailSaleCredit } from 'src/sale-credit/entities/payment-detail
 import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
 import { StatusCredit } from 'src/credit/enum';
 import { LoanPrincipalDto } from './dto/loan-principal-dto';
-import { addDays, subDays } from 'date-fns';
+import { addDays, subDays, subMonths } from 'date-fns';
 import { TotalIndicatorDto } from './dto/total-indicator-dto';
 import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
@@ -26,6 +26,8 @@ import { TransactionType } from 'src/cash/dto/enum';
 import { CreditTransactionCreateDto } from 'src/cash/dto/credit-transaction-create-dto';
 import { Cash } from 'src/cash/entities/cash.entity';
 import { CashService } from 'src/cash/cash.service';
+import { CreditService } from 'src/credit/credit.service';
+import { SaleCreditService } from 'src/sale-credit/sale-credit.service';
 
 
 @Injectable()
@@ -408,7 +410,7 @@ export class ReportService {
           } else {
             await this.saleCreditHistoryRepository.save(credit);
           }
-          await this.createTransaction(credit.credit, lastCash, (credit.credit.commission / 100 * credit.interest), (type == '1')?'Comisión Crédito Personal': 'Comisión Crédito Venta', user);
+          await this.createTransaction(credit.credit, lastCash, (credit.credit.commission / 100 * credit.interest), (type == '1') ? 'Comisión Crédito Personal' : 'Comisión Crédito Venta', user);
         }
       };
 
@@ -450,7 +452,7 @@ export class ReportService {
       .leftJoinAndSelect('credit.client', 'client')
       .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
       .where('debtCollector.id = :id AND credit.status = :status AND creditHistory.status =:statusCreditHistory AND creditHistory.accounted IS TRUE AND creditHistory.commissionPaymentDate IS NULL',
-       { id, status, statusCreditHistory})
+        { id, status, statusCreditHistory })
       .getMany();
 
     console.log("results: ", results)
@@ -814,6 +816,62 @@ export class ReportService {
       ])
       .setParameters({ currency, status, historyStatus, endDate, isNext })
       .getRawOne();
+  }
+
+  async getMonthlyCredits() {
+    const personalCredits = await this.getCreditsByMonths(this.creditHistoryRepository);
+    console.log("personalCredits: ", personalCredits);
+    const saleCredits = await this.getCreditsByMonths(this.saleCreditHistoryRepository);
+    console.log("saleCredits: ", saleCredits);
+    return {
+      personalCredits, saleCredits
+    }
+  }
+
+  private async getCreditsByMonths(creditHistoryRepository: any): Promise<{ month: number; count: number }[]> {
+    const twelveMonthsAgo = subMonths(new Date(), 12);
+    const result = await creditHistoryRepository
+      .createQueryBuilder("creditHistory")
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .select("MONTH(creditHistory.date) as month")
+      .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
+      .addSelect("COUNT(*) as count")
+      .groupBy("month")
+      .getRawMany();
+
+    console.log("result", result);
+    return result.map((row) => ({
+      month: parseInt(row.month, 10),
+      count: parseInt(row.count, 10),
+    }));
+  }
+
+  async getCreditsByDebtCollector(): Promise<any>{
+    const personalCredits = await this.getCreditsByDebtCollectorByType(this.creditRepository);
+    console.log("personalCredits: ", personalCredits);
+    const saleCredits = await this.getCreditsByDebtCollectorByType(this.saleCreditRepository);
+    console.log("saleCredits: ", saleCredits);
+    return {
+      personalCredits, saleCredits
+    }
+  }
+
+
+  async getCreditsByDebtCollectorByType(creditRepository: any): Promise<any> {
+    const credits = await creditRepository.createQueryBuilder('credit')
+      .select('credit.debtCollector_id', 'debtCollectorId')
+      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .addSelect('COUNT(*)', 'creditCount')
+      .andWhere('credit.status = :status', { status: StatusCredit.active })
+      .groupBy('credit.debtCollector_id')
+      .getRawMany();
+
+    const creditCounts = {};
+    credits.forEach(result => {
+      creditCounts[`${result.debtCollector_lastName} ${result.debtCollector_lastName}`] = +result.creditCount;
+    });
+
+    return creditCounts;
   }
 
 }

@@ -603,23 +603,6 @@ export class CreditService {
         return format(date, 'EEEE', { locale: es });
     }
 
-    async getCreditsByMonths(): Promise<{ month: number; count: number }[]> {
-        const twelveMonthsAgo = subMonths(new Date(), 12);
-        const result = await this.creditHistoryRepository
-            .createQueryBuilder("creditHistory")
-            .leftJoinAndSelect('creditHistory.credit', 'credit')
-            .select("MONTH(creditHistory.date) as month")
-            .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
-            .addSelect("COUNT(*) as count")
-            .groupBy("month")
-            .getRawMany();
-
-        console.log("result", result);
-        return result.map((row) => ({
-            month: parseInt(row.month, 10),
-            count: parseInt(row.count, 10),
-        }));
-    }
 
     //register payments
 
@@ -1290,5 +1273,6 @@ export class CreditService {
             await this.paymentDetailRepository.save(payment);
         }
     }
+
 
 }

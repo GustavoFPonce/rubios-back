@@ -203,10 +203,6 @@ export class CreditController {
         return await this.creditService.getTransactions(id);
     }
 
-    @Get('/report/by-month')
-    async getCreditsByMonth() {
-        //const user = req.user.userId;
-        return this.creditService.getCreditsByMonths();
-    }
+   
 
 }

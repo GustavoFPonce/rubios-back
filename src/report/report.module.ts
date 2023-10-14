@@ -13,6 +13,8 @@ import { CreditTransaction } from 'src/cash/entities/credit-transaction.entity';
 import { CreditTransactionDetail } from 'src/cash/entities/credit-transaction-detail.entity';
 import { CashModule } from 'src/cash/cash.module';
 import { Cash } from 'src/cash/entities/cash.entity';
+import { CreditModule } from 'src/credit/credit.module';
+import { SaleCreditModule } from 'src/sale-credit/sale-credit.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([Credit, PaymentDetail, User, CreditHistory, SaleCredit, SaleCreditHistory, PaymentDetailSaleCredit,
