@@ -23,7 +23,7 @@ export class TransactionDto {
             this.id = transaction.id;
             this.date = format(transaction.date, 'dd-MM-yyyy HH:mm:ss'),
             this.user = credit.client?.lastName + " " + credit.client?.name;
-            this.concept = transaction.concept;
+            this.concept = `${transaction.concept} - ${transaction.credit?'Créd. Personal':'Créd. Venta'}`;
             this.type =  transaction.type,
             //(transaction.type == 1) ? TransactionType.payment : TransactionType.paymentInterest;
             this.currencyType = transaction.currencyType;

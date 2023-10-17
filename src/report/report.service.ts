@@ -889,11 +889,10 @@ export class ReportService {
 
   async getPaymentBhaviorByClient(id: number, creditHistoryRepository: any): Promise<[]> {
     return await creditHistoryRepository.createQueryBuilder('creditHistory')
-    .leftJoin('creditHistory.credit', 'credit')
+    .leftJoinAndSelect('creditHistory.credit', 'credit')
     .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
     .where('credit.client_id =:id AND creditHistory.status =:status', {id, status:1})
-    .groupBy('credithistory.id')
-    .getRawMany();
+    .getMany();
   }
 
 }
