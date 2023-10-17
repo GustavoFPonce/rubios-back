@@ -846,7 +846,7 @@ export class ReportService {
     }));
   }
 
-  async getCreditsByDebtCollector(): Promise<any>{
+  async getCreditsByDebtCollector(): Promise<any> {
     const personalCredits = await this.getCreditsByDebtCollectorByType(this.creditRepository);
     console.log("personalCredits: ", personalCredits);
     const saleCredits = await this.getCreditsByDebtCollectorByType(this.saleCreditRepository);
@@ -873,6 +873,27 @@ export class ReportService {
     });
 
     return creditCounts;
+  }
+
+  async getPaymentBhavior(id: number, type: number) {
+    var paymentBhavior = [];
+    if (type == 1) {
+      paymentBhavior = await this.getPaymentBhaviorByClient(id, this.creditHistoryRepository);
+    } else {
+      paymentBhavior = await this.getPaymentBhaviorByClient(id, this.saleCreditHistoryRepository);
+    }
+    console.log("paymentBhavior: ", paymentBhavior);
+    return paymentBhavior;
+
+  }
+
+  async getPaymentBhaviorByClient(id: number, creditHistoryRepository: any): Promise<[]> {
+    return await creditHistoryRepository.createQueryBuilder('creditHistory')
+    .leftJoin('creditHistory.credit', 'credit')
+    .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
+    .where('credit.client_id =:id AND creditHistory.status =:status', {id, status:1})
+    .groupBy('credithistory.id')
+    .getRawMany();
   }
 
 }

@@ -1071,7 +1071,7 @@ export class SaleCreditService {
         const paymentDate = addDays(payment.paymentDueDate, 1);
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
         var concept = 'Cancelación pago de cuota';
-        const transaction = await this.registerCreditTransaction(actualPayment, payment, user, lastCash, concept, TransactionType.payment);
+        const transaction = await this.registerCreditTransaction(actualPayment, payment, user, lastCash, concept, TransactionType.cancellationPayment);
         var creditTransactionDetail = new CreditTransactionDetail();
         creditTransactionDetail.creditTransaction = transaction;
         creditTransactionDetail.paymentId = payment.id;

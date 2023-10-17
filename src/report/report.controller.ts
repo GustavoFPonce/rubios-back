@@ -133,4 +133,12 @@ export class ReportController {
         return await this.reportService.getCommissionsCreditsHistory(id, type);
     }
 
+    @Get(':id/payment-bhavior')
+    async getPaymentBhavior(
+        @Param('id') id: number,
+        @Query('type') type: number
+    ) {
+        return await this.reportService.getPaymentBhavior(id, type);
+    }
+
 }
