@@ -891,7 +891,7 @@ export class ReportService {
     return await creditHistoryRepository.createQueryBuilder('creditHistory')
     .leftJoinAndSelect('creditHistory.credit', 'credit')
     .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
-    .where('credit.client_id =:id AND creditHistory.status =:status', {id, status:1})
+    .where('credit.client_id =:id', {id})
     .getMany();
   }
 
