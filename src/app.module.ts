@@ -42,7 +42,7 @@ const rubiosTest: any = {
 }
 const finan: any = {
   type: 'mysql',
-  host: 'MYSQL5048.site4now.net',
+  host: 'MYSQL5049.site4now.net',
   port: 3306,
   username: 'a7f37d_finance',
   password: 'Abcd1234',
