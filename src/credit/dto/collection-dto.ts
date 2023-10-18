@@ -18,7 +18,8 @@ export class CollectionDto {
     principal: number;
     paymentType: string;
     statusCreditHistory: number;
-    numberPayment: number
+    numberPayment: number;
+    creditId: number;
 
 
 
@@ -44,7 +45,8 @@ export class CollectionDto {
             principal: paymentDetail.creditHistory.principal,
             paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
             statusCreditHistory: paymentDetail.creditHistory.status,
-            numberPayment: paymentDetail.creditHistory.credit.numberPayment
+            numberPayment: paymentDetail.creditHistory.credit.numberPayment,
+            creditId: paymentDetail.creditHistory.credit.id
         };
         return collectionDto;
     }

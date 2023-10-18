@@ -13,7 +13,6 @@ export class ProductDto {
     costPesos: number;
     costDollar: number;
 
-
     constructor(product: Product) {
         const productDto: ProductDto = {
             id: product.id,
@@ -27,7 +26,6 @@ export class ProductDto {
             costDollar: 0,
             pricePesos: (product.pricePesos)?product.pricePesos:0,
             priceDollar: (product.priceDollar)?product.priceDollar:0,
-
         };
         return productDto;
     }

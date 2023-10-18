@@ -24,7 +24,7 @@ export class CreditEditDto {
     status: string;
     commission: number;
     paymentsDetail: PaymentDetailDto[];
-    downPayment: number
+    downPayment: number;
 
 
 
