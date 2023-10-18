@@ -17,22 +17,45 @@ import { SaleModule } from './sale/sale.module';
 import { SaleCreditModule } from './sale-credit/sale-credit.module';
 import { CashModule } from './cash/cash.module';
 
+const rubios: any = {
+  type: 'mysql',
+  host: 'MYSQL5048.site4now.net',
+  port: 3306,
+  username: 'a7f37d_rubios',
+  password: 'Abcd1234',
+  database: 'db_a7f37d_rubios',
+  autoLoadEntities: true,
+  synchronize: false,
+  entities: [join(__dirname, '**', '*.entity.{ts,js}')],
+}
+
+const rubiosTest: any = {
+  type: 'mysql',
+  host: 'MYSQL5048.site4now.net',
+  port: 3306,
+  username: 'a7f37d_test',
+  password: 'Abcd1234',
+  database: 'db_a7f37d_test',
+  autoLoadEntities: true,
+  synchronize: false,
+  entities: [join(__dirname, '**', '*.entity.{ts,js}')],
+}
+const finan: any = {
+  type: 'mysql',
+  host: 'MYSQL5048.site4now.net',
+  port: 3306,
+  username: 'a7f37d_finance',
+  password: 'Abcd1234',
+  database: 'db_a7f37d_finance',
+  autoLoadEntities: true,
+  synchronize: false,
+  entities: [join(__dirname, '**', '*.entity.{ts,js}')],
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'MYSQL5048.site4now.net',
-      port: 3306,
-      username: 'a7f37d_rubios',
-      //username: 'a7f37d_test',
-      password: 'Abcd1234',
-      database: 'db_a7f37d_rubios',
-      //database: 'db_a7f37d_test',
-      autoLoadEntities: true,
-      synchronize: false,
-      entities: [join(__dirname, '**', '*.entity.{ts,js}')],
-    }),
+    TypeOrmModule.forRoot(finan),
     UserModule,
     ProductModule,
     RoleModule,

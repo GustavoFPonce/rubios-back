@@ -140,7 +140,9 @@ export class SaleService {
         console.log('saleModify: ', saleModify);
         if (saleModify) {
             await this.returnStockBySaleDetail(sale.saleDetails);
-            const responseAnnulCredit = await this.saleCreditService.annulSaleCredit(sale.id);
+            if(sale.paymentType == 'Crédito'){
+                const responseAnnulCredit = await this.saleCreditService.annulSaleCredit(sale.id);
+            }
             response = { success: true, error: '' }
         } else {
             response = { success: false, error: 'No see pudo modificar el stock por la cancelación de la venta' }
@@ -168,7 +170,7 @@ export class SaleService {
 
     private async returnStockBySaleDetail(saleDetails: SaleDetail[]) {
         saleDetails.forEach(async detail => {
-            await this.productService.affectStockBySale(detail.product.id, detail.quantity);
+            await this.productService.returnStock(detail.product.id, detail.quantity);
         });
     }
 

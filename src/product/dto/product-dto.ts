@@ -22,9 +22,7 @@ export class ProductDto {
             description: product.description,
             category: product.category.name,
             categoryId: product.category.id,
-            stock: product.inventories.reduce((acumulador, inventario) => {
-                return acumulador + inventario.amount;
-            }, 0),
+            stock: product.stock,
             costPesos: 0,
             costDollar: 0,
             pricePesos: (product.pricePesos)?product.pricePesos:0,

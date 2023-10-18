@@ -77,6 +77,7 @@ export class ProductService {
       newProduct.description = createProductDto.description;
       newProduct.pricePesos = createProductDto.pricePesos;
       newProduct.priceDollar = createProductDto.priceDollar;
+      newProduct.stock = createProductDto.stock;
       const product = this.productRepository.create(newProduct);
       const responseProduct = await this.productRepository.save(product);
       console.log("responseProduct: ", responseProduct);
@@ -98,6 +99,7 @@ export class ProductService {
   async addInventory(inventoryCreate: InventoryCreateDto, productId: string) {
     var response = { success: false };
     const product = await this.productRepository.findOne(productId);
+    product.stock = product.stock + inventoryCreate.amount;
     var newInventory = new Inventory();
     newInventory.date = new Date();
     newInventory.amount = inventoryCreate.amount;
@@ -107,6 +109,7 @@ export class ProductService {
     newInventory.concept = OperationStock.purchase;
     const inventory = this.inventoryRepository.create(newInventory);
     const inventoryResponse = await this.inventoryRepository.save(inventory);
+    const productResponse = await this.productRepository.save(product);
     if (inventoryResponse) response.success = true;
     return response;
 
@@ -209,6 +212,28 @@ export class ProductService {
 
   async affectStockBySale(id: string, quantity: number) {
     const product = await this.productRepository.findOne(id);
+    if(product.stock > 0){
+      product.stock = product.stock + quantity;
+      var newInventory = new Inventory();
+      newInventory.product = product;
+      newInventory.date = new Date();
+      newInventory.amount = quantity;
+      newInventory.costPesos = 0;
+      newInventory.costDollar = 0;
+      newInventory.concept = (quantity>0)?OperationStock.cancelSale: OperationStock.sale;
+      const inventoryCreate = this.inventoryRepository.create(newInventory);
+      await this.inventoryRepository.save(inventoryCreate);
+      await this.productRepository.save(product)
+    }else{
+      throw new NotFoundException(`Producto sin stock.`);
+    }
+
+  }
+
+
+  async returnStock(id: string, quantity: number){
+    const product = await this.productRepository.findOne(id);
+    product.stock = product.stock + quantity;
     var newInventory = new Inventory();
     newInventory.product = product;
     newInventory.date = new Date();
@@ -218,6 +243,7 @@ export class ProductService {
     newInventory.concept = (quantity>0)?OperationStock.cancelSale: OperationStock.sale;
     const inventoryCreate = this.inventoryRepository.create(newInventory);
     await this.inventoryRepository.save(inventoryCreate);
+    await this.productRepository.save(product)
   }
 
   async getProductName(id: number){
