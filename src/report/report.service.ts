@@ -828,6 +828,17 @@ export class ReportService {
     }
   }
 
+  async getMonthlyAmountsCredits() {
+    const personalCreditPesos = await this.getCreditAmountsByMonths(this.creditHistoryRepository, 'peso');
+    const saleCreditPesos = await this.getCreditAmountsByMonths(this.saleCreditHistoryRepository, 'peso');
+
+    const personalCreditDolars = await this.getCreditAmountsByMonths(this.creditHistoryRepository, 'dolar');
+    const saleCreditDolars = await this.getCreditAmountsByMonths(this.saleCreditHistoryRepository, 'dolar');
+    return {
+      personalCreditPesos, saleCreditPesos, personalCreditDolars,saleCreditDolars
+    }
+  }
+
   private async getCreditsByMonths(creditHistoryRepository: any): Promise<{ month: number; count: number }[]> {
     const twelveMonthsAgo = subMonths(new Date(), 12);
     const result = await creditHistoryRepository
@@ -843,6 +854,24 @@ export class ReportService {
     return result.sort((a, b) => a.month - b.month).map((row) => ({
       month: parseInt(row.month, 10),
       count: parseInt(row.count, 10),
+    }));
+  }
+
+  private async getCreditAmountsByMonths(creditHistoryRepository: any, typeCurrency): Promise<{ month: number; count: number }[]> {
+    const twelveMonthsAgo = subMonths(new Date(), 12);
+    const result = await creditHistoryRepository
+      .createQueryBuilder("creditHistory")
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .select('MONTH(creditHistory.date) as month, SUM(creditHistory.principal) as total')
+      .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
+      .andWhere("credit.typeCurrency = :typeCurrency", { typeCurrency })
+      .groupBy('MONTH(date)')
+      .getRawMany();
+
+    console.log("result", result);
+    return result.sort((a, b) => a.month - b.month).map((row) => ({
+      month: parseInt(row.month, 10),
+      count: parseInt(row.total, 10),
     }));
   }
 
@@ -889,10 +918,10 @@ export class ReportService {
 
   async getPaymentBhaviorByClient(id: number, creditHistoryRepository: any): Promise<[]> {
     return await creditHistoryRepository.createQueryBuilder('creditHistory')
-    .leftJoinAndSelect('creditHistory.credit', 'credit')
-    .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
-    .where('credit.client_id =:id', {id})
-    .getMany();
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
+      .where('credit.client_id =:id', { id })
+      .getMany();
   }
 
 }
