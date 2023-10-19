@@ -55,7 +55,7 @@ const finan: any = {
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    TypeOrmModule.forRoot(rubiosTest),
+    TypeOrmModule.forRoot(rubios),
     UserModule,
     ProductModule,
     RoleModule,
