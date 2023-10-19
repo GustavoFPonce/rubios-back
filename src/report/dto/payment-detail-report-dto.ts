@@ -14,6 +14,7 @@ export class PaymentDetailReportDto{
     paymentDate: Date;
     paymentType: string;
     accountabilityDate: string;
+    number: string;
 
     constructor(paymentDetail: PaymentDetail){
         const commissionDetailDto: PaymentDetailReportDto = {
@@ -29,6 +30,7 @@ export class PaymentDetailReportDto{
             paymentDate: paymentDetail.paymentDate,
             paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
             accountabilityDate:(paymentDetail.accountabilityDate)?format(paymentDetail.accountabilityDate, 'dd-MM-yyyy'): ('-'),
+            number: paymentDetail.numberPayment
         };
         return commissionDetailDto
     }

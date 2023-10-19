@@ -46,10 +46,9 @@ export class SaleCredit {
 
     @Column()
     downPayment: number;
-
     
     @Column()
-    information: string
+    information: string;
 
     @OneToMany(() => SaleCreditHistory, (creditHistory: SaleCreditHistory) => creditHistory.credit)
     creditHistory: SaleCreditHistory[];

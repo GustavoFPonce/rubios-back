@@ -132,6 +132,7 @@ export class SaleCreditService {
                     : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
                 detail.isNext = ((i == 0 && paymentsDetail[i].status == StatusPayment.active) || (paymentsDetail[i].status == StatusPayment.active && paymentsDetail[i - 1].status == StatusPayment.cancelled)) ? true : false;
+                detail.numberPayment = (i+1).toString();
                 const paymentDetail = this.paymentDetailSaleCreditRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailSaleCreditRepository.save(paymentDetail);
             };
@@ -146,6 +147,7 @@ export class SaleCreditService {
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
                 detail.paymentType = PaymentType.paymentInstallments;
                 detail.isNext = (i == 0) ? true : false;
+                detail.numberPayment = (i+1).toString();
                 const paymentDetail = this.paymentDetailSaleCreditRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailSaleCreditRepository.save(paymentDetail);
             };
@@ -889,7 +891,7 @@ export class SaleCreditService {
             const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, payment.actualPayment);
             if (creditHistoryUpdate) {
                 if (paymentPending > 0) {
-                    await this.addPendingPayment(paymentPending, payment.creditHistory, payment.paymentDueDate);
+                    await this.addPendingPayment(paymentPending, payment.creditHistory, payment.paymentDueDate, payment.numberPayment);
 
                 } else {
                     if (payment.creditHistory.credit.numberPayment != 1) await this.updateStatusIsNextPayment(payment.id, true, payment.creditHistory.id);
@@ -974,7 +976,7 @@ export class SaleCreditService {
     //     return payment;
     // }
 
-    private async addPendingPayment(paymentPending: number, creditHistory: SaleCreditHistory, date: Date) {
+    private async addPendingPayment(paymentPending: number, creditHistory: SaleCreditHistory, date: Date, numberPayment: string) {
         var payment = new PaymentDetail();
         payment.payment = paymentPending;
         payment.paymentDueDate = addDays(date, 1);
@@ -986,6 +988,7 @@ export class SaleCreditService {
         payment.actualPayment = 0.00;
         payment.isNext = true;
         payment.balance = creditHistory.balance;
+        payment.numberPayment = numberPayment + ' - P';
         const responseAdd = await this.paymentDetailSaleCreditRepository.save(payment);
         console.log("response add payment pending: ", responseAdd);
     }
