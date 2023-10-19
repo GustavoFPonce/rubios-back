@@ -176,17 +176,13 @@ export class SaleService {
 
     async getAll() {
         var referenceDate = new Date();
-        //console.log("fecha de referencia: ", referenceDate);
         var argentinaTime = referenceDate;
-        // new Date(referenceDate.setHours(referenceDate.getHours() - 3));
-        // console.log("argentinaTime: ", argentinaTime);
         const rangeDates = { startDate: subMonths(argentinaTime, 1), endDate: argentinaTime };
-        //console.log("rangeDates: ", rangeDates);
         const sales = await this.saleRepository.find({
             where: {
                 date: Between(rangeDates.startDate, rangeDates.endDate)
             },
-            relations: ['client'],
+            relations: ['client', 'saleCredit'],
             order: { date: 'DESC', id: 'DESC' }
         });
         // console.log("sales: ", sales);

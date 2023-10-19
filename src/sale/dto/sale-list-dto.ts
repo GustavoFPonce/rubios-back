@@ -12,6 +12,7 @@ export class SaleListDto{
     paymentType: string;
     status: number;
     currencyType: string;
+    creditId: any;
 
     constructor(sale: Sale) {
         const saleListDto: SaleListDto = {
@@ -23,7 +24,8 @@ export class SaleListDto{
             payment: sale.payment,
             paymentType: sale.paymentType,
             status: sale.status,
-            currencyType: sale.currencyType
+            currencyType: sale.currencyType,
+            creditId: (sale.saleCredit)? sale.saleCredit.id: null
         };
         return saleListDto;
     }
