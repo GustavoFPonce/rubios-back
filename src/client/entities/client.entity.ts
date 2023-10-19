@@ -1,5 +1,6 @@
 import { CreditTransaction } from "src/cash/entities/credit-transaction.entity";
 import { Credit } from "src/credit/entities/credit.entity";
+import { Sale } from "src/sale/entities/sale.entity";
 import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
@@ -31,5 +32,8 @@ export class Client{
 
     @OneToMany(()=> CreditTransaction, (transaction)=> transaction.client)
     transactions: CreditTransaction[];
+
+    @OneToMany(()=> Sale, (sale)=> sale.client)
+    sales: Sale[];
     
 }

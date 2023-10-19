@@ -53,6 +53,7 @@ export class SaleController {
         @Query('status') status: string,
         @Query('paymentType') paymentType: string
     ) {
+        console.log("paymentType: ", paymentType);
         return await this.saleService.search(startDate, endDate, status, paymentType);
     }
 
