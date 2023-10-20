@@ -106,7 +106,7 @@ export class ReportController {
         return await this.reportService.getMonthlyAmountsCredits();
     }
 
-    
+
     @Get('credits-by-debtcollector')
     async getCreditsByDebtCollector(
     ) {
@@ -115,8 +115,11 @@ export class ReportController {
 
     @Get('products')
     async getProducts(
+        @Query('category') category: string,
+        @Query('startDate') startDate: any,
+        @Query('endDate') endDate: any
     ) {
-        return await this.reportService.getProducts();
+        return await this.reportService.getProducts(category, startDate, endDate);
     }
 
     @Get(':id/commissions-credit-by-deb-collector')

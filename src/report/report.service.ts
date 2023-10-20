@@ -926,12 +926,16 @@ export class ReportService {
       .getMany();
   }
 
-  async getProducts(){
+  async getProducts(category: string, startDate: any, endDate: any){
+    const ranges = getDateStartEnd( new Date(startDate), new Date(endDate)); 
+    console.log("category: ", category);
+    console.log("startDate: ", ranges.startDate);
+    console.log("endDate: ", ranges.endDate);
     const products = await this.inventoryRepository.createQueryBuilder('inventory')
-    .leftJoinAndSelect('inventory.product', 'product')    
+    .leftJoinAndSelect('inventory.product', 'product')   
     .select(['product.id as id',
     'product.name as name', 'product.name as name','SUM(inventory.amount * -1) as quantity'])
-    .where('inventory.concept = :concept', {concept:2})
+    .where("inventory.concept = :concept AND inventory.date BETWEEN :startDate and :endDate AND (:category = 'all' or product.category_id = :category)", {concept:2, startDate:ranges.startDate, endDate: ranges.endDate, category})
     .groupBy('product.id, product.name')
     .orderBy('quantity', 'DESC')
     .getRawMany();
