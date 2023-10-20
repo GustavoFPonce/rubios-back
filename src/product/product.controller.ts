@@ -60,6 +60,15 @@ export class ProductController {
     return this.productService.create(createProductDto);
   }
 
+  @Put(':id/update-stock')
+  async updateStock(
+    @Param('id') id: number,
+    @Query('stock') stock: string,
+  ) {
+    console.log("stock: ", stock);
+    return this.productService.updateStock(id, parseInt(stock));
+  }
+
   @Put(':id')
   async update(
     @Param('id') id: string,

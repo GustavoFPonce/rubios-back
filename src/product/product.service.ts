@@ -212,7 +212,7 @@ export class ProductService {
 
   async affectStockBySale(id: string, quantity: number) {
     const product = await this.productRepository.findOne(id);
-    if(product.stock > 0){
+    if (product.stock > 0) {
       product.stock = product.stock + quantity;
       var newInventory = new Inventory();
       newInventory.product = product;
@@ -220,18 +220,18 @@ export class ProductService {
       newInventory.amount = quantity;
       newInventory.costPesos = 0;
       newInventory.costDollar = 0;
-      newInventory.concept = (quantity>0)?OperationStock.cancelSale: OperationStock.sale;
+      newInventory.concept = (quantity > 0) ? OperationStock.cancelSale : OperationStock.sale;
       const inventoryCreate = this.inventoryRepository.create(newInventory);
       await this.inventoryRepository.save(inventoryCreate);
       await this.productRepository.save(product)
-    }else{
+    } else {
       throw new NotFoundException(`Producto sin stock.`);
     }
 
   }
 
 
-  async returnStock(id: string, quantity: number){
+  async returnStock(id: string, quantity: number) {
     const product = await this.productRepository.findOne(id);
     product.stock = product.stock + quantity;
     var newInventory = new Inventory();
@@ -240,22 +240,47 @@ export class ProductService {
     newInventory.amount = quantity;
     newInventory.costPesos = 0;
     newInventory.costDollar = 0;
-    newInventory.concept = (quantity>0)?OperationStock.cancelSale: OperationStock.sale;
+    newInventory.concept = (quantity > 0) ? OperationStock.cancelSale : OperationStock.sale;
     const inventoryCreate = this.inventoryRepository.create(newInventory);
     await this.inventoryRepository.save(inventoryCreate);
     await this.productRepository.save(product)
   }
 
-  async getProductName(id: number){
-    if(id){
-      const products = await this.productRepository.find({where:{id: id}, relations: ['category', 'inventories']});
+  async getProductName(id: number) {
+    if (id) {
+      const products = await this.productRepository.find({ where: { id: id }, relations: ['category', 'inventories'] });
       const productsDto = products.map((product) => {
         return new ProductDto(product);
       })
       //console.log("productsDto: ", productsDto);
       return productsDto;
-    }else{
+    } else {
       return await this.findAll();
     }
+  }
+
+  async updateStock(id: number, stock: number) {
+    console.log("stock: ", stock);
+    var response = { success: false, error: '' }
+    const product = await this.productRepository.findOne(id);
+    const previousStock = product.stock;
+    if (!product) throw new NotFoundException('Producto no encontrado');
+
+    product.stock = stock;
+    const responseUpdatStock = await this.productRepository.save(product);
+    if (responseUpdatStock) {
+      var newInventory = new Inventory();
+      newInventory.product = product;
+      newInventory.date = new Date();
+      newInventory.amount = stock - previousStock;
+      newInventory.costPesos = 0;
+      newInventory.costDollar = 0;
+      newInventory.concept = OperationStock.stockAdjustment;
+      const addInventory = await this.inventoryRepository.save(newInventory);
+      if(addInventory)response.success = true;
+    }
+
+    return response;
+
   }
 }
