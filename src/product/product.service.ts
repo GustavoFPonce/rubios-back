@@ -77,7 +77,7 @@ export class ProductService {
       newProduct.description = createProductDto.description;
       newProduct.pricePesos = createProductDto.pricePesos;
       newProduct.priceDollar = createProductDto.priceDollar;
-      newProduct.stock = createProductDto.stock;
+      newProduct.stock = 0;
       const product = this.productRepository.create(newProduct);
       const responseProduct = await this.productRepository.save(product);
       console.log("responseProduct: ", responseProduct);
