@@ -113,6 +113,12 @@ export class ReportController {
         return await this.reportService.getCreditsByDebtCollector();
     }
 
+    @Get('products')
+    async getProducts(
+    ) {
+        return await this.reportService.getProducts();
+    }
+
     @Get(':id/commissions-credit-by-deb-collector')
     async getCommissionsCreditsByDebtCollector(
         @Param('id') id: number,

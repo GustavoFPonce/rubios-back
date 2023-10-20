@@ -26,8 +26,8 @@ import { TransactionType } from 'src/cash/dto/enum';
 import { CreditTransactionCreateDto } from 'src/cash/dto/credit-transaction-create-dto';
 import { Cash } from 'src/cash/entities/cash.entity';
 import { CashService } from 'src/cash/cash.service';
-import { CreditService } from 'src/credit/credit.service';
-import { SaleCreditService } from 'src/sale-credit/sale-credit.service';
+import { Product } from 'src/product/enities/product.entity';
+import { Inventory } from 'src/product/enities/inventory';
 
 
 @Injectable()
@@ -47,6 +47,8 @@ export class ReportService {
     private readonly cashService: CashService,
     @InjectRepository(Cash)
     private cashRepository: Repository<Cash>,
+    @InjectRepository(Inventory)
+    private inventoryRepository: Repository<Inventory>,
   ) { }
 
 
@@ -922,6 +924,20 @@ export class ReportService {
       .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
       .where('credit.client_id =:id', { id })
       .getMany();
+  }
+
+  async getProducts(){
+    const products = await this.inventoryRepository.createQueryBuilder('inventory')
+    .leftJoinAndSelect('inventory.product', 'product')    
+    .select(['product.id as id',
+    'product.name as name', 'product.name as name','SUM(inventory.amount * -1) as quantity'])
+    .where('inventory.concept = :concept', {concept:2})
+    .groupBy('product.id, product.name')
+    .orderBy('quantity', 'DESC')
+    .getRawMany();
+
+    console.log("products: ", products);
+    return products;
   }
 
 }
