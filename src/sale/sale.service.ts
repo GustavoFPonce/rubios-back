@@ -61,7 +61,7 @@ export class SaleService {
         const saleCreate = this.saleRepository.create(newSale);
         const saleSaved = await this.saleRepository.save(saleCreate);
         await this.addSaleDetail(sale.saleDetails, saleSaved);
-        if (saleSaved && credit) await this.saleCreditService.create(credit, userId, saleSaved)
+        if (saleSaved && credit) await this.saleCreditService.create(credit, userId, saleSaved, sale.saleDetails)
     }
 
     async addSaleDetail(saleDetails: SaleDetailCreateDto[], sale: Sale) {

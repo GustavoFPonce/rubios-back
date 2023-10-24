@@ -52,14 +52,13 @@ export class SaleCreditService {
     ) { }
 
 
-    async create(creditCreateDto: SaleCreditCreateDto, userId: number, sale: Sale) {
-
+    async create(creditCreateDto: SaleCreditCreateDto, userId: number, sale: Sale, saleDetails: any) {
+        console.log("saleDetails: ", saleDetails);
         var response = { success: false }
         var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
         if (!lastCash || lastCash.closingDate != null) {
             lastCash = (await this.cashService.openCash()).cash;
         }
-        
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
         const saleId = sale.id;
         const dateFirstPayment = parseISO(creditCreateDto.firstPayment);
@@ -79,12 +78,13 @@ export class SaleCreditService {
         createCredit.commission = creditCreateDto.commission;
         createCredit.sale = sale;
         createCredit.downPayment = creditCreateDto.downPayment;
+        createCredit.detail = saleDetails[0].productName;
         const credit = this.saleCreditRepository.create(createCredit);
         const creditSaved = await this.saleCreditRepository.save(credit);
         if (creditSaved) await this.createTransaction(creditSaved, lastCash, creditCreateDto.principal, user);
         const creditId = creditSaved.id;
         if (creditSaved.downPayment > 0) {
-           
+
             const creditTransactionCreateDto = new CreditTransactionCreateDto(client,
                 creditSaved, lastCash, creditSaved.downPayment, 'Venta - Anticipo', TransactionType.downPayment, user, true);
             const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
@@ -132,7 +132,7 @@ export class SaleCreditService {
                     : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
                 detail.isNext = ((i == 0 && paymentsDetail[i].status == StatusPayment.active) || (paymentsDetail[i].status == StatusPayment.active && paymentsDetail[i - 1].status == StatusPayment.cancelled)) ? true : false;
-                detail.numberPayment = (i+1).toString();
+                detail.numberPayment = (i + 1).toString();
                 const paymentDetail = this.paymentDetailSaleCreditRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailSaleCreditRepository.save(paymentDetail);
             };
@@ -147,7 +147,7 @@ export class SaleCreditService {
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
                 detail.paymentType = PaymentType.paymentInstallments;
                 detail.isNext = (i == 0) ? true : false;
-                detail.numberPayment = (i+1).toString();
+                detail.numberPayment = (i + 1).toString();
                 const paymentDetail = this.paymentDetailSaleCreditRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailSaleCreditRepository.save(paymentDetail);
             };
@@ -568,11 +568,12 @@ export class SaleCreditService {
             .addOrderBy('creditHistory.date', 'ASC')
             .getMany();
 
-        //console.log("cobranzas obtenidas: ", collections);
 
         const collectionsDto = collections.map(collection => {
             return new CollectionDto(collection);
-        })
+        });
+
+        console.log("cobranzas obtenidas: ", collectionsDto);
         return collectionsDto;
     }
 
@@ -1206,7 +1207,7 @@ export class SaleCreditService {
         creditTransactionDetail.paymentDate = payment.paymentDate;
         creditTransactionDetail.payment = payment.payment;
         creditTransactionDetail.actualPayment = payment.actualPayment;
-       const responseSavedTransaction = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
+        const responseSavedTransaction = await this.creditTransactionDetailRepository.save(creditTransactionDetail);
         console.log("responseSavedTransaction: ", responseSavedTransaction);
         payment.payment = payment.creditHistory.payment;
         payment.paymentDueDate = payment.creditHistory.firstPayment;
@@ -1217,33 +1218,33 @@ export class SaleCreditService {
         const responseUpdatePayment = await this.paymentDetailSaleCreditRepository.save(payment);
         const creditId = payment.creditHistory.credit.id;
         const removeCreditHistoryRenewed = await this.removeCreditHistoryRenewed(creditId);
-        if(removeCreditHistoryRenewed) await this.updateStatusCreditHistory(creditId);
+        if (removeCreditHistoryRenewed) await this.updateStatusCreditHistory(creditId);
         const saved = await this.paymentDetailSaleCreditRepository.save(payment);
-        if(responseSavedTransaction && responseUpdatePayment && saved) response.success = true;
+        if (responseSavedTransaction && responseUpdatePayment && saved) response.success = true;
         return response;
     }
 
-    async removeCreditHistoryRenewed(id: number){
+    async removeCreditHistoryRenewed(id: number) {
         const creditHistory = await this.saleCreditHistoryRepository.createQueryBuilder('creditHistory')
-        .leftJoinAndSelect('creditHistory.credit', 'credit')
-        .where('creditHistory.status =:status AND credit.id =:id', {status:1, id})
-        .orderBy('creditHistory.date', 'DESC')
-        .getOne();
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('creditHistory.status =:status AND credit.id =:id', { status: 1, id })
+            .orderBy('creditHistory.date', 'DESC')
+            .getOne();
         const responseRemoveCreditHistoryRenewed = await this.saleCreditHistoryRepository.delete(creditHistory.id);
         console.log("responseRemoveCreditHistoryRenewed: ", responseRemoveCreditHistoryRenewed);
         return responseRemoveCreditHistoryRenewed;
     }
 
-    async updateStatusCreditHistory(id: number){
+    async updateStatusCreditHistory(id: number) {
         const creditHistory = await this.saleCreditHistoryRepository.createQueryBuilder('creditHistory')
-        .leftJoinAndSelect('creditHistory.credit', 'credit')
-        .where('creditHistory.status =:status AND credit.id =:id', {status:2, id})
-        .orderBy('creditHistory.date', 'DESC')
-        .getOne();
+            .leftJoinAndSelect('creditHistory.credit', 'credit')
+            .where('creditHistory.status =:status AND credit.id =:id', { status: 2, id })
+            .orderBy('creditHistory.date', 'DESC')
+            .getOne();
         console.log("creditHistory: ", creditHistory);
         creditHistory.status = 1;
         const responseUpdateCreditHistory = await this.saleCreditHistoryRepository.save(creditHistory);
-        console.log("responseUpdateCreditHistory: ",responseUpdateCreditHistory);
+        console.log("responseUpdateCreditHistory: ", responseUpdateCreditHistory);
 
     }
 
@@ -1282,7 +1283,7 @@ export class SaleCreditService {
         }
     }
 
-    async addPaymentSurcharge(id: number, payment: number, paymentDueDate: any){
+    async addPaymentSurcharge(id: number, payment: number, paymentDueDate: any) {
         var response = { success: true, error: '' }
         const creditHistory = await this.saleCreditHistoryRepository.findOne(id);
         var detail = new PaymentDetail();

@@ -80,6 +80,8 @@ export class CreditController {
         return await this.creditService.getCollectionsByDate(userId, date);
     }
 
+    
+
     @Put('reschedule-payment')
     async reschedulePayment(
         @Body() paymentDate: { id: number, dueDate: Date }

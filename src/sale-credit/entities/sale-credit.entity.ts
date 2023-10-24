@@ -50,6 +50,9 @@ export class SaleCredit {
     @Column()
     information: string;
 
+    @Column()
+    detail: string;
+
     @OneToMany(() => SaleCreditHistory, (creditHistory: SaleCreditHistory) => creditHistory.credit)
     creditHistory: SaleCreditHistory[];
 

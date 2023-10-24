@@ -21,10 +21,12 @@ export class CollectionDto {
     numberPayment: number;
     creditId: number;
     number: string;
+    detail: string;
 
 
 
     constructor(paymentDetail: any) {
+        console.log("paymentDetail: ", paymentDetail);
         const collectionDto: CollectionDto = {
             id: paymentDetail.id,
             debtCollector: paymentDetail.creditHistory.credit.debtCollector.lastName + " " + paymentDetail.creditHistory.credit.debtCollector.name,
@@ -37,18 +39,19 @@ export class CollectionDto {
                 email: null
             },
             paymentDueDate: format(paymentDetail.paymentDueDate, "dd-MM-yyyy"),
-            paymentDate: (paymentDetail.paymentDate)?format(paymentDetail.paymentDate, "dd-MM-yyyy"): null,
+            paymentDate: (paymentDetail.paymentDate) ? format(paymentDetail.paymentDate, "dd-MM-yyyy") : null,
             payment: paymentDetail.payment,
             actualPayment: paymentDetail.actualPayment,
             balance: paymentDetail.creditHistory.balance,
             typeCurrency: paymentDetail.creditHistory.credit.typeCurrency,
             interest: paymentDetail.creditHistory.interest,
             principal: paymentDetail.creditHistory.principal,
-            paymentType: (paymentDetail.paymentType == 1)?'cuota':'interés',
+            paymentType: (paymentDetail.paymentType == 1) ? 'cuota' : 'interés',
             statusCreditHistory: paymentDetail.creditHistory.status,
             numberPayment: paymentDetail.creditHistory.credit.numberPayment,
             creditId: paymentDetail.creditHistory.credit.id,
-            number: paymentDetail.numberPayment
+            number: paymentDetail.numberPayment,
+            detail: paymentDetail.creditHistory.credit.detail
         };
         return collectionDto;
     }
