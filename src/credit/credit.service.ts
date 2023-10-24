@@ -1265,7 +1265,11 @@ export class CreditService {
             .where('creditTransactions.credit_id = :id', { id })
             .getMany();
         console.log("transactions: ", transactions);
-        return transactions.map(x => {
+        return transactions.sort((a, b) => {
+            if (a.date.getTime() !== b.date.getTime()) {
+                return b.date.getTime() - a.date.getTime();
+            }
+        }).map(x => {
             return new CreditTransactionDto(x, x.credit);
         })
     }
