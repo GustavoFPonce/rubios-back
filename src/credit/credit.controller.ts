@@ -131,6 +131,15 @@ export class CreditController {
         return this.creditService.registerCancellationInterestPrincipal(id, payment, firstPayment, user);
     }
 
+    @Put((':id/add-payment-surcharge'))
+    async addPaymentSurcharge(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+        @Body('paymentDueDate') paymentDueDate: number,
+    ) {
+        return this.creditService.addPaymentSurcharge(id, payment, paymentDueDate);
+    }
+
 
 
     @Put(':id')

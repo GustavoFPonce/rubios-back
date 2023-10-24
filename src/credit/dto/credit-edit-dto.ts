@@ -25,6 +25,7 @@ export class CreditEditDto {
     commission: number;
     paymentsDetail: PaymentDetailDto[];
     downPayment: number;
+    creditHistoryId: number
 
 
 
@@ -50,7 +51,8 @@ export class CreditEditDto {
             status: `${StatusCredit[credit.status]}`,
             commission: credit.commission,
             paymentsDetail: paymentsDetail,
-            downPayment: (credit instanceof SaleCredit) ?credit.downPayment: null
+            downPayment: (credit instanceof SaleCredit) ?credit.downPayment: null,
+            creditHistoryId: credit.creditHistory[credit.creditHistory.length - 1].id
         };
         //console.log("credit list dto class: ", credit);
         return creditDto;

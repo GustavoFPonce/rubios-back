@@ -128,7 +128,7 @@ export class CreditService {
                     : (i == 0) ? parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2)) : parseFloat((await this.getBalanceLastPaymentDetailCancelled(creditHistorySaved.id)));
                 detail.paymentType = PaymentType.paymentInstallments;
                 detail.isNext = ((i == 0 && paymentsDetail[i].status == StatusPayment.active) || (paymentsDetail[i].status == StatusPayment.active && paymentsDetail[i - 1].status == StatusPayment.cancelled)) ? true : false;
-                detail.numberPayment = (i+1).toString();
+                detail.numberPayment = (i + 1).toString();
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
@@ -143,7 +143,7 @@ export class CreditService {
                 detail.balance = parseFloat((creditHistorySaved.payment * credit.numberPayment).toFixed(2));
                 detail.paymentType = PaymentType.paymentInstallments;
                 detail.isNext = (i == 0) ? true : false;
-                detail.numberPayment = (i+1).toString();
+                detail.numberPayment = (i + 1).toString();
                 const paymentDetail = this.paymentDetailRepository.create(detail);
                 const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
             };
@@ -458,8 +458,9 @@ export class CreditService {
         const paymentsDetail = credit.paymentsDetail.sort((a, b) => {
             if (a.paymentDueDate.getTime() !== b.paymentDueDate.getTime()) {
                 return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
+            } else {
+                return a.id - b.id;
             }
-            return b.id - a.id;
         })
             .map(x => {
                 return new PaymentDetailDto(x, credit.interest);
@@ -1275,6 +1276,29 @@ export class CreditService {
             payment.paymentDueDate = newDate;
             await this.paymentDetailRepository.save(payment);
         }
+    }
+
+    async addPaymentSurcharge(id: number, payment: number, paymentDueDate: any
+    ) {
+        var response = { success: true, error: '' }
+        const creditHistory = await this.creditHistoryRepository.findOne(id);
+        var detail = new PaymentDetail();
+        detail.payment = payment;
+        detail.paymentDueDate = new Date(paymentDueDate);
+        detail.paymentDate = null;
+        detail.creditHistory = creditHistory;
+        detail.actualPayment = 0.00;
+        detail.paymentType = PaymentType.paymentInstallments;
+        detail.isNext = false;
+        detail.numberPayment = 'Recargo';
+        const paymentDetail = this.paymentDetailRepository.create(detail);
+        const responsePaymentDetail = await this.paymentDetailRepository.save(paymentDetail);
+        console.log("guardando recargo: ", responsePaymentDetail);
+        if (responsePaymentDetail) {
+            await this.updateBalanceCreditHistory(id, -payment);
+            response.success = true;
+        }
+        return response;
     }
 
 

@@ -825,8 +825,16 @@ export class ReportService {
     console.log("personalCredits: ", personalCredits);
     const saleCredits = await this.getCreditsByMonths(this.saleCreditHistoryRepository);
     console.log("saleCredits: ", saleCredits);
+
+    const personalCreditsInPesos = await this.getCreditsInPesosByMonths(this.creditHistoryRepository);
+    const personalCreditsInDolars = await this.getCreditsInPesosByMonths(this.creditHistoryRepository);
+
+    const saleCreditsInPesos = await this.getCreditsInPesosByMonths(this.saleCreditHistoryRepository);
+    const saleCreditsInDolars = await this.getCreditsInDolarsByMonths(this.saleCreditHistoryRepository);
+
+
     return {
-      personalCredits, saleCredits
+      personalCredits, saleCredits, personalCreditsInPesos, personalCreditsInDolars, saleCreditsInPesos, saleCreditsInDolars
     }
   }
 
@@ -837,7 +845,7 @@ export class ReportService {
     const personalCreditDolars = await this.getCreditAmountsByMonths(this.creditHistoryRepository, 'dolar');
     const saleCreditDolars = await this.getCreditAmountsByMonths(this.saleCreditHistoryRepository, 'dolar');
     return {
-      personalCreditPesos, saleCreditPesos, personalCreditDolars,saleCreditDolars
+      personalCreditPesos, saleCreditPesos, personalCreditDolars, saleCreditDolars
     }
   }
 
@@ -848,6 +856,44 @@ export class ReportService {
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .select("MONTH(creditHistory.date) as month")
       .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
+      .addSelect("COUNT(*) as count")
+      .groupBy("month")
+      .getRawMany();
+
+    console.log("result", result);
+    return result.sort((a, b) => a.month - b.month).map((row) => ({
+      month: parseInt(row.month, 10),
+      count: parseInt(row.count, 10),
+    }));
+  }
+
+  private async getCreditsInPesosByMonths(creditHistoryRepository: any): Promise<{ month: number; count: number }[]> {
+    const twelveMonthsAgo = subMonths(new Date(), 12);
+    const result = await creditHistoryRepository
+      .createQueryBuilder("creditHistory")
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .select("MONTH(creditHistory.date) as month")
+      .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
+      .andWhere("credit.typeCurrency = 'peso'")
+      .addSelect("COUNT(*) as count")
+      .groupBy("month")
+      .getRawMany();
+
+    console.log("result", result);
+    return result.sort((a, b) => a.month - b.month).map((row) => ({
+      month: parseInt(row.month, 10),
+      count: parseInt(row.count, 10),
+    }));
+  }
+
+  private async getCreditsInDolarsByMonths(creditHistoryRepository: any): Promise<{ month: number; count: number }[]> {
+    const twelveMonthsAgo = subMonths(new Date(), 12);
+    const result = await creditHistoryRepository
+      .createQueryBuilder("creditHistory")
+      .leftJoinAndSelect('creditHistory.credit', 'credit')
+      .select("MONTH(creditHistory.date) as month")
+      .where("creditHistory.date >= :twelveMonthsAgo", { twelveMonthsAgo })
+      .andWhere("credit.typeCurrency = 'dolar'")
       .addSelect("COUNT(*) as count")
       .groupBy("month")
       .getRawMany();
@@ -899,6 +945,16 @@ export class ReportService {
       .getRawMany();
 
     const creditCounts = {};
+    credits.sort((a, b) => {
+      const nameComparison = a.debtCollector_name.localeCompare(b.debtCollector_name);
+
+      if (nameComparison === 0) {
+        return a.bdebtCollector_lastName.localeCompare(b.bdebtCollector_lastName);
+      }
+
+      return nameComparison;
+    });
+
     credits.forEach(result => {
       creditCounts[`${result.debtCollector_name} ${result.debtCollector_lastName}`] = +result.creditCount;
     });
@@ -926,22 +982,21 @@ export class ReportService {
       .getMany();
   }
 
-  async getProducts(category: string, startDate: any, endDate: any){
-    const ranges = getDateStartEnd( new Date(startDate), new Date(endDate)); 
+  async getProducts(category: string, startDate: any, endDate: any) {
+    const ranges = getDateStartEnd(new Date(startDate), new Date(endDate));
     console.log("category: ", category);
     console.log("startDate: ", ranges.startDate);
     console.log("endDate: ", ranges.endDate);
     const products = await this.inventoryRepository.createQueryBuilder('inventory')
-    .leftJoinAndSelect('inventory.product', 'product')   
-    .select(['product.id as id',
-    'product.name as name', 'product.name as name','SUM(inventory.amount * -1) as quantity'])
-    .where("inventory.concept = :concept AND inventory.date BETWEEN :startDate and :endDate AND (:category = 'all' or product.category_id = :category)", {concept:2, startDate:ranges.startDate, endDate: ranges.endDate, category})
-    .groupBy('product.id, product.name')
-    .orderBy('quantity', 'DESC')
-    .getRawMany();
+      .leftJoinAndSelect('inventory.product', 'product')
+      .select(['product.id as id',
+        'product.name as name', 'product.name as name', 'SUM(inventory.amount * -1) as quantity'])
+      .where("inventory.concept = :concept AND inventory.date BETWEEN :startDate and :endDate AND (:category = 'all' or product.category_id = :category)", { concept: 2, startDate: ranges.startDate, endDate: ranges.endDate, category })
+      .groupBy('product.id, product.name')
+      .orderBy('quantity', 'DESC')
+      .getRawMany();
 
     console.log("products: ", products);
     return products;
   }
-
 }

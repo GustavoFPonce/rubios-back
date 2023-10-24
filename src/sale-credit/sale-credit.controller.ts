@@ -161,8 +161,16 @@ export class SaleCreditController {
        return await this.saleCreditService.getTransactions(id);
     }
 
-    
+    @Put((':id/add-payment-surcharge'))
+    async addPaymentSurcharge(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+        @Body('paymentDueDate') paymentDueDate: number,
+    ) {
+        return this.saleCreditService.addPaymentSurcharge(id, payment, paymentDueDate);
+    }
 
+  
     @Put(':id')
     async update(
         @Param('id') id: number,

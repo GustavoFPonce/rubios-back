@@ -333,8 +333,9 @@ export class SaleCreditService {
         const paymentsDetail = credit.paymentsDetail.sort((a, b) => {
             if (a.paymentDueDate.getTime() !== b.paymentDueDate.getTime()) {
                 return a.paymentDueDate.getTime() - b.paymentDueDate.getTime();
+            } else {
+                return a.id - b.id;
             }
-            return b.id - a.id;
         })
             .map(x => {
                 return new PaymentDetailDto(x, credit.interest);
@@ -1277,7 +1278,27 @@ export class SaleCreditService {
         }
     }
 
-
+    async addPaymentSurcharge(id: number, payment: number, paymentDueDate: any){
+        var response = { success: true, error: '' }
+        const creditHistory = await this.saleCreditHistoryRepository.findOne(id);
+        var detail = new PaymentDetail();
+        detail.payment = payment;
+        detail.paymentDueDate = new Date(paymentDueDate);
+        detail.paymentDate = null;
+        detail.creditHistory = creditHistory;
+        detail.actualPayment = 0.00;
+        detail.paymentType = PaymentType.paymentInstallments;
+        detail.isNext = false;
+        detail.numberPayment = 'Recargo';
+        const paymentDetail = this.paymentDetailSaleCreditRepository.create(detail);
+        const responsePaymentDetail = await this.paymentDetailSaleCreditRepository.save(paymentDetail);
+        console.log("guardando recargo: ", responsePaymentDetail);
+        if (responsePaymentDetail) {
+            await this.updateBalanceCreditHistory(id, -payment);
+            response.success = true;
+        }
+        return response;
+    }
 
 
 }
