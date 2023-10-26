@@ -652,7 +652,7 @@ export class CreditService {
             const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, payment.actualPayment);
             if (creditHistoryUpdate) {
                 if (paymentPending > 0) {
-                    await this.addPendingPayment(paymentPending, payment.creditHistory, payment.paymentDueDate, payment.numberPayment);
+                    await this.addPendingPayment(paymentPending, payment.creditHistory, payment.paymentDueDate, payment.numberPayment, payment.id);
 
                 } else {
                     if (payment.creditHistory.credit.numberPayment != 1) await this.updateStatusIsNextPayment(payment.id, true, payment.creditHistory.id);
@@ -687,7 +687,7 @@ export class CreditService {
     }
 
 
-    private async addPendingPayment(paymentPending: number, creditHistory: CreditHistory, date: Date, numberPayment: string) {
+    private async addPendingPayment(paymentPending: number, creditHistory: CreditHistory, date: Date, numberPayment: string, paymentId: number) {
         var payment = new PaymentDetail();
         payment.payment = paymentPending;
         payment.paymentDueDate = addDays(date, 1);
@@ -700,6 +700,7 @@ export class CreditService {
         payment.balance = creditHistory.balance;
         payment.isNext = true;
         payment.numberPayment = numberPayment + ' - P';
+        payment.paymentId = paymentId;
         const responseAdd = await this.paymentDetailRepository.save(payment);
         console.log("response add payment pending: ", responseAdd);
     }
@@ -817,7 +818,7 @@ export class CreditService {
         if (saved) {
             response.success = true;
             if (isPartialPayment) {
-                const paymentPartial = await this.paymentDetailRepository.findOne({ where: { payment: amountPaymentPartial, paymentDueDate: paymentDate } })
+                const paymentPartial = await this.paymentDetailRepository.findOne({ where: { paymentId: id} })
                 await this.paymentDetailRepository.delete(paymentPartial.id);
             } else {
                 if (payment.creditHistory.credit.numberPayment != 1) await this.updateStatusIsNextPayment(payment.id, false, payment.creditHistory.id);

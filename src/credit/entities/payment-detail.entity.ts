@@ -38,6 +38,9 @@ export class PaymentDetail{
     @Column()
     numberPayment: string;
 
+    @Column()
+    paymentId: number;
+
     @ManyToOne(()=> CreditHistory, (creditHistory: CreditHistory) => creditHistory.paymentsDetail)
     @JoinColumn({ name: 'credit_history_id' }) 
     creditHistory: CreditHistory;
