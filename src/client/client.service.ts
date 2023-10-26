@@ -72,15 +72,15 @@ export class ClientService {
 
     async add(client: ClientCreateDto) {
         var response = { success: false, error: '' };
-        const existClientNumber = await this.clientRepository.findOne({ clientNumber: client.clientNumber, type: client.type });
-        if (!existClientNumber) {
+        // const existClientNumber = await this.clientRepository.findOne({ clientNumber: client.clientNumber, type: client.type });
+        // if (!existClientNumber) {
             const newClient = await this.clientRepository.create(client);
             const saveClient = await this.clientRepository.save(newClient);
             if (saveClient) response.success = true;
-        } else {
-            response.success = false;
-            response.error = `El número de ficha ${client.clientNumber} ya se encuentra registrado.`
-        }
+        // } else {
+        //     response.success = false;
+        //     response.error = `El número de ficha ${client.clientNumber} ya se encuentra registrado.`
+        // }
         return response;
     }
 

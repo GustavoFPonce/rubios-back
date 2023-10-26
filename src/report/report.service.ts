@@ -344,6 +344,7 @@ export class ReportService {
           }
           const transactionDetail = await this.creditTransactionDetailRepository.findOne({ where: { paymentId: payment.id }, relations: ['creditTransaction'] });
           const creditTransaction = transactionDetail?.creditTransaction;
+          console.log("creditTransaction: ", creditTransaction);
           if (creditTransaction) {
             creditTransaction.accounted = true;
             const updateTransaction = await this.creditTransactionRepository.save(creditTransaction);

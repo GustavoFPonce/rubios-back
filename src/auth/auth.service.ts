@@ -48,12 +48,12 @@ export class AuthService {
     const payload = { sub: userId };
     const accessToken = this.jwtService.sign(payload, {
       secret: 'mySuperSecretKey',
-      expiresIn: '30d',
+      expiresIn: '5d',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: 'myRefreshToken',
-      expiresIn: '30d',
+      expiresIn: '5d',
     });
     return {
       accessToken, refreshToken

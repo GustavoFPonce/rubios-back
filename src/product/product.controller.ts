@@ -18,7 +18,7 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { InventoryCreateDto } from './dto/inventory-create-dto';
 
 @Controller('product')
-//@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) { }
 
