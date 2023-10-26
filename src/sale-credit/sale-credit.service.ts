@@ -990,7 +990,7 @@ export class SaleCreditService {
         payment.actualPayment = 0.00;
         payment.isNext = true;
         payment.balance = creditHistory.balance;
-        payment.numberPayment = numberPayment + ' - P';
+        payment.numberPayment = (numberPayment.includes('P')) ? numberPayment : numberPayment + ' - P';
         payment.paymentId = paymentId;
         const responseAdd = await this.paymentDetailSaleCreditRepository.save(payment);
         console.log("response add payment pending: ", responseAdd);

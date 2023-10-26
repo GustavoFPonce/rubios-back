@@ -699,7 +699,7 @@ export class CreditService {
         payment.actualPayment = 0.00;
         payment.balance = creditHistory.balance;
         payment.isNext = true;
-        payment.numberPayment = numberPayment + ' - P';
+        payment.numberPayment = (numberPayment.includes('P')) ? numberPayment : numberPayment + ' - P';
         payment.paymentId = paymentId;
         const responseAdd = await this.paymentDetailRepository.save(payment);
         console.log("response add payment pending: ", responseAdd);
@@ -818,7 +818,7 @@ export class CreditService {
         if (saved) {
             response.success = true;
             if (isPartialPayment) {
-                const paymentPartial = await this.paymentDetailRepository.findOne({ where: { paymentId: id} })
+                const paymentPartial = await this.paymentDetailRepository.findOne({ where: { paymentId: id } })
                 await this.paymentDetailRepository.delete(paymentPartial.id);
             } else {
                 if (payment.creditHistory.credit.numberPayment != 1) await this.updateStatusIsNextPayment(payment.id, false, payment.creditHistory.id);
