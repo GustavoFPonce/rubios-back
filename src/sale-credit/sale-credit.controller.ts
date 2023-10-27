@@ -29,7 +29,7 @@ export class SaleCreditController {
     async getPaymentsDetail(
         @Param('id') id: number
     ) {
-        console.log("id credit history: ", id);
+        //console.log("id credit history: ", id);
         return this.saleCreditService.getPaymentsDetail(id);
     }
    
@@ -157,7 +157,7 @@ export class SaleCreditController {
     async getTransactions(
         @Param('id') id: number,
     ){
-        console.log("obteniendo transacciones: ", id);
+        //console.log("obteniendo transacciones: ", id);
        return await this.saleCreditService.getTransactions(id);
     }
 

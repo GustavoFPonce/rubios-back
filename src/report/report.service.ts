@@ -963,24 +963,31 @@ export class ReportService {
     return creditCounts;
   }
 
-  async getPaymentBhavior(id: number, type: number) {
+  async getPaymentBhavior(id: number, type: number, creditId: any) {
     var paymentBhavior = [];
     if (type == 1) {
-      paymentBhavior = await this.getPaymentBhaviorByClient(id, this.creditHistoryRepository);
+      paymentBhavior = await this.getPaymentBhaviorByClient(id, this.creditHistoryRepository, creditId);
     } else {
-      paymentBhavior = await this.getPaymentBhaviorByClient(id, this.saleCreditHistoryRepository);
+      paymentBhavior = await this.getPaymentBhaviorByClient(id, this.saleCreditHistoryRepository, creditId);
     }
     console.log("paymentBhavior: ", paymentBhavior);
     return paymentBhavior;
 
   }
 
-  async getPaymentBhaviorByClient(id: number, creditHistoryRepository: any): Promise<[]> {
-    return await creditHistoryRepository.createQueryBuilder('creditHistory')
+  async getPaymentBhaviorByClient(id: number, creditHistoryRepository: any, creditId: any): Promise<[]> {
+    console.log("creditId: ", creditId);
+    const queryBuilder = creditHistoryRepository.createQueryBuilder('creditHistory')
       .leftJoinAndSelect('creditHistory.credit', 'credit')
       .leftJoinAndSelect('creditHistory.paymentsDetail', 'paymentsDetail')
       .where('credit.client_id =:id', { id })
-      .getMany();
+      .orderBy('creditHistory.id', 'DESC')
+
+      if (creditId !== 'null') {
+        queryBuilder.andWhere('credit.id = :creditId', { creditId });
+      }
+
+      return await queryBuilder.getMany();
   }
 
   async getProducts(category: string, startDate: any, endDate: any) {

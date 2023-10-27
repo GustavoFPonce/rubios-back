@@ -1266,7 +1266,7 @@ export class SaleCreditService {
             .leftJoinAndSelect('creditTransactions.saleCredit', 'credit')
             .where('creditTransactions.sale_credit_id = :id', { id })
             .getMany();
-        console.log("transactions: ", transactions);
+        //console.log("transactions: ", transactions);
         return transactions.sort((a, b) => {
             if (a.date.getTime() !== b.date.getTime()) {
                 return b.date.getTime() - a.date.getTime();

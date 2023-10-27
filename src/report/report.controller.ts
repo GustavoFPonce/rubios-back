@@ -151,9 +151,11 @@ export class ReportController {
     @Get(':id/payment-bhavior')
     async getPaymentBhavior(
         @Param('id') id: number,
-        @Query('type') type: number
+        @Query('type') type: number,
+        @Query('creditId') creditId: any
     ) {
-        return await this.reportService.getPaymentBhavior(id, type);
+        console.log("creditId: ", creditId);
+        return await this.reportService.getPaymentBhavior(id, type, creditId);
     }
 
 }
