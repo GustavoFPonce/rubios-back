@@ -59,6 +59,15 @@ export class UserController {
         return await this.userService.getCredits(id);
     }
 
+    @Get(':id/credits-by-client')
+    async getCreditsByClient(
+        @Param('id') id: number,
+        @Query('client') clientId: any
+    ){
+       //console.log("id: ", id);
+        return await this.userService.getCreditsByClient(id, clientId);
+    }
+
     @Get(':id')
     async getById(
         @Param('id') id: number

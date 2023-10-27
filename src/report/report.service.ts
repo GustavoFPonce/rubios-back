@@ -828,7 +828,7 @@ export class ReportService {
     console.log("saleCredits: ", saleCredits);
 
     const personalCreditsInPesos = await this.getCreditsInPesosByMonths(this.creditHistoryRepository);
-    const personalCreditsInDolars = await this.getCreditsInPesosByMonths(this.creditHistoryRepository);
+    const personalCreditsInDolars = await this.getCreditsInDolarsByMonths(this.creditHistoryRepository);
 
     const saleCreditsInPesos = await this.getCreditsInPesosByMonths(this.saleCreditHistoryRepository);
     const saleCreditsInDolars = await this.getCreditsInDolarsByMonths(this.saleCreditHistoryRepository);
