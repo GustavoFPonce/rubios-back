@@ -12,11 +12,17 @@ import { RoleService } from '../role/role.service';
 import { Role } from './enum';
 import { UserDto } from './dto/user-dto';
 import * as bcrypt from 'bcryptjs';
+import { Credit } from 'src/credit/entities/credit.entity';
+import { SaleCredit } from 'src/sale-credit/entities/sale-credit.entity';
+import { CreditListDto } from 'src/credit/dto/credit-list.dto';
+import { SaleCreditHistory } from 'src/sale-credit/entities/sale-credit-history.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Credit) private readonly creditRepository: Repository<Credit>,
+    @InjectRepository(SaleCredit) private readonly saleCreditRepository: Repository<SaleCredit>,
     private readonly roleService: RoleService,
   ) { }
 
@@ -113,7 +119,7 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto) {
     var response = { success: false };
-    
+
     const role = await this.roleService.findOneByName(createUserDto.roleName);
     console.log("rol obtenido: ", role);
     console.log("usuario a registrar: ", createUserDto);
@@ -187,6 +193,46 @@ export class UserService {
     }
 
     return new UserDto(user);
+  }
+
+  async getCredits(id: number) {
+    const personalCredits = await this.getCreditsByType(id, this.creditRepository, 1);
+    const saleCredits = await this.getCreditsByType(id, this.saleCreditRepository, 2);
+    var credits = [];
+    personalCredits.map(credit => {
+      const creditList = new CreditListDto(credit);
+      const creditDto = {...creditList, type:1}
+      credits.push(creditDto);
+    });
+    saleCredits.map(credit => {
+      const creditList = new CreditListDto(credit);
+      const creditDto = {...creditList, type:2}
+      credits.push(creditDto);
+    });
+    
+    console.log("credits: ", credits);
+    return credits;
+  }
+
+ private async getCreditsByType(id: number, creditRepository: any, type: number) {
+    return await creditRepository
+      .createQueryBuilder('credit')
+      .leftJoinAndSelect('credit.creditHistory', 'creditHistory')
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('MAX(creditHistory.id)')
+          .from((type === 1)?Credit : SaleCreditHistory, 'creditHistory')
+          .where((type === 1) ? 'creditHistory.credit_id = credit.id' : 'creditHistory.sale_credit_id = credit.id')
+          .getQuery();
+        return `creditHistory.id = ${subQuery}`;
+      })
+      .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
+      .leftJoinAndSelect('credit.client', 'client')
+      .where('credit.debtCollector = :id', {id})
+      .orderBy('creditHistory.date', 'DESC')
+      .addOrderBy('creditHistory.id', 'DESC')
+      .getMany();
   }
 
 }

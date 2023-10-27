@@ -51,6 +51,14 @@ export class UserController {
         return this.userService.remove(id);
     }
 
+    @Get(':id/credits')
+    async getCredits(
+        @Param('id') id: number
+    ){
+       //console.log("id: ", id);
+        return await this.userService.getCredits(id);
+    }
+
     @Get(':id')
     async getById(
         @Param('id') id: number

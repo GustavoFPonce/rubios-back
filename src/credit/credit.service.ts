@@ -287,7 +287,7 @@ export class CreditService {
 
 
         const creditsDto = credits.map(credit => {
-            const creditList = new CreditListDto(credit);
+            const creditList = {...new CreditListDto(credit), type:1};
             return creditList;
         })
         //console.log("credits: ", creditsDto);
@@ -444,7 +444,7 @@ export class CreditService {
 
     private getCreditsListDto(credits: Credit[]): CreditListDto[] {
         return credits.map(credit => {
-            const creditList = new CreditListDto(credit);
+            const creditList = {...new CreditListDto(credit), type:1};
             return creditList;
         })
     }
@@ -1147,7 +1147,7 @@ export class CreditService {
             return new PaymentDetailDto(x, creditHistory.interest)
         });
 
-        return new CreditEditDto(credit, paymentsDetailDto);
+        return {...new CreditEditDto(credit, paymentsDetailDto), type:1};
     }
 
     async getCreditsHistory(id: string) {

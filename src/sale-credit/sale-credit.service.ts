@@ -247,7 +247,7 @@ export class SaleCreditService {
 
         //console.log("credits: ", credits);
         const creditsDto = credits.map(credit => {
-            const creditList = new CreditListDto(credit);
+            const creditList = {...new CreditListDto(credit), type:2};
             return creditList;
         })
 
@@ -294,7 +294,7 @@ export class SaleCreditService {
 
     private getCreditsListDto(credits: SaleCredit[]): CreditListDto[] {
         return credits.map(credit => {
-            const creditList = new CreditListDto(credit);
+            const creditList = {...new CreditListDto(credit), type:2};
             return creditList;
         })
     }
@@ -309,7 +309,7 @@ export class SaleCreditService {
             return new PaymentDetailDto(x, creditHistory.interest)
         });
 
-        return new CreditEditDto(credit, paymentsDetailDto);
+        return {...new CreditEditDto(credit, paymentsDetailDto), type:2};
     }
 
     async getCreditsHistory(id: string) {
@@ -926,57 +926,6 @@ export class SaleCreditService {
         const responseSavedTrasaction = await this.cashService.createTransaction(creditTransactionCreateDto);
         return responseSavedTrasaction;
     }
-
-    // async registerPayment(id: number, paymentAmount: number) {
-    //     var response = { success: false, collection: {} };
-    //     // var lastCash = await this.cashRepository.findOne({ order: { id: 'DESC' } });
-    //     // if (!lastCash || lastCash.closingDate != null) {
-    //     //     lastCash = await this.cashService.openCash();
-    //     // }
-    //     //console.log("ultima caja: ", lastCash);
-    //     var payment = await this.paymentDetailSaleCreditRepository.createQueryBuilder('paymentsDetail')
-    //         .leftJoinAndSelect('paymentsDetail.creditHistory', 'creditHistory')
-    //         .leftJoinAndSelect('creditHistory.credit', 'credit')
-    //         .leftJoinAndSelect('credit.client', 'client')
-    //         .leftJoinAndSelect('credit.debtCollector', 'debtCollector')
-    //         .where('paymentsDetail.id = :id', { id })
-    //         .getOne();
-    //     //console.log('payment_ :', payment);
-    //     payment.paymentDate = new Date();
-    //     payment.actualPayment = (paymentAmount<= payment.payment)?paymentAmount: payment.payment;
-    //     payment.isNext = false;
-    //     //payment.creditHistory.balance = payment.creditHistory.balance - paymentAmount;
-    //     // payment.cash = lastCash;
-    //     const paymentPending = payment.payment - paymentAmount;
-    //     const saved = await this.paymentDetailSaleCreditRepository.save(payment);
-    //     //console.log("saved: ", saved);
-    //     if (saved) {
-    //         response.success = true;
-    //         response.collection = new CollectionDto(saved);
-    //         const creditHistoryUpdate = await this.updateBalanceCreditHistory(payment.creditHistory.id, payment.actualPayment);
-    //         if (creditHistoryUpdate) {
-    //             if (paymentPending > 0) {
-    //                 await this.addPendingPayment(paymentPending, payment.creditHistory, payment.paymentDueDate);
-
-    //             } else {
-    //                 if (payment.creditHistory.credit.numberPayment != 1) await this.updateStatusIsNextPayment(payment.id, true, payment.creditHistory.id);
-    //                 if (paymentPending < 0) {
-    //                     const paymentNext = await this.getPaymentNext(creditHistoryUpdate.id);
-    //                     if (paymentNext) await this.registerPayment(paymentNext.id, -paymentPending);
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     return response;
-    // }
-
-    // private async getPaymentNext(crediHistoryId: number) {
-    //     const payment = await this.paymentDetailSaleCreditRepository.createQueryBuilder('payment')
-    //     .where('payment.sale_credit_history_id = :id AND payment.isNext = :isNext', {id: crediHistoryId, isNext: true})
-    //     .getOne();
-    //     console.log("payment siguiente: ", payment);
-    //     return payment;
-    // }
 
     private async addPendingPayment(paymentPending: number, creditHistory: SaleCreditHistory, date: Date, numberPayment: string, paymentId: number) {
         var payment = new PaymentDetail();
