@@ -6,6 +6,7 @@ import { format } from "date-fns";
 export class ReportCollectionsAndCommissionsDto{
     debtCollectorId: string;
     debtCollectorName: string;
+    userRole: string;
     startDate: any;
     endDate: any;
     detailsReport: PaymentDetailReportDto[];
@@ -14,6 +15,7 @@ export class ReportCollectionsAndCommissionsDto{
         const reportDto: ReportCollectionsAndCommissionsDto ={
             debtCollectorId: debtCollector.id,
             debtCollectorName: debtCollector.lastName + " " + debtCollector.name,
+            userRole: debtCollector.role?.name,
             startDate: (start)?start: null,
             endDate: (start)?end: null,
             detailsReport: details

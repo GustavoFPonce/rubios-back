@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SaleCredit } from './entities/sale-credit.entity';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, IsNull, Like, Repository } from 'typeorm';
 import { SaleCreditCreateDto } from './dto/sale-credit-create-dto';
 import { Sale } from 'src/sale/entities/sale.entity';
 import { CreditHistoryCreateDto } from 'src/credit/dto/credit-history-create-dto';
@@ -247,7 +247,7 @@ export class SaleCreditService {
 
         //console.log("credits: ", credits);
         const creditsDto = credits.map(credit => {
-            const creditList = {...new CreditListDto(credit), type:2};
+            const creditList = { ...new CreditListDto(credit), type: 2 };
             return creditList;
         })
 
@@ -294,7 +294,7 @@ export class SaleCreditService {
 
     private getCreditsListDto(credits: SaleCredit[]): CreditListDto[] {
         return credits.map(credit => {
-            const creditList = {...new CreditListDto(credit), type:2};
+            const creditList = { ...new CreditListDto(credit), type: 2 };
             return creditList;
         })
     }
@@ -309,7 +309,7 @@ export class SaleCreditService {
             return new PaymentDetailDto(x, creditHistory.interest)
         });
 
-        return {...new CreditEditDto(credit, paymentsDetailDto), type:2};
+        return { ...new CreditEditDto(credit, paymentsDetailDto), type: 2 };
     }
 
     async getCreditsHistory(id: string) {
@@ -867,7 +867,9 @@ export class SaleCreditService {
         const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['role'] });
         var concept = (paymentAmount > payment.payment) ? 'Pago de multiples cuotas' : 'Pago de cuota';
         const transaction = await this.registerCreditTransaction(paymentAmount, payment, user, lastCash, concept, TransactionType.payment);
-        await this.registerPayment(payment, paymentAmount, transaction, user.role.name);
+        const responseRegister: any = await this.registerPayment(payment, paymentAmount, transaction, user.role.name);
+        console.log("responseRegisterPayment: ", responseRegister);
+        if (responseRegister.success) response.success = true;
         return response;
     }
 
@@ -1107,7 +1109,7 @@ export class SaleCreditService {
         var newPaymentDetail = new PaymentDetailSaleCredit();
         newPaymentDetail.payment = paymentAmount;
         newPaymentDetail.paymentDate = new Date();
-        newPaymentDetail.paymentDueDate = new Date();
+        newPaymentDetail.paymentDueDate = paymentDetail.paymentDueDate;
         newPaymentDetail.creditHistory = paymentDetail.creditHistory;
         newPaymentDetail.balance = 0.00;
         newPaymentDetail.accountabilityDate = null;
@@ -1119,6 +1121,7 @@ export class SaleCreditService {
         console.log("new payment: ", newPaymentDetail);
         console.log("newCreditHistory: ", newCreditHistory);
         const creditHistorySaved = await this.addCreditHistory(newCreditHistory);
+        await this.applySurchargeToNewCreditHIstory(paymentDetail.creditHistory.id, creditHistorySaved.id);
         const payment = await this.newPaymentDetail(newPaymentDetail);
         var creditTransactionDetail = new CreditTransactionDetail();
         creditTransactionDetail.creditTransaction = transaction;
@@ -1138,6 +1141,28 @@ export class SaleCreditService {
         }
         if (deletePaymentDetail) await this.paymentDetailSaleCreditRepository.delete(paymentDetail.id);
         return response;
+    }
+
+    private async applySurchargeToNewCreditHIstory(creditHistoryIdPrevious: number, creditHistoryIdCurrent: number) {
+        const paymentsDetail = await this.paymentDetailSaleCreditRepository.find({
+            where: {
+                creditHistory: creditHistoryIdPrevious,
+                paymentDate: IsNull(),
+                numberPayment: Like('%Recargo%')
+            },
+            relations: ['creditHistory']
+        });
+        const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { id: creditHistoryIdCurrent } });
+        if (paymentsDetail.length > 0 && creditHistory) {
+            var totalSurcharges = 0;
+            for (const payment of paymentsDetail) {
+                payment.creditHistory = creditHistory;
+                await this.paymentDetailSaleCreditRepository.save(payment);
+                totalSurcharges = totalSurcharges + parseFloat(payment.payment.toString());
+            }
+            creditHistory.balance = parseFloat(creditHistory.balance.toString()) + totalSurcharges;
+            await this.saleCreditHistoryRepository.save(creditHistory);
+        }
     }
 
     async cancelRegisteredPaymentInterest(id: number, userId: number) {
@@ -1255,5 +1280,33 @@ export class SaleCreditService {
         return response;
     }
 
+    async updatePayment(id: number, payment: number, concept: string, userId: number) {
+        var response = { success: false, error: '' };
+        console.log("concept: ", concept);
+        if (concept == 'cuota') {
+            const cancelPaymentResponse = await this.cancelRegisteredPayment(id, userId);
+            console.log("cancelPaymentResponse: ", cancelPaymentResponse);
+            if (cancelPaymentResponse) {
+                const registerResponse = await this.registerTrasactionAndPayment(id, payment, userId);
+                console.log("registerResponse: ", registerResponse);
+                if (registerResponse.success) response.success = true;
+            }
+        } else {
+            const credit = (await this.paymentDetailSaleCreditRepository.findOne({ where: { id }, relations: ['creditHistory', 'creditHistory.credit'] }));
+            console.log("credit: ", credit);
+            const creditHistory = await this.saleCreditHistoryRepository.findOne({ where: { credit: credit.creditHistory.credit.id, status: 1 } });
+            console.log("creditHistory: ", creditHistory);
+            const firstPayment = creditHistory.firstPayment;
+            const cancelPaymentInterestResponse = await this.cancelRegisteredPaymentInterest(id, userId);
+            console.log("cancelPaymentInterestResponse: ", cancelPaymentInterestResponse);
+            if (cancelPaymentInterestResponse) {
+                const registerResponse = await this.registerCancellationInterestPrincipal(id, payment, firstPayment, userId);
+                console.log("registerResponse: ", registerResponse);
+                if (registerResponse.success) response.success = true;
+            }
+        }
+
+        return response;
+    }
 
 }

@@ -170,6 +170,18 @@ export class SaleCreditController {
         return this.saleCreditService.addPaymentSurcharge(id, payment, paymentDueDate);
     }
 
+    @Put(('collection/:id/update-payment'))
+    async updatePayment(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+        @Body('concept') concept: string,
+        @Req() req: any
+    ) {
+        console.log("modificando pago: ", payment);
+        const user = req.user.userId;
+       return this.saleCreditService.updatePayment(id, payment, concept, user);
+    }
+
   
     @Put(':id')
     async update(

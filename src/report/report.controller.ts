@@ -100,12 +100,23 @@ export class ReportController {
         return await this.reportService.getMonthlyCredits();
     }
 
+    @Get('expired-credit-count')
+    async getMonthlyCreditCount(
+    ) {
+        return await this.reportService.getExpiredCreditCount();
+    }
+
+    @Get('expired-credits')
+    async getExpiredCredits(
+    ) {
+        return await this.reportService.getExpiredCredits();
+    }
+
     @Get('monthly-credit-amounts')
     async getMonthlyCreditAmounts(
     ) {
         return await this.reportService.getMonthlyAmountsCredits();
     }
-
 
     @Get('credits-by-debtcollector')
     async getCreditsByDebtCollector(

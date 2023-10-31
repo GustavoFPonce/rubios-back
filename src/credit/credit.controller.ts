@@ -92,6 +92,18 @@ export class CreditController {
         return response;
     }
 
+    @Put(('collection/:id/update-payment'))
+    async updatePayment(
+        @Param('id') id: number,
+        @Body('payment') payment: number,
+        @Body('concept') concept: string,
+        @Req() req: any
+    ) {
+        console.log("modificando pago: ", payment);
+        const user = req.user.userId;
+       return this.creditService.updatePayment(id, payment, concept, user);
+    }
+
 
     @Put((':id/register-payment'))
     async registerPayment(

@@ -135,8 +135,8 @@ export class ReportService {
         'CONCAT(user.lastName, \' \', user.name) as debtCollectorName',
         'SUM(CASE WHEN (paymentDetail.paymentDueDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesPesos',
         'SUM(CASE WHEN (paymentDetail.paymentDueDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.paymentDate IS NULL AND creditHistory.status =:status) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsReceivablesDollar',
-        'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedPesos',
-        'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.payment ELSE 0 END) as totalPaymentsCollectedDollar'
+        'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyPesos AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.actualPayment ELSE 0 END) as totalPaymentsCollectedPesos',
+        'SUM(CASE WHEN (paymentDetail.paymentDate <= :endDateValue AND credit.typeCurrency = :currencyDollar AND paymentDetail.accountabilityDate IS NULL) THEN paymentDetail.actualPayment ELSE 0 END) as totalPaymentsCollectedDollar'
       ])
       .setParameters({ currencyPesos, currencyDollar, endDateValue: endDate, status })
       .groupBy('user.id, user.lastName')
@@ -165,7 +165,7 @@ export class ReportService {
 
 
   async getPaymentsCollectedAndPendingDetail(id: string, start: any, end: any, type: string) {
-    const debtCollector = await this.userRepository.findOne(id);
+    const debtCollector = await this.userRepository.findOne({ where: { id: id }, relations:['role']});
     var paymentsDetail: PaymentDetail[] = await this.getPaymentsDetail(id, start, end, type);
     const paymentsDetailsDto = paymentsDetail.map((x) => {
       return new PaymentDetailReportDto(x);
@@ -193,7 +193,7 @@ export class ReportService {
 
 
   async getCollectionsAndCommissionsDetail(id: string, start: any, end: any, type: string) {
-    const debtCollector = await this.userRepository.findOne(id);
+    const debtCollector = await this.userRepository.findOne({ where: { id: id }, relations:['role']});
     var paymentsDetail: PaymentDetail[] = await this.getPaymentsDetail(id, start, end, type);
     const paymentsDetailsDto = paymentsDetail.map((x) => {
       return new PaymentDetailReportDto(x);
@@ -201,19 +201,6 @@ export class ReportService {
     const details = new ReportCollectionsAndCommissionsDto(debtCollector, paymentsDetailsDto);
     return details;
   }
-
-  // private async getPaymentsDetailByDates(id: string, start: any, end: any, type: string) {
-  //   if ((start != 'null' && start != null) && (end != 'null' && end != null)) {
-  //     console.log("no estoy en null");
-  //     const dates = getDateStartEnd(getDateObject(start), getDateObject(end))
-  //     const startDate = dates.startDate;
-  //     const endDate = dates.endDate;
-  //     return await this.getPaymentsDetailByDebtCollectorByDates(id, startDate, endDate, type);
-  //   } else {
-  //     console.log("estoy en null");
-  //     return await this.getPaymentsDetailByDebtCollector(id, type);
-  //   }
-  // }
 
 
   private async getPaymentsDetailByDebtCollector(id: string, type: string, endDate: Date) {
@@ -849,6 +836,41 @@ export class ReportService {
       personalCreditPesos, saleCreditPesos, personalCreditDolars, saleCreditDolars
     }
   }
+
+  async getExpiredCredits() {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['credit.id as id', 'client.name as name', 'client.lastName as lastName', 'MAX(ABS(DATEDIFF(pd.paymentDueDate, CURDATE()))) AS delay'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .leftJoin('credit.client', 'client')
+      .innerJoin('creditHistory.paymentsDetail', 'pd', 'creditHistory.id = pd.credit_history_id and pd.paymentDueDate <= curdate() and pd.paymentDate is null')
+      .where('creditHistory.status = 1')
+
+      .groupBy('credit.id')
+      .addOrderBy('delay', 'DESC')
+
+    return (await queryBuilder.getRawMany()).filter(x => x.delay > 0);
+  }
+
+  async getExpiredCreditCount() {
+    const queryExpiredBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['credit.id'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .leftJoin('credit.client', 'client')
+      .innerJoin('creditHistory.paymentsDetail', 'pd', 'creditHistory.id = pd.credit_history_id and pd.paymentDueDate <= curdate() and pd.paymentDate is null and ABS(DATEDIFF(pd.paymentDueDate, CURDATE())) > 0')
+      .where('creditHistory.status = 1')
+
+    const expiredCount = await queryExpiredBuilder.getCount();
+
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select('credit.id')
+      .where('status = 1')
+
+    const activeCreditCount = await queryBuilder.getCount();
+    return ({     
+      "vencidos": expiredCount,
+      "al corriente": activeCreditCount - expiredCount
+    });
+  }
 
   private async getCreditsByMonths(creditHistoryRepository: any): Promise<{ month: number; count: number }[]> {
     const twelveMonthsAgo = subMonths(new Date(), 12);
