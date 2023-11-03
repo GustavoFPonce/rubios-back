@@ -108,9 +108,10 @@ export class ReportController {
 
     @Get('expired-credits')
     async getExpiredCredits(
+        @Query('type') clientType: number
     ) {
-        return await this.reportService.getExpiredCredits();
-    }
+        return await this.reportService.getExpiredCredits(clientType);
+    }
 
     @Get('monthly-credit-amounts')
     async getMonthlyCreditAmounts(
@@ -167,6 +168,93 @@ export class ReportController {
     ) {
         console.log("creditId: ", creditId);
         return await this.reportService.getPaymentBhavior(id, type, creditId);
+    }
+
+    @Get('pending-current-month')
+    async getMoneyToCollectByMonthTotal(
+    ) {
+        return {
+            pesos: {
+                current: await this.reportService.getTotalToCollectInCurrentMonth("peso"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentMonth("peso"),
+                paid: await this.reportService.getMoneyPaidCurrentMonth("peso"),
+            },
+            dolars: {
+                current: await this.reportService.getTotalToCollectInCurrentMonth("dolar"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentMonth("dolar"),
+                paid: await this.reportService.getMoneyPaidCurrentMonth("dolar"),
+            }
+        };
+    }
+
+    @Get('pending-current-week')
+    async getMoneyToCollectInCurrentWeek(
+    ) {
+        return {
+            pesos: {
+                current: await this.reportService.getTotalToCollectInCurrentWeek("peso"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentWeek("peso"),
+                paid: await this.reportService.getMoneyPaidCurrentWeek("peso"),
+            },
+            dolars: {
+                current: await this.reportService.getTotalToCollectInCurrentWeek("dolar"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentWeek("dolar"),
+                paid: await this.reportService.getMoneyPaidCurrentWeek("dolar"),                
+            }
+        };
+    }
+
+    @Get('total-expired-pending')
+    async getTotalExpiredPending(
+    ) {
+        return {
+            pesos: await this.reportService.getTotalExpiredPending("peso"),
+            dolars: await this.reportService.getTotalExpiredPending("dolar")
+        };
+    }
+
+    //sale
+    @Get('sale-pending-current-month')
+    async getSaleMoneyToCollectByMonthTotal(
+    ) {
+        return {
+            pesos: {
+                current: await this.reportService.getTotalToCollectInCurrentMonthSale("peso"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentMonthSale("peso"),
+                paid: await this.reportService.getMoneyPaidCurrentMonthSale("peso"),
+            },
+            dolars: {
+                current: await this.reportService.getTotalToCollectInCurrentMonthSale("dolar"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentMonthSale("dolar"),
+                paid: await this.reportService.getMoneyPaidCurrentMonthSale("dolar"),
+            }
+        };
+    }
+
+    @Get('sale-pending-current-week')
+    async getSaleMoneyToCollectInCurrentWeek(
+    ) {
+        return {
+            pesos: {
+                current: await this.reportService.getTotalToCollectInCurrentWeekSale("peso"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentWeekSale("peso"),
+                paid: await this.reportService.getMoneyPaidCurrentWeekSale("peso"),
+            },
+            dolars: {
+                current: await this.reportService.getTotalToCollectInCurrentWeekSale("dolar"),
+                pending: await this.reportService.getMoneyPendingToCollectInCurrentWeekSale("dolar"),
+                paid: await this.reportService.getMoneyPaidCurrentWeekSale("dolar"),                
+            }
+        };
+    }
+
+    @Get('sale-total-expired-pending')
+    async getSaleTotalExpiredPending(
+    ) {
+        return {
+            pesos: await this.reportService.getTotalExpiredPendingSale("peso"),
+            dolars: await this.reportService.getTotalExpiredPendingSale("dolar")
+        };
     }
 
 }

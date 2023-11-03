@@ -30,7 +30,13 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ['http://antofanari-001-site6.gtempurl.com', 'http://localhost:3000', 'http://antofanari-001-site3.gtempurl.com', 'http://antofanari-001-site4.gtempurl.com']
+    origin: [
+      'http://antofanari-001-site6.gtempurl.com', 
+      'http://localhost:3000', 
+      'http://antofanari-001-site3.gtempurl.com', 
+      'http://antofanari-001-site4.gtempurl.com',
+      'http://www.rubios.com.ar'
+    ]
   });
 
 

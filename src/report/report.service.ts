@@ -165,7 +165,7 @@ export class ReportService {
 
 
   async getPaymentsCollectedAndPendingDetail(id: string, start: any, end: any, type: string) {
-    const debtCollector = await this.userRepository.findOne({ where: { id: id }, relations:['role']});
+    const debtCollector = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
     var paymentsDetail: PaymentDetail[] = await this.getPaymentsDetail(id, start, end, type);
     const paymentsDetailsDto = paymentsDetail.map((x) => {
       return new PaymentDetailReportDto(x);
@@ -193,7 +193,7 @@ export class ReportService {
 
 
   async getCollectionsAndCommissionsDetail(id: string, start: any, end: any, type: string) {
-    const debtCollector = await this.userRepository.findOne({ where: { id: id }, relations:['role']});
+    const debtCollector = await this.userRepository.findOne({ where: { id: id }, relations: ['role'] });
     var paymentsDetail: PaymentDetail[] = await this.getPaymentsDetail(id, start, end, type);
     const paymentsDetailsDto = paymentsDetail.map((x) => {
       return new PaymentDetailReportDto(x);
@@ -837,12 +837,20 @@ export class ReportService {
     }
   }
 
-  async getExpiredCredits() {
-    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+  async getExpiredCredits(clientType: number) {
+    if (clientType == 1) {
+      return await this.getExpiredCreditByClientType(this.creditRepository, 'credit_history_id');
+    } else {
+      return this.getExpiredCreditByClientType(this.saleCreditRepository, 'sale_credit_history_id')
+    }
+  }
+
+  private async getExpiredCreditByClientType(creditRepository: any, creditHistoryIdField: string) {
+    const queryBuilder = creditRepository.createQueryBuilder('credit')
       .select(['credit.id as id', 'client.name as name', 'client.lastName as lastName', 'MAX(ABS(DATEDIFF(pd.paymentDueDate, CURDATE()))) AS delay'])
       .leftJoin('credit.creditHistory', 'creditHistory')
       .leftJoin('credit.client', 'client')
-      .innerJoin('creditHistory.paymentsDetail', 'pd', 'creditHistory.id = pd.credit_history_id and pd.paymentDueDate <= curdate() and pd.paymentDate is null')
+      .innerJoin('creditHistory.paymentsDetail', 'pd', `creditHistory.id = pd.${creditHistoryIdField} and pd.paymentDueDate <= curdate() and pd.paymentDate is null`)
       .where('creditHistory.status = 1')
 
       .groupBy('credit.id')
@@ -852,25 +860,39 @@ export class ReportService {
   }
 
   async getExpiredCreditCount() {
-    const queryExpiredBuilder = this.creditRepository.createQueryBuilder('credit')
-      .select(['credit.id'])
-      .leftJoin('credit.creditHistory', 'creditHistory')
-      .leftJoin('credit.client', 'client')
-      .innerJoin('creditHistory.paymentsDetail', 'pd', 'creditHistory.id = pd.credit_history_id and pd.paymentDueDate <= curdate() and pd.paymentDate is null and ABS(DATEDIFF(pd.paymentDueDate, CURDATE())) > 0')
-      .where('creditHistory.status = 1')
+    const queryExpiredBuilderPersonalCredit = await this.getExpiredCreditCountQuery(this.creditRepository, 'credit_history_id');
+    const queryExpiredBuilderSaleCredit = await this.getExpiredCreditCountQuery(this.saleCreditRepository, 'sale_credit_history_id');
 
-    const expiredCount = await queryExpiredBuilder.getCount();
+    const expiredCountPersonalCredit = await queryExpiredBuilderPersonalCredit.getCount();
+    const expiredCountSaleCredit = await queryExpiredBuilderSaleCredit.getCount();
 
-    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+    const queryBuilderPersonalCredit = this.creditRepository.createQueryBuilder('credit')
       .select('credit.id')
       .where('status = 1')
 
-    const activeCreditCount = await queryBuilder.getCount();
-    return ({     
-      "vencidos": expiredCount,
-      "al corriente": activeCreditCount - expiredCount
-    });
-  }
+    const queryBuilderSaleCredit = this.saleCreditRepository.createQueryBuilder('credit')
+      .select('credit.id')
+      .where('status = 1')
+
+    const activeCreditCountPersonalCredit = await queryBuilderPersonalCredit.getCount();
+    const activeCreditCountSaleCredit = await queryBuilderSaleCredit.getCount();
+    return ([{
+      "vencidos": expiredCountPersonalCredit,
+      "al corriente": activeCreditCountPersonalCredit - expiredCountPersonalCredit
+    }, {
+      "vencidos": expiredCountSaleCredit,
+      "al corriente": activeCreditCountSaleCredit - expiredCountSaleCredit
+    }]);
+  }
+
+  private async getExpiredCreditCountQuery(creditRepository: any, creditHistoryIdField: string) {
+    return creditRepository.createQueryBuilder('credit')
+      .select(['credit.id'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .leftJoin('credit.client', 'client')
+      .innerJoin('creditHistory.paymentsDetail', 'pd', `creditHistory.id = pd.${creditHistoryIdField} and pd.paymentDueDate <= curdate() and pd.paymentDate is null and ABS(DATEDIFF(pd.paymentDueDate, CURDATE())) > 0`)
+      .where('creditHistory.status = 1');
+  }
 
   private async getCreditsByMonths(creditHistoryRepository: any): Promise<{ month: number; count: number }[]> {
     const twelveMonthsAgo = subMonths(new Date(), 12);
@@ -1005,11 +1027,11 @@ export class ReportService {
       .where('credit.client_id =:id', { id })
       .orderBy('creditHistory.id', 'DESC')
 
-      if (creditId !== 'null') {
-        queryBuilder.andWhere('credit.id = :creditId', { creditId });
-      }
+    if (creditId !== 'null') {
+      queryBuilder.andWhere('credit.id = :creditId', { creditId });
+    }
 
-      return await queryBuilder.getMany();
+    return await queryBuilder.getMany();
   }
 
   async getProducts(category: string, startDate: any, endDate: any) {
@@ -1028,5 +1050,175 @@ export class ReportService {
 
     console.log("products: ", products);
     return products;
+  }
+
+  async getTotalToCollectInCurrentWeek(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND WEEK(paymentDueDate) = WEEK(CURDATE())')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPendingToCollectInCurrentWeek(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND WEEK(paymentDueDate) = WEEK(CURDATE()) AND pd.paymentDate IS NULL')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getTotalToCollectInCurrentMonth(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND MONTH(paymentDueDate) = MONTH(CURDATE())')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPendingToCollectInCurrentMonth(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND MONTH(paymentDueDate) = MONTH(CURDATE())  and pd.paymentDate is null')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPaidCurrentMonth(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (actualPayment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND MONTH(paymentDueDate) = MONTH(CURDATE())  and pd.paymentDate is not null')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPaidCurrentWeek(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (actualPayment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND WEEK(paymentDueDate) = WEEK(CURDATE())  and pd.paymentDate is not null')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getTotalExpiredPending(typeCurrency: string) {
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', {typeCurrency})
+      .andWhere('pd.paymentDueDate <= curdate() AND pd.paymentDate IS NULL')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+
+  //Sale 
+
+  
+  async getTotalToCollectInCurrentWeekSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND WEEK(paymentDueDate) = WEEK(CURDATE())')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPendingToCollectInCurrentWeekSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND WEEK(paymentDueDate) = WEEK(CURDATE()) AND pd.paymentDate IS NULL')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getTotalToCollectInCurrentMonthSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND MONTH(paymentDueDate) = MONTH(CURDATE())')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPendingToCollectInCurrentMonthSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND MONTH(paymentDueDate) = MONTH(CURDATE())  and pd.paymentDate is null')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPaidCurrentMonthSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (actualPayment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND MONTH(paymentDueDate) = MONTH(CURDATE())  and pd.paymentDate is not null')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getMoneyPaidCurrentWeekSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (actualPayment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
+      .andWhere('YEAR(paymentDueDate) = YEAR(CURDATE()) AND WEEK(paymentDueDate) = WEEK(CURDATE())  and pd.paymentDate is not null')
+      .addOrderBy('pd.paymentDueDate', 'DESC')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
+  }
+
+  async getTotalExpiredPendingSale(typeCurrency: string) {
+    const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .select(['SUM (pd.payment) AS total'])
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .innerJoin('creditHistory.paymentsDetail', 'pd')
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', {typeCurrency})
+      .andWhere('pd.paymentDueDate <= curdate() AND pd.paymentDate IS NULl')
+    const result = await queryBuilder.getRawOne();
+    return result ? result.total : 0;
   }
 }
