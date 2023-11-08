@@ -2,6 +2,7 @@ import { IsPhoneNumber } from 'class-validator';
 import { format } from 'date-fns';
 import { Client } from '../../client/entities/client.entity';
 import { PaymentType } from '../enum';
+import { CreditHistory } from '../entities/credit-history.entity';
 export class CollectionDto {
     id: number;
     debtCollector: string;
@@ -22,6 +23,7 @@ export class CollectionDto {
     creditId: number;
     number: string;
     detail: string;
+    date: string;
 
 
 
@@ -51,7 +53,8 @@ export class CollectionDto {
             numberPayment: paymentDetail.creditHistory.credit.numberPayment,
             creditId: paymentDetail.creditHistory.credit.id,
             number: paymentDetail.numberPayment,
-            detail: paymentDetail.creditHistory.credit.detail
+            detail: paymentDetail.creditHistory.credit.detail,
+            date: format(paymentDetail.creditHistory.date, "dd-MM-yyyy")
         };
         return collectionDto;
     }
