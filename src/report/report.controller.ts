@@ -3,7 +3,7 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { ReportService } from './report.service';
 
 @Controller('report')
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 export class ReportController {
     constructor(private readonly reportService: ReportService) { }
 
@@ -76,6 +76,11 @@ export class ReportController {
         @Query('year') year: string
     ) {
         return await this.reportService.getTotalBalance(currencyType, year);
+    }
+
+    @Get('total-balances')
+    async getTotalBalances() {
+        return await this.reportService.getTotalBalances();
     }
 
     @Get('total-balance-bad')

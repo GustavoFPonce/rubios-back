@@ -1129,7 +1129,7 @@ export class ReportService {
       .select(['SUM (pd.payment) AS total'])
       .leftJoin('credit.creditHistory', 'creditHistory')
       .innerJoin('creditHistory.paymentsDetail', 'pd')
-      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', {typeCurrency})
+      .where('credit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
       .andWhere('pd.paymentDueDate <= curdate() AND pd.paymentDate IS NULL')
     const result = await queryBuilder.getRawOne();
     return result ? result.total : 0;
@@ -1138,7 +1138,7 @@ export class ReportService {
 
   //Sale 
 
-  
+
   async getTotalToCollectInCurrentWeekSale(typeCurrency: string) {
     const queryBuilder = this.saleCreditRepository.createQueryBuilder('saleCredit')
       .select(['SUM (pd.payment) AS total'])
@@ -1216,9 +1216,36 @@ export class ReportService {
       .select(['SUM (pd.payment) AS total'])
       .leftJoin('saleCredit.creditHistory', 'creditHistory')
       .innerJoin('creditHistory.paymentsDetail', 'pd')
-      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', {typeCurrency})
+      .where('saleCredit.typeCurrency = :typeCurrency AND creditHistory.status = 1', { typeCurrency })
       .andWhere('pd.paymentDueDate <= curdate() AND pd.paymentDate IS NULl')
     const result = await queryBuilder.getRawOne();
     return result ? result.total : 0;
+  }
+
+  async getTotalBalances() {
+
+
+    const queryBuilder = this.creditRepository.createQueryBuilder('credit')
+      .leftJoin('credit.creditHistory', 'creditHistory')
+      .select(`
+        COUNT(CASE WHEN credit.typeCurrency = 'peso' THEN 1 END) AS totalRecordsPeso,
+        COUNT(CASE WHEN credit.typeCurrency = 'dolar' THEN 1 END) AS totalRecordsDolar,
+        SUM(CASE WHEN credit.typeCurrency = 'peso' THEN balance ELSE 0 END) AS balancePeso,
+        SUM(CASE WHEN credit.typeCurrency = 'dolar' THEN balance ELSE 0 END) AS balanceDolar`)
+      .where('creditHistory.status = 1')
+    const personalCredits = await queryBuilder.getRawOne();
+
+
+    const queryBuilderSale = this.saleCreditRepository.createQueryBuilder('saleCredit')
+      .leftJoin('saleCredit.creditHistory', 'creditHistory')
+      .select(`
+        COUNT(CASE WHEN saleCredit.typeCurrency = 'peso' THEN 1 END) AS totalRecordsPeso,
+        COUNT(CASE WHEN saleCredit.typeCurrency = 'dolar' THEN 1 END) AS totalRecordsDolar,
+        SUM(CASE WHEN saleCredit.typeCurrency = 'peso' THEN balance ELSE 0 END) AS balancePeso,
+        SUM(CASE WHEN saleCredit.typeCurrency = 'dolar' THEN balance ELSE 0 END) AS balanceDolar`)
+      .where('creditHistory.status = 1')
+    const saleCredits = await queryBuilderSale.getRawOne();
+
+    return { personalCredits, saleCredits }
   }
 }
