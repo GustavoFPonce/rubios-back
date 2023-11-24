@@ -24,6 +24,7 @@ export class CollectionDto {
     number: string;
     detail: string;
     date: string;
+    accountabilityDate?: string;
 
 
 
@@ -54,7 +55,8 @@ export class CollectionDto {
             creditId: paymentDetail.creditHistory.credit.id,
             number: paymentDetail.numberPayment,
             detail: paymentDetail.creditHistory.credit.detail,
-            date: format(paymentDetail.creditHistory.date, "dd-MM-yyyy")
+            date: format(paymentDetail.creditHistory.date, "dd-MM-yyyy"),
+            accountabilityDate: paymentDetail.accountabilityDate
         };
         return collectionDto;
     }
